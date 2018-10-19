@@ -39,7 +39,7 @@ public class KubeServiceImpl implements KubeService {
         fakeBearerToken.setApiKey("ntk5WcP7XmfmSHUg00tRM4ytMMdMALjB0FyvHll1HK-k");
         fakeBearerToken.setApiKeyPrefix("Token");                  
         
-        V1NamespaceList list = null;         		
+        V1NamespaceList list = new V1NamespaceList();         		
         try {
         	CoreV1Api api = new CoreV1Api();
 			list = api.listNamespace(null, null, null, null, null, null, null, null, null);
