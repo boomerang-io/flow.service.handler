@@ -30,12 +30,14 @@ public class KubeServiceImpl implements KubeService {
 //        }
 //        Configuration.setDefaultApiClient(client);
                 
-        String credentials= new String(Base64.getEncoder().encode("admin:1CfaLDU#".getBytes()));
+//        String credentials= new String(Base64.getEncoder().encode("admin:1CfaLDU#".getBytes()));
         ApiClient  defaultClient = Configuration.getDefaultApiClient().setVerifyingSsl(false);
-        defaultClient.setBasePath("http://9.42.74.37:8080");
+        defaultClient.setBasePath("http://9.42.74.37");
         ApiKeyAuth fakeBearerToken = (ApiKeyAuth) defaultClient.getAuthentication("BearerToken");
-        fakeBearerToken.setApiKey(credentials);
-        fakeBearerToken.setApiKeyPrefix("Basic");               
+//        fakeBearerToken.setApiKey(credentials);
+//        fakeBearerToken.setApiKeyPrefix("Basic");               
+        fakeBearerToken.setApiKey("ntk5WcP7XmfmSHUg00tRM4ytMMdMALjB0FyvHll1HK-k");
+        fakeBearerToken.setApiKeyPrefix("Token");                  
         
         V1NamespaceList list = null;         		
         try {
