@@ -24,9 +24,9 @@ public class KubeConfiguration {
 		ApiClient defaultClient = io.kubernetes.client.Configuration.getDefaultApiClient().setVerifyingSsl(false).setDebugging(kubeApiDebug.isEmpty() ? false : Boolean.valueOf(kubeApiDebug));
 		defaultClient.setBasePath(kubeApiBasePath);
 
-		ApiKeyAuth fakeBearerToken = (ApiKeyAuth) defaultClient.getAuthentication("BearerToken");
-		fakeBearerToken.setApiKey(kubeApiToken);
-		fakeBearerToken.setApiKeyPrefix("Bearer");
+		ApiKeyAuth apiKeyAuth = (ApiKeyAuth) defaultClient.getAuthentication("BearerToken");
+		apiKeyAuth.setApiKey(kubeApiToken);
+		apiKeyAuth.setApiKeyPrefix("Bearer");
 		
 		return defaultClient;
 	}
