@@ -15,10 +15,13 @@ public class KubeConfiguration {
 
 	@Value("${kube.api.token}")
 	public String kubeApiToken;
+	
+	@Value("${kube.api.debug}")
+	public String kubeApiDebug;
 
 	@Bean
 	public ApiClient connectToKube() {
-		ApiClient defaultClient = io.kubernetes.client.Configuration.getDefaultApiClient().setVerifyingSsl(false).setDebugging(true);
+		ApiClient defaultClient = io.kubernetes.client.Configuration.getDefaultApiClient().setVerifyingSsl(false).setDebugging(kubeApiDebug.isEmpty() ? false : Boolean.valueOf(kubeApiDebug));
 		defaultClient.setBasePath(kubeApiBasePath);
 
 		ApiKeyAuth fakeBearerToken = (ApiKeyAuth) defaultClient.getAuthentication("BearerToken");
