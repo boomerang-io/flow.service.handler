@@ -7,13 +7,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.kubernetes.client.models.V1JobList;
 import io.kubernetes.client.models.V1NamespaceList;
 import net.boomerangplatform.model.Workflow;
 import net.boomerangplatform.service.KubeService;
 
 @RestController
-@RequestMapping("/kube")
-public class KubeController {
+@RequestMapping("/controller")
+public class ControllerController {
 
     @Autowired
     private KubeService kubeService;
@@ -21,6 +22,11 @@ public class KubeController {
     @RequestMapping(value = "/namespace", method = RequestMethod.GET)
     public V1NamespaceList getAllNamespaces() {
         return kubeService.getAllNamespaces();
+    }
+    
+    @RequestMapping(value = "/jobs", method = RequestMethod.GET)
+    public V1JobList getAllJobs() {
+        return kubeService.getAllJobs();
     }
     
     @RequestMapping(value = "/workflow/{name}", method = RequestMethod.GET)
