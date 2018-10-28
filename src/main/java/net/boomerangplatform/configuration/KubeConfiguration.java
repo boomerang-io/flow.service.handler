@@ -1,5 +1,7 @@
 package net.boomerangplatform.configuration;
 
+import java.util.concurrent.TimeUnit;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -23,6 +25,15 @@ public class KubeConfiguration {
 	public ApiClient connectToKube() {
 		ApiClient defaultClient = io.kubernetes.client.Configuration.getDefaultApiClient().setVerifyingSsl(false).setDebugging(kubeApiDebug.isEmpty() ? false : Boolean.valueOf(kubeApiDebug));
 		defaultClient.setBasePath(kubeApiBasePath);
+//		try {
+//			ClassPathResource resource = new ClassPathResource("ca.crt");
+//			System.out.println(resource.exists());
+//			defaultClient.setSslCaCert(resource.getInputStream());
+//		} catch (IOException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+		defaultClient.getHttpClient().setReadTimeout(60, TimeUnit.SECONDS); //added for watcher to not timeout
 
 		ApiKeyAuth apiKeyAuth = (ApiKeyAuth) defaultClient.getAuthentication("BearerToken");
 		apiKeyAuth.setApiKey(kubeApiToken);
