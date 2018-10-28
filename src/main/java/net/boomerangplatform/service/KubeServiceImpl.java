@@ -1,13 +1,24 @@
 package net.boomerangplatform.service;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.stereotype.Service;
 
 import io.kubernetes.client.ApiException;
 import io.kubernetes.client.apis.BatchV1Api;
 import io.kubernetes.client.apis.CoreV1Api;
 import io.kubernetes.client.apis.CustomObjectsApi;
+import io.kubernetes.client.models.V1Container;
+import io.kubernetes.client.models.V1Job;
 import io.kubernetes.client.models.V1JobList;
+import io.kubernetes.client.models.V1JobSpec;
 import io.kubernetes.client.models.V1NamespaceList;
+import io.kubernetes.client.models.V1ObjectMeta;
+import io.kubernetes.client.models.V1PodSpec;
+import io.kubernetes.client.models.V1PodTemplateSpec;
 import net.boomerangplatform.model.Workflow;
 
 @Service
@@ -48,6 +59,48 @@ public class KubeServiceImpl implements KubeService {
 			e.printStackTrace();
 		}        
         return list;
+    }
+    
+    @Override
+    public V1Job createJob() {
+    	V1Job jobResult = new V1Job();
+    	
+    	//Create Job
+    	String namespace = "default"; // String | object name and auth scope, such as for teams and projects
+    	V1Job body = new V1Job(); // V1Job | 
+    	String pretty = "true"; // String | If 'true', then the output is pretty printed.
+    	
+    	//Create Metadata
+    	V1ObjectMeta metadata = new V1ObjectMeta();
+    	Map <String, String> annotations = new HashMap<String, String>();
+    	annotations.put("boomerangplatform.net/workflow", "workflow-name");
+    	metadata.annotations(annotations);
+    	metadata.generateName("bmrg-flow-");
+    	body.metadata(metadata);
+    	
+    	//Create Spec
+    	V1JobSpec jobSpec = new V1JobSpec();
+    	V1PodTemplateSpec templateSpec = new V1PodTemplateSpec();
+    	V1PodSpec podSpec = new V1PodSpec();
+    	V1Container container = new V1Container();
+    	container.image("tools.boomerangplatform.net:8500/ise/bmrg-worker-flow:0.0.1");
+    	container.name("bmrg-flow-cntr-worker");
+    	List<V1Container> containerList = new ArrayList<V1Container>();
+    	containerList.add(container);
+    	podSpec.containers(containerList);
+    	podSpec.restartPolicy("Never");
+    	templateSpec.spec(podSpec);
+    	jobSpec.template(templateSpec);
+    	body.spec(jobSpec);
+
+        try {
+        	BatchV1Api api = new BatchV1Api();
+        	jobResult = api.createNamespacedJob(namespace, body, pretty);
+
+		} catch (ApiException e) {
+			e.printStackTrace();
+		}        
+        return jobResult;
     }
     
     @Override

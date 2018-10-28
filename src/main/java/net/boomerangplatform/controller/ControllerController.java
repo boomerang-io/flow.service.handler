@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.kubernetes.client.models.V1Job;
 import io.kubernetes.client.models.V1JobList;
 import io.kubernetes.client.models.V1NamespaceList;
 import net.boomerangplatform.model.Workflow;
@@ -27,6 +28,11 @@ public class ControllerController {
     @RequestMapping(value = "/jobs", method = RequestMethod.GET)
     public V1JobList getAllJobs() {
         return kubeService.getAllJobs();
+    }
+    
+    @RequestMapping(value = "/jobs/create", method = RequestMethod.GET)
+    public V1Job createJob() {
+        return kubeService.createJob();
     }
     
     @RequestMapping(value = "/workflow/{name}", method = RequestMethod.GET)
