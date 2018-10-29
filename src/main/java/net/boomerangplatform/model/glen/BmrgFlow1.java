@@ -1,7 +1,8 @@
 
-package net.boomerangplatform.model;
+package net.boomerangplatform.model.glen;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
@@ -12,21 +13,21 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({
-    "boundaryID",
+    "children",
     "displayName",
     "finishedAt",
     "id",
     "name",
-    "outputs",
+    "outboundNodes",
     "phase",
     "startedAt",
     "templateName",
     "type"
 })
-public class BmrgFlow115782439 {
+public class BmrgFlow1 {
 
-    @JsonProperty("boundaryID")
-    private String boundaryID;
+    @JsonProperty("children")
+    private List<String> children = null;
     @JsonProperty("displayName")
     private String displayName;
     @JsonProperty("finishedAt")
@@ -35,8 +36,8 @@ public class BmrgFlow115782439 {
     private String id;
     @JsonProperty("name")
     private String name;
-    @JsonProperty("outputs")
-    private Outputs_ outputs;
+    @JsonProperty("outboundNodes")
+    private List<String> outboundNodes = null;
     @JsonProperty("phase")
     private String phase;
     @JsonProperty("startedAt")
@@ -48,14 +49,14 @@ public class BmrgFlow115782439 {
     @JsonIgnore
     private Map<String, Object> additionalProperties = new HashMap<String, Object>();
 
-    @JsonProperty("boundaryID")
-    public String getBoundaryID() {
-        return boundaryID;
+    @JsonProperty("children")
+    public List<String> getChildren() {
+        return children;
     }
 
-    @JsonProperty("boundaryID")
-    public void setBoundaryID(String boundaryID) {
-        this.boundaryID = boundaryID;
+    @JsonProperty("children")
+    public void setChildren(List<String> children) {
+        this.children = children;
     }
 
     @JsonProperty("displayName")
@@ -98,14 +99,14 @@ public class BmrgFlow115782439 {
         this.name = name;
     }
 
-    @JsonProperty("outputs")
-    public Outputs_ getOutputs() {
-        return outputs;
+    @JsonProperty("outboundNodes")
+    public List<String> getOutboundNodes() {
+        return outboundNodes;
     }
 
-    @JsonProperty("outputs")
-    public void setOutputs(Outputs_ outputs) {
-        this.outputs = outputs;
+    @JsonProperty("outboundNodes")
+    public void setOutboundNodes(List<String> outboundNodes) {
+        this.outboundNodes = outboundNodes;
     }
 
     @JsonProperty("phase")

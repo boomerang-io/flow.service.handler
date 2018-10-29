@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.google.gson.reflect.TypeToken;
@@ -16,7 +17,7 @@ import io.kubernetes.client.ApiException;
 import io.kubernetes.client.Configuration;
 import io.kubernetes.client.apis.BatchV1Api;
 import io.kubernetes.client.apis.CoreV1Api;
-import io.kubernetes.client.apis.CustomObjectsApi;
+import io.kubernetes.client.auth.ApiKeyAuth;
 import io.kubernetes.client.models.V1Container;
 import io.kubernetes.client.models.V1Job;
 import io.kubernetes.client.models.V1JobList;
@@ -29,11 +30,22 @@ import io.kubernetes.client.models.V1PodSpec;
 import io.kubernetes.client.models.V1PodTemplateSpec;
 import io.kubernetes.client.util.Config;
 import io.kubernetes.client.util.Watch;
-import net.boomerangplatform.model.Workflow;
 
 @Service
 public class KubeServiceImpl implements KubeService {
+	
+	@Value("${kube.api.base.path}")
+	public String kubeApiBasePath;
 
+	@Value("${kube.api.token}")
+	public String kubeApiToken;
+	
+	@Value("${kube.api.debug}")
+	public String kubeApiDebug;
+
+	@Value("${kube.namespace}")
+	public String kubeNamespace;
+	
 	@Override
 	public V1NamespaceList getAllNamespaces() {
 		V1NamespaceList list = new V1NamespaceList();
@@ -50,7 +62,7 @@ public class KubeServiceImpl implements KubeService {
 	public V1JobList getAllJobs() {
 		V1JobList list = new V1JobList();
 
-		String namespace = "default"; // String | object name and auth scope, such as for teams and projects
+		String namespace = kubeNamespace; // String | object name and auth scope, such as for teams and projects
 		String pretty = "true"; // String | If 'true', then the output is pretty printed.
 		String _continue = ""; // String | The continue option should be set when retrieving more results from
 								// the server. Since this value is server defined, clients may only use the
@@ -111,53 +123,6 @@ public class KubeServiceImpl implements KubeService {
 	}
 
 	@Override
-	public V1Job createJob() {
-		V1Job jobResult = new V1Job();
-
-		// Create Job
-		String namespace = "default"; // String | object name and auth scope, such as for teams and projects
-		V1Job body = new V1Job(); // V1Job |
-		String pretty = "true"; // String | If 'true', then the output is pretty printed.
-
-		// Create Metadata
-		V1ObjectMeta metadata = new V1ObjectMeta();
-		Map<String, String> annotations = new HashMap<String, String>();
-		annotations.put("boomerangplatform.net/workflow-name", "workflow-name");
-		annotations.put("boomerangplatform.net/workflow-id", "workflow-id");
-		annotations.put("boomerangplatform.net/workflow-task-id", "workflow-task-id");
-		metadata.annotations(annotations);
-		Map<String, String> labels = new HashMap<String, String>();
-		labels.put("bmrg-flow-workflow-name", "workflow-name");
-		metadata.labels(labels);
-		metadata.generateName("bmrg-flow-");
-		body.metadata(metadata);
-
-		// Create Spec
-		V1JobSpec jobSpec = new V1JobSpec();
-		V1PodTemplateSpec templateSpec = new V1PodTemplateSpec();
-		V1PodSpec podSpec = new V1PodSpec();
-		V1Container container = new V1Container();
-		container.image("tools.boomerangplatform.net:8500/ise/bmrg-worker-flow:0.0.1");
-		container.name("bmrg-flow-cntr-worker");
-		List<V1Container> containerList = new ArrayList<V1Container>();
-		containerList.add(container);
-		podSpec.containers(containerList);
-		podSpec.restartPolicy("Never");
-		templateSpec.spec(podSpec);
-		jobSpec.template(templateSpec);
-		body.spec(jobSpec);
-
-		try {
-			BatchV1Api api = new BatchV1Api();
-			jobResult = api.createNamespacedJob(namespace, body, pretty);
-
-		} catch (ApiException e) {
-			e.printStackTrace();
-		}
-		return jobResult;
-	}
-
-	@Override
 	public void watchJob() throws ApiException, IOException {
 		ApiClient client = Config.defaultClient();
 	    client.getHttpClient().setReadTimeout(60, TimeUnit.SECONDS);
@@ -180,23 +145,23 @@ public class KubeServiceImpl implements KubeService {
 	}
 	
 	@Override
-	public V1Job createJob(String labelName) {
+	public V1Job createJob(String workflowName, String workflowId) {
 		V1Job jobResult = new V1Job();
 
 		// Create Job
-		String namespace = "default"; // String | object name and auth scope, such as for teams and projects
+		String namespace = kubeNamespace; // String | object name and auth scope, such as for teams and projects
 		V1Job body = new V1Job(); // V1Job |
 		String pretty = "true"; // String | If 'true', then the output is pretty printed.
 
 		// Create Metadata
 		V1ObjectMeta metadata = new V1ObjectMeta();
 		Map<String, String> annotations = new HashMap<String, String>();
-		annotations.put("boomerangplatform.net/workflow-name", "workflow-name");
-		annotations.put("boomerangplatform.net/workflow-id", "workflow-id");
+		annotations.put("boomerangplatform.net/workflow-name", workflowName);
+		annotations.put("boomerangplatform.net/workflow-id", workflowId);
 		annotations.put("boomerangplatform.net/workflow-task-id", "workflow-task-id");
 		metadata.annotations(annotations);
 		Map<String, String> labels = new HashMap<String, String>();
-		labels.put("bmrg-flow-workflow-name", labelName);
+		labels.put("bmrg-flow-workflow-name", workflowName);
 		metadata.labels(labels);
 		metadata.generateName("bmrg-flow-");
 		body.metadata(metadata);
@@ -208,7 +173,7 @@ public class KubeServiceImpl implements KubeService {
 		V1Container container = new V1Container();
 		container.image("tools.boomerangplatform.net:8500/ise/bmrg-worker-flow:0.0.1");
 		container.name("bmrg-flow-cntr-worker");
-		container.addCommandItem("bash");
+		//container.addCommandItem("bash");
 		List<V1Container> containerList = new ArrayList<V1Container>();
 		containerList.add(container);
 		podSpec.containers(containerList);
@@ -236,17 +201,15 @@ public class KubeServiceImpl implements KubeService {
 	@Override
 	public String watchJob(String labelName) throws ApiException, IOException {
 		System.out.println("----- Start Watcher -----");
-		String result = "failure";
-		ApiClient client = Config.defaultClient();
-	    client.getHttpClient().setReadTimeout(60, TimeUnit.SECONDS);
-	    Configuration.setDefaultApiClient(client);
+		
 		BatchV1Api api = new BatchV1Api();
 
 		Watch<V1Job> watch = Watch.createWatch(
-				client, api.listNamespacedJobCall("default", "true", null, null, null,
+				createWatcherApiClient(), api.listNamespacedJobCall(kubeNamespace, "true", null, null, null,
 						"bmrg-flow-workflow-name="+labelName, null, null, null, true, null, null),
 				new TypeToken<Watch.Response<V1Job>>() {
 				}.getType());
+		String result = "failure";
 		try {
 			for (Watch.Response<V1Job> item : watch) {
 				System.out.printf("%s : %s%n", item.type, item.object.getMetadata().getName());
@@ -261,6 +224,21 @@ public class KubeServiceImpl implements KubeService {
 		}
 		
 		return result;
+	}
+	
+	private ApiClient createWatcherApiClient() {
+//		https://github.com/kubernetes-client/java/blob/master/util/src/main/java/io/kubernetes/client/util/Config.java#L57
+//		ApiClient watcherClient = Config.fromToken(kubeApiBasePath, kubeApiToken, false);
+//		watcherClient.getHttpClient().setReadTimeout(300, TimeUnit.SECONDS);
+		
+		ApiClient watcherClient = io.kubernetes.client.Configuration.getDefaultApiClient().setVerifyingSsl(false).setBasePath(kubeApiBasePath).setDebugging(false);
+		watcherClient.getHttpClient().setReadTimeout(300, TimeUnit.SECONDS); //added for watcher to not timeout
+
+		ApiKeyAuth watcherApiKeyAuth = (ApiKeyAuth) watcherClient.getAuthentication("BearerToken");
+		watcherApiKeyAuth.setApiKey(kubeApiToken);
+		watcherApiKeyAuth.setApiKeyPrefix("Bearer");
+		
+		return watcherClient;
 	}
 
 	@Override
@@ -285,30 +263,4 @@ public class KubeServiceImpl implements KubeService {
 			watch.close();
 		}
 	}
-
-	@Override
-	public Workflow getWorkflow(String name) {
-		CustomObjectsApi api = new CustomObjectsApi();
-		Workflow response = null;
-		try {
-			response = (Workflow) api.getNamespacedCustomObject("argoproj.io", "v1alpha1", "default", "workflows",
-					name);
-		} catch (ApiException e) {
-			e.printStackTrace();
-		}
-		return response;
-	}
-
-	@Override
-	public Object createWorkflow(Workflow workflow) {
-		CustomObjectsApi api = new CustomObjectsApi();
-		Object response = null;
-		try {
-			response = api.createNamespacedCustomObject("argoproj.io", "v1alpha1", "default", "workflows",
-					workflow, null);
-		} catch (ApiException e) {
-			e.printStackTrace();
-		}
-		return response;
-	} 
 }

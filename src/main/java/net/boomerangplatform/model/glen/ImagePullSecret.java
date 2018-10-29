@@ -1,5 +1,5 @@
 
-package net.boomerangplatform.model;
+package net.boomerangplatform.model.glen;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -12,23 +12,23 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({
-    "result"
+    "name"
 })
-public class Outputs__ {
+public class ImagePullSecret {
 
-    @JsonProperty("result")
-    private String result;
+    @JsonProperty("name")
+    private String name;
     @JsonIgnore
     private Map<String, Object> additionalProperties = new HashMap<String, Object>();
 
-    @JsonProperty("result")
-    public String getResult() {
-        return result;
+    @JsonProperty("name")
+    public String getName() {
+        return name;
     }
 
-    @JsonProperty("result")
-    public void setResult(String result) {
-        this.result = result;
+    @JsonProperty("name")
+    public void setName(String name) {
+        this.name = name;
     }
 
     @JsonAnyGetter

@@ -1,5 +1,5 @@
 
-package net.boomerangplatform.model;
+package net.boomerangplatform.model.glen;
 
 import java.util.HashMap;
 import java.util.List;
@@ -23,7 +23,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
     "startedAt",
     "type"
 })
-public class BmrgFlow1615867090 {
+public class BmrgFlow1548609519 {
 
     @JsonProperty("boundaryID")
     private String boundaryID;
