@@ -19,6 +19,7 @@ import io.kubernetes.client.apis.BatchV1Api;
 import io.kubernetes.client.apis.CoreV1Api;
 import io.kubernetes.client.auth.ApiKeyAuth;
 import io.kubernetes.client.models.V1Container;
+import io.kubernetes.client.models.V1EnvVar;
 import io.kubernetes.client.models.V1Job;
 import io.kubernetes.client.models.V1JobList;
 import io.kubernetes.client.models.V1JobSpec;
@@ -45,6 +46,9 @@ public class KubeServiceImpl implements KubeService {
 
 	@Value("${kube.namespace}")
 	public String kubeNamespace;
+	
+	@Value("${kube.worker}")
+	public String kubeWorker;
 	
 	@Override
 	public V1NamespaceList getAllNamespaces() {
@@ -145,7 +149,7 @@ public class KubeServiceImpl implements KubeService {
 	}
 	
 	@Override
-	public V1Job createJob(String workflowName, String workflowId) {
+	public V1Job createJob(String workflowName, String workflowId, String taskId, List<String> arguments, Map<String, String> inputProperties) {
 		V1Job jobResult = new V1Job();
 
 		// Create Job
@@ -158,12 +162,15 @@ public class KubeServiceImpl implements KubeService {
 		Map<String, String> annotations = new HashMap<String, String>();
 		annotations.put("boomerangplatform.net/workflow-name", workflowName);
 		annotations.put("boomerangplatform.net/workflow-id", workflowId);
-		annotations.put("boomerangplatform.net/workflow-task-id", "workflow-task-id");
+		annotations.put("boomerangplatform.net/task-id", taskId);
 		metadata.annotations(annotations);
 		Map<String, String> labels = new HashMap<String, String>();
-		labels.put("bmrg-flow-workflow-name", workflowName);
+		labels.put("workflow-name", workflowName);
+		labels.put("workflow-id", workflowId);
+		labels.put("task-id", taskId);
 		metadata.labels(labels);
 		metadata.generateName("bmrg-flow-");
+//		metadata.name("bmrg-flow-"+taskId);
 		body.metadata(metadata);
 
 		// Create Spec
@@ -171,8 +178,22 @@ public class KubeServiceImpl implements KubeService {
 		V1PodTemplateSpec templateSpec = new V1PodTemplateSpec();
 		V1PodSpec podSpec = new V1PodSpec();
 		V1Container container = new V1Container();
-		container.image("tools.boomerangplatform.net:8500/ise/bmrg-worker-flow:0.0.1");
+		container.image(kubeWorker);
 		container.name("bmrg-flow-cntr-worker");
+		List<V1EnvVar> envVars = new ArrayList<V1EnvVar>();
+		inputProperties.forEach((key, value) -> {
+			V1EnvVar envVar = new V1EnvVar();
+			envVar.setName("INPUTS_PROPS_"+key.replace("-", "_").replace(".", "_").toUpperCase());
+			envVar.setValue(value);
+			envVars.add(envVar);
+		});
+		container.env(envVars);
+//		List<String> containerArgs = new ArrayList<String>();
+//		containerArgs.add("sendSlackMessage");
+//		containerArgs.add("$(INPUTS_PROPS_CHANNEL)");
+//		containerArgs.add("$(INPUTS_PROPS_TITLE)");
+//		containerArgs.add("$(INPUTS_PROPS_MESSAGE)");
+		container.args(arguments);
 		//container.addCommandItem("bash");
 		List<V1Container> containerList = new ArrayList<V1Container>();
 		containerList.add(container);
@@ -199,14 +220,14 @@ public class KubeServiceImpl implements KubeService {
 	}
 	
 	@Override
-	public String watchJob(String labelName) throws ApiException, IOException {
+	public String watchJob(String workflowId, String taskId) throws ApiException, IOException {
 		System.out.println("----- Start Watcher -----");
 		
 		BatchV1Api api = new BatchV1Api();
 
 		Watch<V1Job> watch = Watch.createWatch(
 				createWatcherApiClient(), api.listNamespacedJobCall(kubeNamespace, "true", null, null, null,
-						"bmrg-flow-workflow-name="+labelName, null, null, null, true, null, null),
+						"workflow-id="+workflowId+",task-id="+taskId, null, null, null, true, null, null),
 				new TypeToken<Watch.Response<V1Job>>() {
 				}.getType());
 		String result = "failure";
@@ -222,7 +243,7 @@ public class KubeServiceImpl implements KubeService {
 		} finally {
 			watch.close();
 		}
-		
+		System.out.println("----- End Watcher -----");
 		return result;
 	}
 	

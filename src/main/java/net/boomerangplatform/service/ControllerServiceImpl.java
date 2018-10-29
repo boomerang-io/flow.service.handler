@@ -15,8 +15,8 @@ public class ControllerServiceImpl implements ControllerService {
 	public String executeTask(Task task) {
 		
 		try {
-			kubeService.createJob(task.getWorkflowName(),task.getWorkflowID());
-			return kubeService.watchJob(task.getWorkflowName());
+			kubeService.createJob(task.getWorkflowName(), task.getWorkflowId(), task.getTaskId(), task.getArguments(), task.getInputs().getProperties());
+			return kubeService.watchJob(task.getWorkflowId(), task.getTaskId());
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
