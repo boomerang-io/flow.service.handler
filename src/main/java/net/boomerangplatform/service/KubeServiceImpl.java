@@ -170,7 +170,7 @@ public class KubeServiceImpl implements KubeService {
 		V1PodSpec podSpec = new V1PodSpec();
 		V1Container container = new V1Container();
 		container.image(kubeWorker);
-		container.name("bmrg-flow-cntr-worker");
+		container.name("bmrg-flow-worker-cntr");
 		List<V1EnvVar> envVars = new ArrayList<V1EnvVar>();
 		inputProperties.forEach((key, value) -> {
 			V1EnvVar envVar = new V1EnvVar();
