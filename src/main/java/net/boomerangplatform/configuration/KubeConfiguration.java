@@ -25,15 +25,9 @@ public class KubeConfiguration {
 	public ApiClient connectToKube() {
 //		ApiClient defaultClient = null;
 //		if (kubeApiBasePath.equals("")) {
-		ApiClient defaultClient;
-		try {
-			defaultClient = Config.defaultClient();
-			io.kubernetes.client.Configuration.setDefaultApiClient(defaultClient);
-			return defaultClient;
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		ApiClient defaultClient = io.kubernetes.client.Configuration.getDefaultApiClient().setVerifyingSsl(false).setDebugging(true);
+		io.kubernetes.client.Configuration.setDefaultApiClient(defaultClient);
+		return defaultClient;
 //		} else {
 //			defaultClient = io.kubernetes.client.Configuration.getDefaultApiClient().setVerifyingSsl(false).setDebugging(kubeApiDebug.isEmpty() ? false : Boolean.valueOf(kubeApiDebug));
 //			defaultClient.setBasePath(kubeApiBasePath);
@@ -45,7 +39,5 @@ public class KubeConfiguration {
 //		}
 //		ApiClient defaultClient = Config.fromToken(kubeApiBasePath, kubeApiToken, false).setVerifyingSsl(false).setDebugging(kubeApiDebug.isEmpty() ? false : Boolean.valueOf(kubeApiDebug));
 //		defaultClient.getHttpClient().setReadTimeout(60, TimeUnit.SECONDS);
-		
-		return null;
 	}
 }
