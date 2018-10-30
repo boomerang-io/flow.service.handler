@@ -25,8 +25,15 @@ public class KubeConfiguration {
 	public ApiClient connectToKube() {
 //		ApiClient defaultClient = null;
 //		if (kubeApiBasePath.equals("")) {
-		ApiClient defaultClient = io.kubernetes.client.Configuration.getDefaultApiClient().setVerifyingSsl(false).setDebugging(true);
-		io.kubernetes.client.Configuration.setDefaultApiClient(defaultClient);
+		ApiClient defaultClient = null;
+		try {
+			System.out.println("debug: entering config creation for default client from cluster");
+			defaultClient = Config.fromCluster().setVerifyingSsl(false).setDebugging(true);
+			io.kubernetes.client.Configuration.setDefaultApiClient(defaultClient);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		return defaultClient;
 //		} else {
 //			defaultClient = io.kubernetes.client.Configuration.getDefaultApiClient().setVerifyingSsl(false).setDebugging(kubeApiDebug.isEmpty() ? false : Boolean.valueOf(kubeApiDebug));
