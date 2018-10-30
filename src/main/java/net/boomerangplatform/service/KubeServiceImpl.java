@@ -10,6 +10,7 @@ import java.util.concurrent.TimeUnit;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 
 import io.kubernetes.client.ApiClient;
@@ -18,7 +19,9 @@ import io.kubernetes.client.Configuration;
 import io.kubernetes.client.apis.BatchV1Api;
 import io.kubernetes.client.apis.CoreV1Api;
 import io.kubernetes.client.auth.ApiKeyAuth;
+import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.models.V1Container;
+import io.kubernetes.client.models.V1DeleteOptions;
 import io.kubernetes.client.models.V1EnvVar;
 import io.kubernetes.client.models.V1Job;
 import io.kubernetes.client.models.V1JobList;
@@ -27,8 +30,14 @@ import io.kubernetes.client.models.V1LocalObjectReference;
 import io.kubernetes.client.models.V1Namespace;
 import io.kubernetes.client.models.V1NamespaceList;
 import io.kubernetes.client.models.V1ObjectMeta;
+import io.kubernetes.client.models.V1PersistentVolumeClaim;
+import io.kubernetes.client.models.V1PersistentVolumeClaimList;
+import io.kubernetes.client.models.V1PersistentVolumeClaimSpec;
+import io.kubernetes.client.models.V1PersistentVolumeClaimStatus;
 import io.kubernetes.client.models.V1PodSpec;
 import io.kubernetes.client.models.V1PodTemplateSpec;
+import io.kubernetes.client.models.V1ResourceRequirements;
+import io.kubernetes.client.models.V1Status;
 import io.kubernetes.client.util.Config;
 import io.kubernetes.client.util.Watch;
 
@@ -125,28 +134,6 @@ public class KubeServiceImpl implements KubeService {
 		}
 		return list;
 	}
-
-	@Override
-	public void watchJob() throws ApiException, IOException {
-		ApiClient client = Config.defaultClient();
-	    client.getHttpClient().setReadTimeout(60, TimeUnit.SECONDS);
-	    Configuration.setDefaultApiClient(client);
-		BatchV1Api api = new BatchV1Api();
-
-		Watch<V1Job> watch = Watch.createWatch(
-				Config.defaultClient(), api.listNamespacedJobCall("default", "true", null, null, null,
-						"bmrg-flow-workflow-name=workflow-name", null, null, null, true, null, null),
-				new TypeToken<Watch.Response<V1Job>>() {
-				}.getType());
-
-		try {
-			for (Watch.Response<V1Job> item : watch) {
-				System.out.printf("%s : %s%n", item.type, item.object.getMetadata().getName());
-			}
-		} finally {
-			watch.close();
-		}
-	}
 	
 	@Override
 	public V1Job createJob(String workflowName, String workflowId, String taskId, List<String> arguments, Map<String, String> inputProperties) {
@@ -160,11 +147,15 @@ public class KubeServiceImpl implements KubeService {
 		// Create Metadata
 		V1ObjectMeta metadata = new V1ObjectMeta();
 		Map<String, String> annotations = new HashMap<String, String>();
+		annotations.put("boomerangplatform.net/org", "bmrg");
+		annotations.put("boomerangplatform.net/app", "bmrg-flow");
 		annotations.put("boomerangplatform.net/workflow-name", workflowName);
 		annotations.put("boomerangplatform.net/workflow-id", workflowId);
 		annotations.put("boomerangplatform.net/task-id", taskId);
 		metadata.annotations(annotations);
 		Map<String, String> labels = new HashMap<String, String>();
+		labels.put("org", "bmrg");
+		labels.put("app", "bmrg-flow");
 		labels.put("workflow-name", workflowName);
 		labels.put("workflow-id", workflowId);
 		labels.put("task-id", taskId);
@@ -227,7 +218,7 @@ public class KubeServiceImpl implements KubeService {
 
 		Watch<V1Job> watch = Watch.createWatch(
 				createWatcherApiClient(), api.listNamespacedJobCall(kubeNamespace, "true", null, null, null,
-						"workflow-id="+workflowId+",task-id="+taskId, null, null, null, true, null, null),
+						"org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",task-id="+taskId, null, null, null, true, null, null),
 				new TypeToken<Watch.Response<V1Job>>() {
 				}.getType());
 		String result = "failure";
@@ -244,6 +235,117 @@ public class KubeServiceImpl implements KubeService {
 			watch.close();
 		}
 		System.out.println("----- End Watcher -----");
+		return result;
+	}
+	
+	public V1PersistentVolumeClaim createPVC(String workflowName, String workflowId) {
+		
+		// Setup	
+		CoreV1Api api = new CoreV1Api();
+		String namespace = kubeNamespace; // String | object name and auth scope, such as for teams and projects
+		String pretty = "true"; // String | If 'true', then the output is pretty printed.
+		V1PersistentVolumeClaim body = new V1PersistentVolumeClaim(); // V1PersistentVolumeClaim |
+
+		// Create Metadata
+		V1ObjectMeta metadata = new V1ObjectMeta();
+		Map<String, String> annotations = new HashMap<String, String>();
+		annotations.put("boomerangplatform.net/org", "bmrg");
+		annotations.put("boomerangplatform.net/app", "bmrg-flow");
+		annotations.put("boomerangplatform.net/workflow-name", workflowName);
+		annotations.put("boomerangplatform.net/workflow-id", workflowId);
+		metadata.annotations(annotations);
+		Map<String, String> labels = new HashMap<String, String>();
+		labels.put("org", "bmrg");
+		labels.put("app", "bmrg-flow");
+		labels.put("workflow-name", workflowName);
+		labels.put("workflow-id", workflowId);
+		metadata.labels(labels);
+		metadata.generateName("bmrg-flow-");
+		body.metadata(metadata);
+
+		// Create PVC Spec
+		V1PersistentVolumeClaimSpec pvcSpec = new V1PersistentVolumeClaimSpec();
+		List<String> pvcAccessModes = new ArrayList<String>();
+		pvcAccessModes.add("ReadWriteMany");
+		pvcSpec.accessModes(pvcAccessModes);
+		V1ResourceRequirements pvcResourceReq = new V1ResourceRequirements();
+		Map<String, Quantity> pvcRequests = new HashMap<String, Quantity>();
+		pvcRequests.put("storage", Quantity.fromString("1Gi"));
+		pvcResourceReq.requests(pvcRequests);
+		pvcSpec.resources(pvcResourceReq);
+		body.spec(pvcSpec);
+		
+		V1PersistentVolumeClaim result = new V1PersistentVolumeClaim();
+		try {
+		    result = api.createNamespacedPersistentVolumeClaim(namespace, body, pretty);
+		    System.out.println(result);
+		    return result;
+		} catch (ApiException e) {
+		    System.err.println("Exception when calling CoreV1Api#createNamespacedPersistentVolumeClaim");
+		    e.printStackTrace();
+		}
+		return null;
+	}
+	
+	@Override
+	public V1PersistentVolumeClaimStatus watchPVC(String workflowId) throws ApiException, IOException {
+		System.out.println("----- Start Watcher -----");
+		
+		CoreV1Api api = new CoreV1Api();
+		
+		Watch<V1PersistentVolumeClaim> watch = Watch.createWatch(
+				createWatcherApiClient(), api.listNamespacedPersistentVolumeClaimCall(kubeNamespace, "true", null, null, null, "org=bmrg,app=bmrg-flow,workflow-id="+workflowId, null, null, null, true, null, null),
+				new TypeToken<Watch.Response<V1PersistentVolumeClaim>>() {
+				}.getType());
+		V1PersistentVolumeClaimStatus result = null;
+		try {
+			for (Watch.Response<V1PersistentVolumeClaim> item : watch) {
+				System.out.printf("%s : %s%n", item.type, item.object.getMetadata().getName());
+				System.out.println(item.object.getStatus());
+				result = item.object.getStatus();
+				if (result != null && result.getPhase() != null && result.getPhase().equals("Bound")) {
+					break;
+				}
+			}
+		} finally {
+			watch.close();
+		}
+		System.out.println("----- End Watcher -----");
+		return result;
+	}
+	
+	@Override
+	public V1Status deletePVC(String workflowId) {
+		V1Status result = new V1Status();
+		// Setup	
+		CoreV1Api apiInstance = new CoreV1Api();
+		String namespace = kubeNamespace; // String | object name and auth scope, such as for teams and projects
+		String pretty = "true"; // String | If 'true', then the output is pretty printed.
+		
+		V1DeleteOptions pvcDeleteOptions = new V1DeleteOptions();
+		
+		try {
+			V1PersistentVolumeClaimList persistentVolumeClaimList = apiInstance.listNamespacedPersistentVolumeClaim(namespace, pretty, null, null, null, "org=bmrg,app=bmrg-flow,workflow-id="+workflowId, null, null, 60, false);
+			System.out.println("Printing List...");
+			persistentVolumeClaimList.getItems().forEach(pvc -> {
+				System.out.println(pvc.toString());
+				System.out.println("  name: " + persistentVolumeClaimList.getItems().get(0).getMetadata().getName());
+			});
+			result = apiInstance.deleteNamespacedPersistentVolumeClaim(persistentVolumeClaimList.getItems().get(0).getMetadata().getName(), namespace, pvcDeleteOptions, pretty, null, null, null);
+		} catch (JsonSyntaxException e) {
+            if (e.getCause() instanceof IllegalStateException) {
+                IllegalStateException ise = (IllegalStateException) e.getCause();
+                if (ise.getMessage() != null && ise.getMessage().contains("Expected a string but was BEGIN_OBJECT")) {
+                	System.out.println("Catching exception because of issue https://github.com/kubernetes-client/java/issues/86");
+            	} else {
+	                System.err.println("Exception when running deletePV()");
+	    		    e.printStackTrace();
+            	}
+            }
+        } catch (ApiException e) {
+		    System.err.println("Exception when running deletePVC()");
+		    e.printStackTrace();
+		}
 		return result;
 	}
 	
