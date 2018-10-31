@@ -14,6 +14,9 @@ public class Task {
 	@JsonProperty("workflowId")
     private String workflowId;
 	
+	@JsonProperty("workflowActivityId")
+    private String workflowActivityId;
+	
 	@JsonProperty("taskId")
     private String taskId;
 	
@@ -37,6 +40,14 @@ public class Task {
 
 	public void setWorkflowId(String workflowId) {
 		this.workflowId = workflowId;
+	}
+
+	public String getWorkflowActivityId() {
+		return workflowActivityId;
+	}
+
+	public void setWorkflowActivityId(String workflowActivityId) {
+		this.workflowActivityId = workflowActivityId;
 	}
 
 	public String getTaskId() {

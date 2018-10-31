@@ -11,6 +11,9 @@ public class Workflow {
 	
 	@JsonProperty("workflowId")
     private String workflowId;
+	
+	@JsonProperty("workflowActivityId")
+    private String workflowActivityId;
 
 	public String getWorkflowName() {
 		return workflowName;
@@ -26,6 +29,14 @@ public class Workflow {
 
 	public void setWorkflowId(String workflowId) {
 		this.workflowId = workflowId;
+	}
+
+	public String getWorkflowActivityId() {
+		return workflowActivityId;
+	}
+
+	public void setWorkflowActivityId(String workflowActivityId) {
+		this.workflowActivityId = workflowActivityId;
 	}
 
 }

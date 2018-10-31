@@ -156,7 +156,7 @@ public class KubeServiceImpl implements KubeService {
 	}
 	
 	@Override
-	public V1Job createJob(String workflowName, String workflowId, String taskId, List<String> arguments, Map<String, String> inputProperties) {
+	public V1Job createJob(String workflowName, String workflowId, String workflowActivityId, String taskId, List<String> arguments, Map<String, String> inputProperties) {
 		V1Job jobResult = new V1Job();
 
 		// Create Job
@@ -171,6 +171,7 @@ public class KubeServiceImpl implements KubeService {
 		annotations.put("boomerangplatform.net/app", "bmrg-flow");
 		annotations.put("boomerangplatform.net/workflow-name", workflowName);
 		annotations.put("boomerangplatform.net/workflow-id", workflowId);
+		annotations.put("boomerangplatform.net/workflow-activity-id", workflowActivityId);
 		annotations.put("boomerangplatform.net/task-id", taskId);
 		metadata.annotations(annotations);
 		Map<String, String> labels = new HashMap<String, String>();
@@ -178,6 +179,7 @@ public class KubeServiceImpl implements KubeService {
 		labels.put("app", "bmrg-flow");
 		labels.put("workflow-name", workflowName);
 		labels.put("workflow-id", workflowId);
+		labels.put("workflow-activity-id", workflowActivityId);
 		labels.put("task-id", taskId);
 		metadata.labels(labels);
 		metadata.generateName("bmrg-flow-");
@@ -235,20 +237,18 @@ public class KubeServiceImpl implements KubeService {
 	}
 	
 	@Override
-	public String watchJob(String workflowId, String taskId) throws ApiException, IOException {
+	public String watchJob(String workflowId, String workflowActivityId, String taskId) throws ApiException, IOException {
 		System.out.println("----- Start Watcher -----");
 		
 		BatchV1Api api = new BatchV1Api();
 
 		Watch<V1Job> watch = Watch.createWatch(
 				createWatcherApiClient(), api.listNamespacedJobCall(kubeNamespace, "true", null, null, null,
-						"org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",task-id="+taskId, null, null, null, true, null, null),
+						"org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId+",task-id="+taskId, null, null, null, true, null, null),
 				new TypeToken<Watch.Response<V1Job>>() {
 				}.getType());
 		String result = "failure";
-		System.out.println("debug: Watcher Triggered");
 		try {
-			System.out.println("debug: try to go through Watch responses");
 			for (Watch.Response<V1Job> item : watch) {
 				System.out.println(item.type + " : " + item.object.getMetadata().getName());
 				System.out.println(item.object.getStatus());
@@ -264,7 +264,7 @@ public class KubeServiceImpl implements KubeService {
 		return result;
 	}
 	
-	public V1PersistentVolumeClaim createPVC(String workflowName, String workflowId) {
+	public V1PersistentVolumeClaim createPVC(String workflowName, String workflowId, String workflowActivityId) {
 		
 		// Setup	
 		CoreV1Api api = new CoreV1Api();
@@ -279,12 +279,14 @@ public class KubeServiceImpl implements KubeService {
 		annotations.put("boomerangplatform.net/app", "bmrg-flow");
 		annotations.put("boomerangplatform.net/workflow-name", workflowName);
 		annotations.put("boomerangplatform.net/workflow-id", workflowId);
+		annotations.put("boomerangplatform.net/workflow-activity-id", workflowActivityId);
 		metadata.annotations(annotations);
 		Map<String, String> labels = new HashMap<String, String>();
 		labels.put("org", "bmrg");
 		labels.put("app", "bmrg-flow");
 		labels.put("workflow-name", workflowName);
 		labels.put("workflow-id", workflowId);
+		labels.put("workflow-activity-id", workflowActivityId);
 		metadata.labels(labels);
 		metadata.generateName("bmrg-flow-");
 		body.metadata(metadata);
@@ -314,13 +316,13 @@ public class KubeServiceImpl implements KubeService {
 	}
 	
 	@Override
-	public V1PersistentVolumeClaimStatus watchPVC(String workflowId) throws ApiException, IOException {
+	public V1PersistentVolumeClaimStatus watchPVC(String workflowId, String workflowActivityId) throws ApiException, IOException {
 		System.out.println("----- Start Watcher -----");
 		
 		CoreV1Api api = new CoreV1Api();
 		
 		Watch<V1PersistentVolumeClaim> watch = Watch.createWatch(
-				createWatcherApiClient(), api.listNamespacedPersistentVolumeClaimCall(kubeNamespace, "true", null, null, null, "org=bmrg,app=bmrg-flow,workflow-id="+workflowId, null, null, null, true, null, null),
+				createWatcherApiClient(), api.listNamespacedPersistentVolumeClaimCall(kubeNamespace, "true", null, null, null, "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId, null, null, null, true, null, null),
 				new TypeToken<Watch.Response<V1PersistentVolumeClaim>>() {
 				}.getType());
 		V1PersistentVolumeClaimStatus result = null;
@@ -341,7 +343,7 @@ public class KubeServiceImpl implements KubeService {
 	}
 	
 	@Override
-	public V1Status deletePVC(String workflowId) {
+	public V1Status deletePVC(String workflowId, String workflowActivityId) {
 		V1Status result = new V1Status();
 		// Setup	
 		CoreV1Api apiInstance = new CoreV1Api();
@@ -351,7 +353,7 @@ public class KubeServiceImpl implements KubeService {
 		V1DeleteOptions pvcDeleteOptions = new V1DeleteOptions();
 		
 		try {
-			V1PersistentVolumeClaimList persistentVolumeClaimList = apiInstance.listNamespacedPersistentVolumeClaim(namespace, pretty, null, null, null, "org=bmrg,app=bmrg-flow,workflow-id="+workflowId, null, null, 60, false);
+			V1PersistentVolumeClaimList persistentVolumeClaimList = apiInstance.listNamespacedPersistentVolumeClaim(namespace, pretty, null, null, null, "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId, null, null, 60, false);
 			System.out.println("Printing List...");
 			persistentVolumeClaimList.getItems().forEach(pvc -> {
 				System.out.println(pvc.toString());
@@ -379,26 +381,7 @@ public class KubeServiceImpl implements KubeService {
 //		https://github.com/kubernetes-client/java/blob/master/util/src/main/java/io/kubernetes/client/util/Config.java#L57
 //		ApiClient watcherClient = Config.fromToken(kubeApiBasePath, kubeApiToken, false);
 		
-		//Debug must be false for watcher clients
-//		ApiClient watcherClient = null;
-//		if (kubeApiType.equals("cluster")) {
-//			try {
-//				watcherClient = io.kubernetes.client.Configuration.
-//						//Config.fromCluster().setVerifyingSsl(false).setDebugging(false);
-//			} catch (IOException e) {
-//				e.printStackTrace();
-//			}
-//		} else {
-//			watcherClient = io.kubernetes.client.Configuration.getDefaultApiClient().setVerifyingSsl(false).setBasePath(kubeApiBasePath).setDebugging(false);
-//		}
-		
 		ApiClient watcherClient = io.kubernetes.client.Configuration.getDefaultApiClient().setVerifyingSsl(false).setDebugging(false);
-//		try {
-//			watcherClient = Config.defaultClient().setVerifyingSsl(false).setDebugging(false);
-//		} catch (IOException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
 		
 		if (!kubeApiToken.isEmpty()) {
 			ApiKeyAuth watcherApiKeyAuth = (ApiKeyAuth) watcherClient.getAuthentication("BearerToken");

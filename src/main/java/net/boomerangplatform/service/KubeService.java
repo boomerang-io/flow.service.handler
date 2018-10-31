@@ -17,9 +17,9 @@ public interface KubeService {
 	V1NamespaceList getAllNamespaces();
 	V1JobList getAllJobs();
 	void watchNamespace() throws ApiException, IOException;
-	String watchJob(String workflowId, String taskId) throws ApiException, IOException;
-	V1Job createJob(String workflowName, String workflowId, String taskId, List<String> arguments, Map<String, String> inputProperties);
-	V1PersistentVolumeClaim createPVC(String workflowName, String workflowId);
-	V1Status deletePVC(String workflowId);
-	V1PersistentVolumeClaimStatus watchPVC(String workflowId) throws ApiException, IOException;
+	String watchJob(String workflowId, String workflowActivityId, String taskId) throws ApiException, IOException;
+	V1Job createJob(String workflowName, String workflowId, String workflowActivityId, String taskId, List<String> arguments, Map<String, String> inputProperties);
+	V1PersistentVolumeClaim createPVC(String workflowName, String workflowId, String workflowActivityId);
+	V1Status deletePVC(String workflowId, String workflowActivityId);
+	V1PersistentVolumeClaimStatus watchPVC(String workflowId, String workflowActivityId) throws ApiException, IOException;
 }
