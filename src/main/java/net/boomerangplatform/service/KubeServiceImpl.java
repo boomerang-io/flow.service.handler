@@ -1,6 +1,7 @@
 package net.boomerangplatform.service;
 
 import java.io.IOException;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -26,6 +27,7 @@ import io.kubernetes.client.models.V1EnvVar;
 import io.kubernetes.client.models.V1Job;
 import io.kubernetes.client.models.V1JobList;
 import io.kubernetes.client.models.V1JobSpec;
+import io.kubernetes.client.models.V1JobStatus;
 import io.kubernetes.client.models.V1LocalObjectReference;
 import io.kubernetes.client.models.V1Namespace;
 import io.kubernetes.client.models.V1NamespaceList;
@@ -213,7 +215,16 @@ public class KubeServiceImpl implements KubeService {
 			jobResult = api.createNamespacedJob(namespace, body, pretty);
 
 		} catch (ApiException e) {
-			e.printStackTrace();
+			if (e.getCause() instanceof SocketTimeoutException) {
+				SocketTimeoutException ste = (SocketTimeoutException) e.getCause();
+                if (ste.getMessage() != null && ste.getMessage().contains("timeout")) {
+                	System.out.println("Catching timeout and return as task error");
+                	V1JobStatus badStatus = new V1JobStatus();
+                	return body.status(badStatus.failed(1));
+            	} else {
+	                e.printStackTrace();
+            	}
+            }
 		}
 		
 		return jobResult;
