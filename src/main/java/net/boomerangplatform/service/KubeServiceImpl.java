@@ -42,6 +42,7 @@ import io.kubernetes.client.models.V1PodTemplateSpec;
 import io.kubernetes.client.models.V1ResourceRequirements;
 import io.kubernetes.client.models.V1Status;
 import io.kubernetes.client.models.V1Volume;
+import io.kubernetes.client.models.V1VolumeMount;
 import io.kubernetes.client.util.Config;
 import io.kubernetes.client.util.Watch;
 
@@ -205,6 +206,12 @@ public class KubeServiceImpl implements KubeService {
 		}
 		container.env(envVars);
 		container.args(arguments);
+		if (!getPVCName(workflowId, workflowActivityId).isEmpty()) {
+			V1VolumeMount volMount = new V1VolumeMount();
+			volMount.name("bmrg-flow-vol-" + workflowActivityId);
+			volMount.mountPath("/data");
+			container.addVolumeMountsItem(volMount);
+		}
 		List<V1Container> containerList = new ArrayList<V1Container>();
 		containerList.add(container);
 		podSpec.containers(containerList);
@@ -214,8 +221,8 @@ public class KubeServiceImpl implements KubeService {
 		imagePullSecretList.add(imagePullSecret);
 		podSpec.imagePullSecrets(imagePullSecretList);
 		podSpec.restartPolicy("Never");
-		List<V1Volume> volumesList = new ArrayList<V1Volume>();
 		if (!getPVCName(workflowId, workflowActivityId).isEmpty()) {
+			List<V1Volume> volumesList = new ArrayList<V1Volume>();
 			V1Volume workerVolume = new V1Volume();
 			workerVolume.name("bmrg-flow-vol-" + workflowActivityId);
 			V1PersistentVolumeClaimVolumeSource workerVolumePVCSource = new V1PersistentVolumeClaimVolumeSource();
