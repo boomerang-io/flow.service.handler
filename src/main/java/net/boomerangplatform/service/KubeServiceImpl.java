@@ -211,6 +211,13 @@ public class KubeServiceImpl implements KubeService {
 			volMount.name("bmrg-flow-vol-" + workflowActivityId);
 			volMount.mountPath("/data");
 			container.addVolumeMountsItem(volMount);
+			List<V1Volume> volumesList = new ArrayList<V1Volume>();
+			V1Volume workerVolume = new V1Volume();
+			workerVolume.name("bmrg-flow-vol-" + workflowActivityId);
+			V1PersistentVolumeClaimVolumeSource workerVolumePVCSource = new V1PersistentVolumeClaimVolumeSource();
+			workerVolume.persistentVolumeClaim(workerVolumePVCSource.claimName(getPVCName(workflowId, workflowActivityId)));
+			volumesList.add(workerVolume);
+			podSpec.volumes(volumesList);
 		}
 		List<V1Container> containerList = new ArrayList<V1Container>();
 		containerList.add(container);
@@ -221,15 +228,6 @@ public class KubeServiceImpl implements KubeService {
 		imagePullSecretList.add(imagePullSecret);
 		podSpec.imagePullSecrets(imagePullSecretList);
 		podSpec.restartPolicy("Never");
-		if (!getPVCName(workflowId, workflowActivityId).isEmpty()) {
-			List<V1Volume> volumesList = new ArrayList<V1Volume>();
-			V1Volume workerVolume = new V1Volume();
-			workerVolume.name("bmrg-flow-vol-" + workflowActivityId);
-			V1PersistentVolumeClaimVolumeSource workerVolumePVCSource = new V1PersistentVolumeClaimVolumeSource();
-			workerVolume.persistentVolumeClaim(workerVolumePVCSource.claimName(getPVCName(workflowId, workflowActivityId)));
-			volumesList.add(workerVolume);
-			podSpec.volumes(volumesList);
-		}
 		templateSpec.spec(podSpec);
 		jobSpec.template(templateSpec);
 		body.spec(jobSpec);
