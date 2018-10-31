@@ -14,6 +14,9 @@ public class Workflow {
 	
 	@JsonProperty("workflowActivityId")
     private String workflowActivityId;
+	
+	@JsonProperty("enablePersistentVolume")
+    private Boolean enablePersistentVolume;
 
 	public String getWorkflowName() {
 		return workflowName;
@@ -37,6 +40,14 @@ public class Workflow {
 
 	public void setWorkflowActivityId(String workflowActivityId) {
 		this.workflowActivityId = workflowActivityId;
+	}
+
+	public Boolean getEnablePersistentVolume() {
+		return enablePersistentVolume;
+	}
+
+	public void setEnablePersistentVolume(Boolean enablePersistentVolume) {
+		this.enablePersistentVolume = enablePersistentVolume;
 	}
 
 }

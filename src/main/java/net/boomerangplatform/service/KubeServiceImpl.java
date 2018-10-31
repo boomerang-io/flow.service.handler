@@ -36,10 +36,12 @@ import io.kubernetes.client.models.V1PersistentVolumeClaim;
 import io.kubernetes.client.models.V1PersistentVolumeClaimList;
 import io.kubernetes.client.models.V1PersistentVolumeClaimSpec;
 import io.kubernetes.client.models.V1PersistentVolumeClaimStatus;
+import io.kubernetes.client.models.V1PersistentVolumeClaimVolumeSource;
 import io.kubernetes.client.models.V1PodSpec;
 import io.kubernetes.client.models.V1PodTemplateSpec;
 import io.kubernetes.client.models.V1ResourceRequirements;
 import io.kubernetes.client.models.V1Status;
+import io.kubernetes.client.models.V1Volume;
 import io.kubernetes.client.util.Config;
 import io.kubernetes.client.util.Watch;
 
@@ -212,6 +214,15 @@ public class KubeServiceImpl implements KubeService {
 		imagePullSecretList.add(imagePullSecret);
 		podSpec.imagePullSecrets(imagePullSecretList);
 		podSpec.restartPolicy("Never");
+		List<V1Volume> volumesList = new ArrayList<V1Volume>();
+		if (!getPVCName(workflowId, workflowActivityId).isEmpty()) {
+			V1Volume workerVolume = new V1Volume();
+			workerVolume.name("bmrg-flow-vol-" + workflowActivityId);
+			V1PersistentVolumeClaimVolumeSource workerVolumePVCSource = new V1PersistentVolumeClaimVolumeSource();
+			workerVolume.persistentVolumeClaim(workerVolumePVCSource.claimName(getPVCName(workflowId, workflowActivityId)));
+			volumesList.add(workerVolume);
+			podSpec.volumes(volumesList);
+		}
 		templateSpec.spec(podSpec);
 		jobSpec.template(templateSpec);
 		body.spec(jobSpec);
@@ -375,6 +386,21 @@ public class KubeServiceImpl implements KubeService {
 		    e.printStackTrace();
 		}
 		return result;
+	}
+	
+	private String getPVCName(String workflowId, String workflowActivityId) {
+		System.out.println("----- Start Watcher -----");
+		
+		CoreV1Api api = new CoreV1Api();
+		
+		try {
+			return api.listNamespacedPersistentVolumeClaim(kubeNamespace, "true", null, null, null, "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId, null, null, null, false).getItems().get(0).getMetadata().getName();
+		} catch (ApiException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		return null;
 	}
 	
 	private ApiClient createWatcherApiClient() {

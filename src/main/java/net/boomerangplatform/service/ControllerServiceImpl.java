@@ -28,19 +28,23 @@ public class ControllerServiceImpl implements ControllerService {
 	@Override
 	public String createWorkflow(Workflow workflow) {
 		
-		try {
-			kubeService.createPVC(workflow.getWorkflowName(), workflow.getWorkflowId(), workflow.getWorkflowActivityId());
-			return kubeService.watchPVC(workflow.getWorkflowId(), workflow.getWorkflowActivityId()).getPhase();
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			return e.toString();
+		if (workflow.getEnablePersistentVolume()) {
+			try {
+				kubeService.createPVC(workflow.getWorkflowName(), workflow.getWorkflowId(), workflow.getWorkflowActivityId());
+				return kubeService.watchPVC(workflow.getWorkflowId(), workflow.getWorkflowActivityId()).getPhase();
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				return e.toString();
+			}
 		}
+		return "success";
 	}
 	
 	@Override
 	public String terminateWorkflow(Workflow workflow) {
 		
+		if (workflow.getEnablePersistentVolume()) {
 		try {
 			kubeService.deletePVC(workflow.getWorkflowId(), workflow.getWorkflowActivityId());
 			return "success";
@@ -49,5 +53,7 @@ public class ControllerServiceImpl implements ControllerService {
 			e.printStackTrace();
 			return e.toString();
 		}
+		}
+		return "success";
 	}
 }
