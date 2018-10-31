@@ -399,7 +399,10 @@ public class KubeServiceImpl implements KubeService {
 		CoreV1Api api = new CoreV1Api();
 		
 		try {
-			return api.listNamespacedPersistentVolumeClaim(kubeNamespace, "true", null, null, null, "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId, null, null, null, false).getItems().get(0).getMetadata().getName();
+			List<V1PersistentVolumeClaim> persistentVolumeClaimList = api.listNamespacedPersistentVolumeClaim(kubeNamespace, "true", null, null, null, "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId, null, null, null, false).getItems();
+			if (persistentVolumeClaimList != null) {
+				return persistentVolumeClaimList.get(0).getMetadata().getName();
+			}
 		} catch (ApiException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
