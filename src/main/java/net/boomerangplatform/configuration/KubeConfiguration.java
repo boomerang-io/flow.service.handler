@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import io.kubernetes.client.ApiClient;
+import io.kubernetes.client.auth.ApiKeyAuth;
 import io.kubernetes.client.util.Config;
 
 @Configuration
@@ -33,6 +34,12 @@ public class KubeConfiguration {
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+		}
+		
+		if (!kubeApiToken.isEmpty()) {
+			ApiKeyAuth apiKeyAuth = (ApiKeyAuth) defaultClient.getAuthentication("BearerToken");
+			apiKeyAuth.setApiKey(kubeApiToken);
+			apiKeyAuth.setApiKeyPrefix("Bearer");
 		}
 		return defaultClient;
 //		} else {
