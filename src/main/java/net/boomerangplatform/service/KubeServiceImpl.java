@@ -62,6 +62,18 @@ public class KubeServiceImpl implements KubeService {
 	@Value("${kube.worker}")
 	public String kubeWorker;
 	
+	@Value("${proxy.enable}")
+	public Boolean proxyEnabled;
+	
+	@Value("${proxy.host}")
+	public String proxyHost;
+	
+	@Value("${proxy.port}")
+	public String proxyPort;
+	
+	@Value("${proxy.ignore}")
+	public String proxyIgnore;
+	
 	@Override
 	public V1NamespaceList getAllNamespaces() {
 		V1NamespaceList list = new V1NamespaceList();
@@ -176,19 +188,13 @@ public class KubeServiceImpl implements KubeService {
 		container.name("bmrg-flow-worker-cntr");
 		List<V1EnvVar> envVars = new ArrayList<V1EnvVar>();
 		inputProperties.forEach((key, value) -> {
-			V1EnvVar envVar = new V1EnvVar();
-			envVar.setName("INPUTS_PROPS_"+key.replace("-", "_").replace(".", "_").toUpperCase());
-			envVar.setValue(value);
-			envVars.add(envVar);
+			envVars.add(createEnvVar("INPUTS_PROPS_"+key.replace("-", "_").replace(".", "_").toUpperCase(), value));
 		});
+		if (proxyEnabled) {
+			envVars.addAll(createProxyEnvVars());
+		}
 		container.env(envVars);
-//		List<String> containerArgs = new ArrayList<String>();
-//		containerArgs.add("sendSlackMessage");
-//		containerArgs.add("$(INPUTS_PROPS_CHANNEL)");
-//		containerArgs.add("$(INPUTS_PROPS_TITLE)");
-//		containerArgs.add("$(INPUTS_PROPS_MESSAGE)");
 		container.args(arguments);
-		//container.addCommandItem("bash");
 		List<V1Container> containerList = new ArrayList<V1Container>();
 		containerList.add(container);
 		podSpec.containers(containerList);
@@ -375,6 +381,27 @@ public class KubeServiceImpl implements KubeService {
 		}
 		watcherClient.getHttpClient().setReadTimeout(1800, TimeUnit.SECONDS);
 		return watcherClient;
+	}
+	
+	private List<V1EnvVar> createProxyEnvVars() {
+		List<V1EnvVar> proxyEnvVars = new ArrayList<V1EnvVar>();
+		
+		proxyEnvVars.add(createEnvVar("HTTP_PROXY","http://" + proxyHost + ":" + proxyPort));
+		proxyEnvVars.add(createEnvVar("HTTPS_PROXY","https://" + proxyHost + ":" + proxyPort));
+		proxyEnvVars.add(createEnvVar("http_proxy","https://" + proxyHost + ":" + proxyPort));
+		proxyEnvVars.add(createEnvVar("https_proxy","https://" + proxyHost + ":" + proxyPort));
+		proxyEnvVars.add(createEnvVar("NO_PROXY",proxyIgnore));
+		proxyEnvVars.add(createEnvVar("no_proxy",proxyIgnore));
+		proxyEnvVars.add(createEnvVar("use_proxy","on"));
+
+		return proxyEnvVars;
+	}
+	
+	private V1EnvVar createEnvVar(String key, String value) {
+		V1EnvVar envVar = new V1EnvVar();
+		envVar.setName(key);
+		envVar.setValue(value);
+		return envVar;
 	}
 
 	@Override
