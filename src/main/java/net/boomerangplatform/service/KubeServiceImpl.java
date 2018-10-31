@@ -408,7 +408,7 @@ public class KubeServiceImpl implements KubeService {
 			e.printStackTrace();
 		}
 		
-		return null;
+		return "";
 	}
 	
 	private ApiClient createWatcherApiClient() {
