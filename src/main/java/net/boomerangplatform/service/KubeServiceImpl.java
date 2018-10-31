@@ -61,8 +61,11 @@ public class KubeServiceImpl implements KubeService {
 	@Value("${kube.namespace}")
 	public String kubeNamespace;
 	
-	@Value("${kube.worker}")
-	public String kubeWorker;
+	@Value("${kube.image}")
+	public String kubeImage;
+	
+	@Value("${kube.image.pullPolicy}")
+	public String kubeImagePullPolicy;
 	
 	@Value("${proxy.enable}")
 	public Boolean proxyEnabled;
@@ -186,8 +189,9 @@ public class KubeServiceImpl implements KubeService {
 		V1PodTemplateSpec templateSpec = new V1PodTemplateSpec();
 		V1PodSpec podSpec = new V1PodSpec();
 		V1Container container = new V1Container();
-		container.image(kubeWorker);
+		container.image(kubeImage);
 		container.name("bmrg-flow-worker-cntr");
+		container.imagePullPolicy(kubeImagePullPolicy);
 		List<V1EnvVar> envVars = new ArrayList<V1EnvVar>();
 		inputProperties.forEach((key, value) -> {
 			envVars.add(createEnvVar("INPUTS_PROPS_"+key.replace("-", "_").replace(".", "_").toUpperCase(), value));
