@@ -1,6 +1,7 @@
 package net.boomerangplatform.configuration;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -21,19 +22,21 @@ public class KubeConfiguration {
 	
 	@Value("${kube.api.debug}")
 	public String kubeApiDebug;
+	
+	@Value("${kube.api.type}")
+	public String kubeApiType;
 
 	@Bean
 	public ApiClient connectToKube() {
-//		ApiClient defaultClient = null;
-//		if (kubeApiBasePath.equals("")) {
 		ApiClient defaultClient = null;
-		try {
-			System.out.println("debug: entering config creation for default client from cluster");
-			defaultClient = Config.fromCluster().setVerifyingSsl(false).setDebugging(true);
-			io.kubernetes.client.Configuration.setDefaultApiClient(defaultClient);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		if (kubeApiType.equals("cluster")) {
+			try {
+				defaultClient = Config.fromCluster().setVerifyingSsl(false).setDebugging(kubeApiDebug.isEmpty() ? false : Boolean.valueOf(kubeApiDebug));
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		} else {
+			defaultClient = io.kubernetes.client.Configuration.getDefaultApiClient().setVerifyingSsl(false).setBasePath(kubeApiBasePath).setDebugging(kubeApiDebug.isEmpty() ? false : Boolean.valueOf(kubeApiDebug));
 		}
 		
 		if (!kubeApiToken.isEmpty()) {
@@ -41,16 +44,10 @@ public class KubeConfiguration {
 			apiKeyAuth.setApiKey(kubeApiToken);
 			apiKeyAuth.setApiKeyPrefix("Bearer");
 		}
+		io.kubernetes.client.Configuration.setDefaultApiClient(defaultClient);
+		defaultClient.getHttpClient().setReadTimeout(300, TimeUnit.SECONDS); //added for watcher to not timeout
 		return defaultClient;
-//		} else {
-//			defaultClient = io.kubernetes.client.Configuration.getDefaultApiClient().setVerifyingSsl(false).setDebugging(kubeApiDebug.isEmpty() ? false : Boolean.valueOf(kubeApiDebug));
-//			defaultClient.setBasePath(kubeApiBasePath);
-//			defaultClient.getHttpClient().setReadTimeout(60, TimeUnit.SECONDS); //added for watcher to not timeout
-//	
-//			ApiKeyAuth apiKeyAuth = (ApiKeyAuth) defaultClient.getAuthentication("BearerToken");
-//			apiKeyAuth.setApiKey(kubeApiToken);
-//			apiKeyAuth.setApiKeyPrefix("Bearer");
-//		}
+
 //		ApiClient defaultClient = Config.fromToken(kubeApiBasePath, kubeApiToken, false).setVerifyingSsl(false).setDebugging(kubeApiDebug.isEmpty() ? false : Boolean.valueOf(kubeApiDebug));
 //		defaultClient.getHttpClient().setReadTimeout(60, TimeUnit.SECONDS);
 	}

@@ -52,6 +52,9 @@ public class KubeServiceImpl implements KubeService {
 	
 	@Value("${kube.api.debug}")
 	public String kubeApiDebug;
+	
+	@Value("${kube.api.type}")
+	public String kubeApiType;
 
 	@Value("${kube.namespace}")
 	public String kubeNamespace;
@@ -352,15 +355,25 @@ public class KubeServiceImpl implements KubeService {
 	private ApiClient createWatcherApiClient() {
 //		https://github.com/kubernetes-client/java/blob/master/util/src/main/java/io/kubernetes/client/util/Config.java#L57
 //		ApiClient watcherClient = Config.fromToken(kubeApiBasePath, kubeApiToken, false);
-//		watcherClient.getHttpClient().setReadTimeout(300, TimeUnit.SECONDS);
 		
-		ApiClient watcherClient = io.kubernetes.client.Configuration.getDefaultApiClient().setVerifyingSsl(false).setBasePath(kubeApiBasePath).setDebugging(false);
-		watcherClient.getHttpClient().setReadTimeout(300, TimeUnit.SECONDS); //added for watcher to not timeout
-
-		ApiKeyAuth watcherApiKeyAuth = (ApiKeyAuth) watcherClient.getAuthentication("BearerToken");
-		watcherApiKeyAuth.setApiKey(kubeApiToken);
-		watcherApiKeyAuth.setApiKeyPrefix("Bearer");
+		//Debug must be false for watcher clients
+		ApiClient watcherClient = null;
+		if (kubeApiType.equals("cluster")) {
+			try {
+				watcherClient = Config.fromCluster().setVerifyingSsl(false).setDebugging(false);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		} else {
+			watcherClient = io.kubernetes.client.Configuration.getDefaultApiClient().setVerifyingSsl(false).setBasePath(kubeApiBasePath).setDebugging(false);
+		}
 		
+		if (!kubeApiToken.isEmpty()) {
+			ApiKeyAuth watcherApiKeyAuth = (ApiKeyAuth) watcherClient.getAuthentication("BearerToken");
+			watcherApiKeyAuth.setApiKey(kubeApiToken);
+			watcherApiKeyAuth.setApiKeyPrefix("Bearer");
+		}
+		watcherClient.getHttpClient().setReadTimeout(1800, TimeUnit.SECONDS);
 		return watcherClient;
 	}
 
