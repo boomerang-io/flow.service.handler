@@ -400,7 +400,7 @@ public class KubeServiceImpl implements KubeService {
 		
 		try {
 			List<V1PersistentVolumeClaim> persistentVolumeClaimList = api.listNamespacedPersistentVolumeClaim(kubeNamespace, "true", null, null, null, "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId, null, null, null, false).getItems();
-			if (persistentVolumeClaimList != null) {
+			if (persistentVolumeClaimList != null && !persistentVolumeClaimList.isEmpty()) {
 				return persistentVolumeClaimList.get(0).getMetadata().getName();
 			}
 		} catch (ApiException e) {
