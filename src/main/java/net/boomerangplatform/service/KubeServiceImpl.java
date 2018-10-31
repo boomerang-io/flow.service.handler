@@ -394,15 +394,20 @@ public class KubeServiceImpl implements KubeService {
 	}
 	
 	private String getPVCName(String workflowId, String workflowActivityId) {
+		System.out.println(" ");
+		System.out.println(" ");
 		System.out.println("----- Start Watcher -----");
 		
 		CoreV1Api api = new CoreV1Api();
 		
 		try {
 			List<V1PersistentVolumeClaim> persistentVolumeClaimList = api.listNamespacedPersistentVolumeClaim(kubeNamespace, "true", null, null, null, "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId, null, null, null, false).getItems();
+			System.out.println(" ");
 			if (persistentVolumeClaimList != null && !persistentVolumeClaimList.isEmpty()) {
+				System.out.println(persistentVolumeClaimList.get(0).getMetadata().getName());
 				return persistentVolumeClaimList.get(0).getMetadata().getName();
 			}
+			System.out.println(" ");
 		} catch (ApiException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
