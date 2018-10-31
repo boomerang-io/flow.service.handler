@@ -378,23 +378,25 @@ public class KubeServiceImpl implements KubeService {
 //		ApiClient watcherClient = Config.fromToken(kubeApiBasePath, kubeApiToken, false);
 		
 		//Debug must be false for watcher clients
-		ApiClient watcherClient = null;
-		if (kubeApiType.equals("cluster")) {
-			try {
-				watcherClient = Config.fromCluster().setVerifyingSsl(false).setDebugging(false);
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		} else {
-			watcherClient = io.kubernetes.client.Configuration.getDefaultApiClient().setVerifyingSsl(false).setBasePath(kubeApiBasePath).setDebugging(false);
-		}
+//		ApiClient watcherClient = null;
+//		if (kubeApiType.equals("cluster")) {
+//			try {
+//				watcherClient = Config.fromCluster().setVerifyingSsl(false).setDebugging(false);
+//			} catch (IOException e) {
+//				e.printStackTrace();
+//			}
+//		} else {
+//			watcherClient = io.kubernetes.client.Configuration.getDefaultApiClient().setVerifyingSsl(false).setBasePath(kubeApiBasePath).setDebugging(false);
+//		}
+		
+		ApiClient watcherClient = io.kubernetes.client.Configuration.getDefaultApiClient().setVerifyingSsl(false).setBasePath(kubeApiBasePath).setDebugging(false);
 		
 		if (!kubeApiToken.isEmpty()) {
 			ApiKeyAuth watcherApiKeyAuth = (ApiKeyAuth) watcherClient.getAuthentication("BearerToken");
 			watcherApiKeyAuth.setApiKey(kubeApiToken);
 			watcherApiKeyAuth.setApiKeyPrefix("Bearer");
 		}
-		watcherClient.getHttpClient().setReadTimeout(1800, TimeUnit.SECONDS);
+		watcherClient.getHttpClient().setReadTimeout(300, TimeUnit.SECONDS);
 		return watcherClient;
 	}
 	
@@ -403,7 +405,7 @@ public class KubeServiceImpl implements KubeService {
 		
 		proxyEnvVars.add(createEnvVar("HTTP_PROXY","http://" + proxyHost + ":" + proxyPort));
 		proxyEnvVars.add(createEnvVar("HTTPS_PROXY","https://" + proxyHost + ":" + proxyPort));
-		proxyEnvVars.add(createEnvVar("http_proxy","https://" + proxyHost + ":" + proxyPort));
+		proxyEnvVars.add(createEnvVar("http_proxy","http://" + proxyHost + ":" + proxyPort));
 		proxyEnvVars.add(createEnvVar("https_proxy","https://" + proxyHost + ":" + proxyPort));
 		proxyEnvVars.add(createEnvVar("NO_PROXY",proxyIgnore));
 		proxyEnvVars.add(createEnvVar("no_proxy",proxyIgnore));
