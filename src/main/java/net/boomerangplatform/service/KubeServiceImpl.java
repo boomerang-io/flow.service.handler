@@ -246,9 +246,11 @@ public class KubeServiceImpl implements KubeService {
 				new TypeToken<Watch.Response<V1Job>>() {
 				}.getType());
 		String result = "failure";
+		System.out.println("debug: Watcher Triggered");
 		try {
+			System.out.println("debug: try to go through Watch responses");
 			for (Watch.Response<V1Job> item : watch) {
-				System.out.printf("%s : %s%n", item.type, item.object.getMetadata().getName());
+				System.out.println(item.type + " : " + item.object.getMetadata().getName());
 				System.out.println(item.object.getStatus());
 				if (item.object.getStatus().getSucceeded() != null && item.object.getStatus().getSucceeded() == 1) {
 					result = "success";
@@ -381,7 +383,8 @@ public class KubeServiceImpl implements KubeService {
 //		ApiClient watcherClient = null;
 //		if (kubeApiType.equals("cluster")) {
 //			try {
-//				watcherClient = Config.fromCluster().setVerifyingSsl(false).setDebugging(false);
+//				watcherClient = io.kubernetes.client.Configuration.
+//						//Config.fromCluster().setVerifyingSsl(false).setDebugging(false);
 //			} catch (IOException e) {
 //				e.printStackTrace();
 //			}
@@ -390,6 +393,12 @@ public class KubeServiceImpl implements KubeService {
 //		}
 		
 		ApiClient watcherClient = io.kubernetes.client.Configuration.getDefaultApiClient().setVerifyingSsl(false).setBasePath(kubeApiBasePath).setDebugging(false);
+//		try {
+//			watcherClient = Config.defaultClient().setVerifyingSsl(false).setDebugging(false);
+//		} catch (IOException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
 		
 		if (!kubeApiToken.isEmpty()) {
 			ApiKeyAuth watcherApiKeyAuth = (ApiKeyAuth) watcherClient.getAuthentication("BearerToken");
