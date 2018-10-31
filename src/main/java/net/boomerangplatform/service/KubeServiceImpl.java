@@ -392,7 +392,7 @@ public class KubeServiceImpl implements KubeService {
 //			watcherClient = io.kubernetes.client.Configuration.getDefaultApiClient().setVerifyingSsl(false).setBasePath(kubeApiBasePath).setDebugging(false);
 //		}
 		
-		ApiClient watcherClient = io.kubernetes.client.Configuration.getDefaultApiClient().setVerifyingSsl(false).setBasePath(kubeApiBasePath).setDebugging(false);
+		ApiClient watcherClient = io.kubernetes.client.Configuration.getDefaultApiClient().setVerifyingSsl(false).setDebugging(false);
 //		try {
 //			watcherClient = Config.defaultClient().setVerifyingSsl(false).setDebugging(false);
 //		} catch (IOException e) {
