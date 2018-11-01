@@ -206,11 +206,11 @@ public class KubeServiceImpl implements KubeService {
 		}
 		container.env(envVars);
 		container.args(arguments);
-		System.out.println(" ");
-		System.out.println(" ");
+		System.out.println(" 1  ");
+		System.out.println(" 2  ");
 		System.out.println(" calling getPVCName()");
-		System.out.println(" ");
-		System.out.println(" ");
+		System.out.println(" -2 ");
+		System.out.println(" -1 ");
 		if (!getPVCName(workflowId, workflowActivityId).isEmpty()) {
 			System.out.println(" ");
 			System.out.println(" ");
