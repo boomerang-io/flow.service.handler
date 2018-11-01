@@ -304,7 +304,7 @@ public class KubeServiceImpl implements KubeService {
 		labels.put("workflow-id", workflowId);
 		labels.put("workflow-activity-id", workflowActivityId);
 		metadata.labels(labels);
-		metadata.generateName("bmrg-flow-");
+		metadata.generateName("bmrg-flow-pvc-");
 		body.metadata(metadata);
 
 		// Create PVC Spec
@@ -362,19 +362,19 @@ public class KubeServiceImpl implements KubeService {
 	public V1Status deletePVC(String workflowId, String workflowActivityId) {
 		V1Status result = new V1Status();
 		// Setup	
-		CoreV1Api apiInstance = new CoreV1Api();
+		CoreV1Api api = new CoreV1Api();
 		String namespace = kubeNamespace; // String | object name and auth scope, such as for teams and projects
 		String pretty = "true"; // String | If 'true', then the output is pretty printed.
 		
 		V1DeleteOptions pvcDeleteOptions = new V1DeleteOptions();
 		
 		try {
-			V1PersistentVolumeClaimList persistentVolumeClaimList = apiInstance.listNamespacedPersistentVolumeClaim(namespace, pretty, null, null, null, "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId, null, null, 60, false);
+			V1PersistentVolumeClaimList persistentVolumeClaimList = api.listNamespacedPersistentVolumeClaim(namespace, pretty, null, null, null, "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId, null, null, 60, false);
 			persistentVolumeClaimList.getItems().forEach(pvc -> {
 				System.out.println(pvc.toString());
-				System.out.println("  name: " + persistentVolumeClaimList.getItems().get(0).getMetadata().getName());
+				System.out.println(" PVC Name: " + persistentVolumeClaimList.getItems().get(0).getMetadata().getName());
 			});
-			result = apiInstance.deleteNamespacedPersistentVolumeClaim(persistentVolumeClaimList.getItems().get(0).getMetadata().getName(), namespace, pvcDeleteOptions, pretty, null, null, null);
+			result = api.deleteNamespacedPersistentVolumeClaim(persistentVolumeClaimList.getItems().get(0).getMetadata().getName(), namespace, pvcDeleteOptions, pretty, null, null, null);
 		} catch (JsonSyntaxException e) {
             if (e.getCause() instanceof IllegalStateException) {
                 IllegalStateException ise = (IllegalStateException) e.getCause();
@@ -398,9 +398,12 @@ public class KubeServiceImpl implements KubeService {
 		CoreV1Api api = new CoreV1Api();
 		
 		try {
-			V1PersistentVolumeClaimList persistentVolumeClaimList = api.listNamespacedPersistentVolumeClaim(kubeNamespace, "true", null, null, null, "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId, null, null, null, false);
-			System.out.println("PVC List Size: " + persistentVolumeClaimList.getItems().size());
-			if (persistentVolumeClaimList != null && !persistentVolumeClaimList.getItems().isEmpty()) {
+			V1PersistentVolumeClaimList persistentVolumeClaimList = api.listNamespacedPersistentVolumeClaim(kubeNamespace, "true", null, null, null, "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId, null, null, 60, false);
+			persistentVolumeClaimList.getItems().forEach(pvc -> {
+				System.out.println(pvc.toString());
+				System.out.println(" PVC Name: " + persistentVolumeClaimList.getItems().get(0).getMetadata().getName());
+			});
+			if (!persistentVolumeClaimList.getItems().isEmpty()) {
 				System.out.println("PVC Name: " + persistentVolumeClaimList.getItems().get(0).getMetadata().getName());
 				return persistentVolumeClaimList.getItems().get(0).getMetadata().getName();
 			}
