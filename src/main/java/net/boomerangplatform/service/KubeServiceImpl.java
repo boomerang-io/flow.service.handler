@@ -70,6 +70,9 @@ public class KubeServiceImpl implements KubeService {
 	@Value("${kube.image.pullPolicy}")
 	public String kubeImagePullPolicy;
 	
+	@Value("${kube.worker.pvc.initialSize}")
+	public String kubeWorkerPVCInitialSize;
+	
 	@Value("${proxy.enable}")
 	public Boolean proxyEnabled;
 	
@@ -280,7 +283,7 @@ public class KubeServiceImpl implements KubeService {
 		return result;
 	}
 	
-	public V1PersistentVolumeClaim createPVC(String workflowName, String workflowId, String workflowActivityId) {
+	public V1PersistentVolumeClaim createPVC(String workflowName, String workflowId, String workflowActivityId, String pvcSize) {
 		
 		// Setup	
 		CoreV1Api api = new CoreV1Api();
@@ -314,7 +317,10 @@ public class KubeServiceImpl implements KubeService {
 		pvcSpec.accessModes(pvcAccessModes);
 		V1ResourceRequirements pvcResourceReq = new V1ResourceRequirements();
 		Map<String, Quantity> pvcRequests = new HashMap<String, Quantity>();
-		pvcRequests.put("storage", Quantity.fromString("1Gi"));
+		if (pvcSize == null || pvcSize.isEmpty()) {
+			pvcSize = kubeWorkerPVCInitialSize;
+		}
+		pvcRequests.put("storage", Quantity.fromString(pvcSize));
 		pvcResourceReq.requests(pvcRequests);
 		pvcSpec.resources(pvcResourceReq);
 		body.spec(pvcSpec);

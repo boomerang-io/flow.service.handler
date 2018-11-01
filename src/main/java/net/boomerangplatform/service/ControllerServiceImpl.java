@@ -28,9 +28,9 @@ public class ControllerServiceImpl implements ControllerService {
 	@Override
 	public String createWorkflow(Workflow workflow) {
 		
-		if (workflow.getEnablePersistentVolume()) {
+		if (workflow.getPersistentVolume().getEnable()) {
 			try {
-				kubeService.createPVC(workflow.getWorkflowName(), workflow.getWorkflowId(), workflow.getWorkflowActivityId());
+				kubeService.createPVC(workflow.getWorkflowName(), workflow.getWorkflowId(), workflow.getWorkflowActivityId(), workflow.getPersistentVolume().getSize());
 				return kubeService.watchPVC(workflow.getWorkflowId(), workflow.getWorkflowActivityId()).getPhase();
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
@@ -44,7 +44,7 @@ public class ControllerServiceImpl implements ControllerService {
 	@Override
 	public String terminateWorkflow(Workflow workflow) {
 		
-		if (workflow.getEnablePersistentVolume()) {
+		if (workflow.getPersistentVolume().getEnable()) {
 		try {
 			kubeService.deletePVC(workflow.getWorkflowId(), workflow.getWorkflowActivityId());
 			return "success";
