@@ -368,11 +368,6 @@ public class KubeServiceImpl implements KubeService {
 		String pretty = "true"; // String | If 'true', then the output is pretty printed.
 		
 		try {
-//			V1PersistentVolumeClaimList persistentVolumeClaimList = api.listNamespacedPersistentVolumeClaim(namespace, pretty, null, null, null, "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId, null, null, 60, false);
-//			persistentVolumeClaimList.getItems().forEach(pvc -> {
-//				System.out.println(pvc.toString());
-//				System.out.println(" PVC Name: " + pvc.getMetadata().getName());
-//			});
 			result = api.deleteNamespacedPersistentVolumeClaim(getPVCName(workflowId, workflowActivityId), namespace, pvcDeleteOptions, pretty, null, null, null);
 		} catch (JsonSyntaxException e) {
             if (e.getCause() instanceof IllegalStateException) {
