@@ -206,17 +206,7 @@ public class KubeServiceImpl implements KubeService {
 		}
 		container.env(envVars);
 		container.args(arguments);
-		System.out.println(" 1  ");
-		System.out.println(" 2  ");
-		System.out.println(" calling getPVCName()");
-		System.out.println(" -2 ");
-		System.out.println(" -1 ");
 		if (!getPVCName(workflowId, workflowActivityId).isEmpty()) {
-			System.out.println(" ");
-			System.out.println(" ");
-			System.out.println(" mounting volume");
-			System.out.println(" ");
-			System.out.println(" ");
 			V1VolumeMount volMount = new V1VolumeMount();
 			volMount.name("bmrg-flow-vol-" + workflowActivityId);
 			volMount.mountPath("/data");
@@ -380,7 +370,6 @@ public class KubeServiceImpl implements KubeService {
 		
 		try {
 			V1PersistentVolumeClaimList persistentVolumeClaimList = apiInstance.listNamespacedPersistentVolumeClaim(namespace, pretty, null, null, null, "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId, null, null, 60, false);
-			System.out.println("Printing List...");
 			persistentVolumeClaimList.getItems().forEach(pvc -> {
 				System.out.println(pvc.toString());
 				System.out.println("  name: " + persistentVolumeClaimList.getItems().get(0).getMetadata().getName());
@@ -404,29 +393,15 @@ public class KubeServiceImpl implements KubeService {
 	}
 	
 	private String getPVCName(String workflowId, String workflowActivityId) {
-		System.out.println(" ");
-		System.out.println(" ");
 		System.out.println("----- Start getPVCName() -----");
-		System.out.println(" ");
-		System.out.println(" ");
 		
 		CoreV1Api api = new CoreV1Api();
 		
 		try {
-			System.out.println(" ");
-			System.out.println(" ");
-			System.out.println(" in getPVCName() try {} statement ");
-			System.out.println(" ");
-			System.out.println(" ");
 			List<V1PersistentVolumeClaim> persistentVolumeClaimList = api.listNamespacedPersistentVolumeClaim(kubeNamespace, "true", null, null, null, "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId, null, null, null, false).getItems();
-			System.out.println(" ");
-			System.out.println(" ");
+			System.out.println("PVC List Size: " + persistentVolumeClaimList.size());
 			if (persistentVolumeClaimList != null && !persistentVolumeClaimList.isEmpty()) {
-				System.out.println(" ");
-				System.out.println(" ");
-				System.out.println(persistentVolumeClaimList.get(0).getMetadata().getName());
-				System.out.println(" ");
-				System.out.println(" ");
+				System.out.println("PVC Name: " + persistentVolumeClaimList.get(0).getMetadata().getName());
 				return persistentVolumeClaimList.get(0).getMetadata().getName();
 			}
 			System.out.println(" ");
