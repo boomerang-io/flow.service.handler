@@ -398,11 +398,11 @@ public class KubeServiceImpl implements KubeService {
 		CoreV1Api api = new CoreV1Api();
 		
 		try {
-			List<V1PersistentVolumeClaim> persistentVolumeClaimList = api.listNamespacedPersistentVolumeClaim(kubeNamespace, "true", null, null, null, "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId, null, null, null, false).getItems();
-			System.out.println("PVC List Size: " + persistentVolumeClaimList.size());
-			if (persistentVolumeClaimList != null && !persistentVolumeClaimList.isEmpty()) {
-				System.out.println("PVC Name: " + persistentVolumeClaimList.get(0).getMetadata().getName());
-				return persistentVolumeClaimList.get(0).getMetadata().getName();
+			V1PersistentVolumeClaimList persistentVolumeClaimList = api.listNamespacedPersistentVolumeClaim(kubeNamespace, "true", null, null, null, "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId, null, null, null, false);
+			System.out.println("PVC List Size: " + persistentVolumeClaimList.getItems().size());
+			if (persistentVolumeClaimList != null && !persistentVolumeClaimList.getItems().isEmpty()) {
+				System.out.println("PVC Name: " + persistentVolumeClaimList.getItems().get(0).getMetadata().getName());
+				return persistentVolumeClaimList.getItems().get(0).getMetadata().getName();
 			}
 			System.out.println(" ");
 		} catch (ApiException e) {
