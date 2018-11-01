@@ -360,6 +360,7 @@ public class KubeServiceImpl implements KubeService {
 	
 	@Override
 	public V1Status deletePVC(String workflowId, String workflowActivityId) {
+		System.out.println("----- Start deletePVC() -----");
 		V1Status result = new V1Status();
 		// Setup	
 		CoreV1Api api = new CoreV1Api();
@@ -372,7 +373,7 @@ public class KubeServiceImpl implements KubeService {
 			V1PersistentVolumeClaimList persistentVolumeClaimList = api.listNamespacedPersistentVolumeClaim(namespace, pretty, null, null, null, "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId, null, null, 60, false);
 			persistentVolumeClaimList.getItems().forEach(pvc -> {
 				System.out.println(pvc.toString());
-				System.out.println(" PVC Name: " + persistentVolumeClaimList.getItems().get(0).getMetadata().getName());
+				System.out.println(" PVC Name: " + pvc.getMetadata().getName());
 			});
 			result = api.deleteNamespacedPersistentVolumeClaim(persistentVolumeClaimList.getItems().get(0).getMetadata().getName(), namespace, pvcDeleteOptions, pretty, null, null, null);
 		} catch (JsonSyntaxException e) {
@@ -396,18 +397,16 @@ public class KubeServiceImpl implements KubeService {
 		System.out.println("----- Start getPVCName() -----");
 		
 		CoreV1Api api = new CoreV1Api();
+		String namespace = kubeNamespace; // String | object name and auth scope, such as for teams and projects
+		String pretty = "true"; // String | If 'true', then the output is pretty printed.
 		
 		try {
-			V1PersistentVolumeClaimList persistentVolumeClaimList = api.listNamespacedPersistentVolumeClaim(kubeNamespace, "true", null, null, null, "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId, null, null, 60, false);
+			V1PersistentVolumeClaimList persistentVolumeClaimList = api.listNamespacedPersistentVolumeClaim(namespace, pretty, null, null, null, "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId, null, null, 60, false);
 			persistentVolumeClaimList.getItems().forEach(pvc -> {
 				System.out.println(pvc.toString());
-				System.out.println(" PVC Name: " + persistentVolumeClaimList.getItems().get(0).getMetadata().getName());
+				System.out.println(" PVC Name: " + pvc.getMetadata().getName());
 			});
-			if (!persistentVolumeClaimList.getItems().isEmpty()) {
-				System.out.println("PVC Name: " + persistentVolumeClaimList.getItems().get(0).getMetadata().getName());
-				return persistentVolumeClaimList.getItems().get(0).getMetadata().getName();
-			}
-			System.out.println(" ");
+			return persistentVolumeClaimList.getItems().get(0).getMetadata().getName();
 		} catch (ApiException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
