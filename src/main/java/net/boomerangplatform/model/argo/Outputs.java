@@ -1,5 +1,5 @@
 
-package net.boomerangplatform.model.glen;
+package net.boomerangplatform.model.argo;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -13,7 +13,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
 
 })
-public class Arguments {
+public class Outputs {
 
     @JsonIgnore
     private Map<String, Object> additionalProperties = new HashMap<String, Object>();

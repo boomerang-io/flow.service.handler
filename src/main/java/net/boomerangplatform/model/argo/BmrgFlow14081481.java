@@ -1,5 +1,5 @@
 
-package net.boomerangplatform.model.glen;
+package net.boomerangplatform.model.argo;
 
 import java.util.HashMap;
 import java.util.List;
@@ -19,11 +19,13 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
     "finishedAt",
     "id",
     "name",
+    "outputs",
     "phase",
     "startedAt",
+    "templateName",
     "type"
 })
-public class BmrgFlow1615867090 {
+public class BmrgFlow14081481 {
 
     @JsonProperty("boundaryID")
     private String boundaryID;
@@ -37,10 +39,14 @@ public class BmrgFlow1615867090 {
     private String id;
     @JsonProperty("name")
     private String name;
+    @JsonProperty("outputs")
+    private Outputs__ outputs;
     @JsonProperty("phase")
     private String phase;
     @JsonProperty("startedAt")
     private String startedAt;
+    @JsonProperty("templateName")
+    private String templateName;
     @JsonProperty("type")
     private String type;
     @JsonIgnore
@@ -106,6 +112,16 @@ public class BmrgFlow1615867090 {
         this.name = name;
     }
 
+    @JsonProperty("outputs")
+    public Outputs__ getOutputs() {
+        return outputs;
+    }
+
+    @JsonProperty("outputs")
+    public void setOutputs(Outputs__ outputs) {
+        this.outputs = outputs;
+    }
+
     @JsonProperty("phase")
     public String getPhase() {
         return phase;
@@ -124,6 +140,16 @@ public class BmrgFlow1615867090 {
     @JsonProperty("startedAt")
     public void setStartedAt(String startedAt) {
         this.startedAt = startedAt;
+    }
+
+    @JsonProperty("templateName")
+    public String getTemplateName() {
+        return templateName;
+    }
+
+    @JsonProperty("templateName")
+    public void setTemplateName(String templateName) {
+        this.templateName = templateName;
     }
 
     @JsonProperty("type")

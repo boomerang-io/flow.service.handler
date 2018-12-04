@@ -1,6 +1,6 @@
 package net.boomerangplatform.service;
 
-import net.boomerangplatform.model.glen.Workflow;
+import net.boomerangplatform.model.argo.Workflow;
 
 public interface ArgoService {
 

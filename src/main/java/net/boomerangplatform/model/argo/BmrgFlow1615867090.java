@@ -1,7 +1,8 @@
 
-package net.boomerangplatform.model.glen;
+package net.boomerangplatform.model.argo;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
@@ -13,20 +14,21 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({
     "boundaryID",
+    "children",
     "displayName",
     "finishedAt",
     "id",
     "name",
-    "outputs",
     "phase",
     "startedAt",
-    "templateName",
     "type"
 })
-public class BmrgFlow115782439 {
+public class BmrgFlow1615867090 {
 
     @JsonProperty("boundaryID")
     private String boundaryID;
+    @JsonProperty("children")
+    private List<String> children = null;
     @JsonProperty("displayName")
     private String displayName;
     @JsonProperty("finishedAt")
@@ -35,14 +37,10 @@ public class BmrgFlow115782439 {
     private String id;
     @JsonProperty("name")
     private String name;
-    @JsonProperty("outputs")
-    private Outputs_ outputs;
     @JsonProperty("phase")
     private String phase;
     @JsonProperty("startedAt")
     private String startedAt;
-    @JsonProperty("templateName")
-    private String templateName;
     @JsonProperty("type")
     private String type;
     @JsonIgnore
@@ -56,6 +54,16 @@ public class BmrgFlow115782439 {
     @JsonProperty("boundaryID")
     public void setBoundaryID(String boundaryID) {
         this.boundaryID = boundaryID;
+    }
+
+    @JsonProperty("children")
+    public List<String> getChildren() {
+        return children;
+    }
+
+    @JsonProperty("children")
+    public void setChildren(List<String> children) {
+        this.children = children;
     }
 
     @JsonProperty("displayName")
@@ -98,16 +106,6 @@ public class BmrgFlow115782439 {
         this.name = name;
     }
 
-    @JsonProperty("outputs")
-    public Outputs_ getOutputs() {
-        return outputs;
-    }
-
-    @JsonProperty("outputs")
-    public void setOutputs(Outputs_ outputs) {
-        this.outputs = outputs;
-    }
-
     @JsonProperty("phase")
     public String getPhase() {
         return phase;
@@ -126,16 +124,6 @@ public class BmrgFlow115782439 {
     @JsonProperty("startedAt")
     public void setStartedAt(String startedAt) {
         this.startedAt = startedAt;
-    }
-
-    @JsonProperty("templateName")
-    public String getTemplateName() {
-        return templateName;
-    }
-
-    @JsonProperty("templateName")
-    public void setTemplateName(String templateName) {
-        this.templateName = templateName;
     }
 
     @JsonProperty("type")

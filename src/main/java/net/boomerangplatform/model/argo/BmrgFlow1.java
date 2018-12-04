@@ -1,5 +1,5 @@
 
-package net.boomerangplatform.model.glen;
+package net.boomerangplatform.model.argo;
 
 import java.util.HashMap;
 import java.util.List;

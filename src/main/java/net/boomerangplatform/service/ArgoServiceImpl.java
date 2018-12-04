@@ -4,7 +4,7 @@ import org.springframework.stereotype.Service;
 
 import io.kubernetes.client.ApiException;
 import io.kubernetes.client.apis.CustomObjectsApi;
-import net.boomerangplatform.model.glen.Workflow;
+import net.boomerangplatform.model.argo.Workflow;
 
 @Service
 public class ArgoServiceImpl implements ArgoService {

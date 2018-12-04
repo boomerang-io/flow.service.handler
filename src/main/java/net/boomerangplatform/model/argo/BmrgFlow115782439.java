@@ -1,8 +1,7 @@
 
-package net.boomerangplatform.model.glen;
+package net.boomerangplatform.model.argo;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
@@ -14,7 +13,6 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({
     "boundaryID",
-    "children",
     "displayName",
     "finishedAt",
     "id",
@@ -25,12 +23,10 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
     "templateName",
     "type"
 })
-public class BmrgFlow14081481 {
+public class BmrgFlow115782439 {
 
     @JsonProperty("boundaryID")
     private String boundaryID;
-    @JsonProperty("children")
-    private List<String> children = null;
     @JsonProperty("displayName")
     private String displayName;
     @JsonProperty("finishedAt")
@@ -40,7 +36,7 @@ public class BmrgFlow14081481 {
     @JsonProperty("name")
     private String name;
     @JsonProperty("outputs")
-    private Outputs__ outputs;
+    private Outputs_ outputs;
     @JsonProperty("phase")
     private String phase;
     @JsonProperty("startedAt")
@@ -60,16 +56,6 @@ public class BmrgFlow14081481 {
     @JsonProperty("boundaryID")
     public void setBoundaryID(String boundaryID) {
         this.boundaryID = boundaryID;
-    }
-
-    @JsonProperty("children")
-    public List<String> getChildren() {
-        return children;
-    }
-
-    @JsonProperty("children")
-    public void setChildren(List<String> children) {
-        this.children = children;
     }
 
     @JsonProperty("displayName")
@@ -113,12 +99,12 @@ public class BmrgFlow14081481 {
     }
 
     @JsonProperty("outputs")
-    public Outputs__ getOutputs() {
+    public Outputs_ getOutputs() {
         return outputs;
     }
 
     @JsonProperty("outputs")
-    public void setOutputs(Outputs__ outputs) {
+    public void setOutputs(Outputs_ outputs) {
         this.outputs = outputs;
     }
 

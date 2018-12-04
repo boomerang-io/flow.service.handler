@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
-import net.boomerangplatform.model.glen.Workflow;
+import net.boomerangplatform.model.argo.Workflow;
 import net.boomerangplatform.service.ArgoService;
 
 @RestController
