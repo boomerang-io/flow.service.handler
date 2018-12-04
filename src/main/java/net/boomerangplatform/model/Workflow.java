@@ -1,5 +1,7 @@
 package net.boomerangplatform.model;
 
+import java.util.Map;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -17,6 +19,9 @@ public class Workflow {
 	
 	@JsonProperty("persistentVolume")
     private WorkflowStorage persistentVolume;
+	
+	@JsonProperty("configMapData")
+    private Map<String, String> configMapData;
 
 	public String getWorkflowName() {
 		return workflowName;
@@ -48,5 +53,13 @@ public class Workflow {
 
 	public void setPersistentVolume(WorkflowStorage persistentVolume) {
 		this.persistentVolume = persistentVolume;
+	}
+
+	public Map<String, String> getConfigMapData() {
+		return configMapData;
+	}
+
+	public void setConfigMapData(Map<String, String> configMapData) {
+		this.configMapData = configMapData;
 	}
 }

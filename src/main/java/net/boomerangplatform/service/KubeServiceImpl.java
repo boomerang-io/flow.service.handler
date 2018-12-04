@@ -21,6 +21,8 @@ import io.kubernetes.client.apis.BatchV1Api;
 import io.kubernetes.client.apis.CoreV1Api;
 import io.kubernetes.client.auth.ApiKeyAuth;
 import io.kubernetes.client.custom.Quantity;
+import io.kubernetes.client.models.V1ConfigMap;
+import io.kubernetes.client.models.V1ConfigMapList;
 import io.kubernetes.client.models.V1Container;
 import io.kubernetes.client.models.V1DeleteOptions;
 import io.kubernetes.client.models.V1EnvVar;
@@ -184,6 +186,19 @@ public class KubeServiceImpl implements KubeService {
 			volumesList.add(workerVolume);
 			podSpec.volumes(volumesList);
 		}
+		if (!getConfigMapName(workflowId, workflowActivityId).isEmpty()) {
+			V1VolumeMount volMount = new V1VolumeMount();
+			volMount.name("bmrg-flow-vol-" + workflowActivityId);
+			volMount.mountPath("/inputs");
+			container.addVolumeMountsItem(volMount);
+			List<V1Volume> volumesList = new ArrayList<V1Volume>();
+			V1Volume workerVolume = new V1Volume();
+			workerVolume.name("bmrg-flow-vol-" + workflowActivityId);
+			V1PersistentVolumeClaimVolumeSource workerVolumePVCSource = new V1PersistentVolumeClaimVolumeSource();
+			workerVolume.persistentVolumeClaim(workerVolumePVCSource.claimName(getPVCName(workflowId, workflowActivityId)));
+			volumesList.add(workerVolume);
+			podSpec.volumes(volumesList);
+		}
 		List<V1Container> containerList = new ArrayList<V1Container>();
 		containerList.add(container);
 		podSpec.containers(containerList);
@@ -245,7 +260,7 @@ public class KubeServiceImpl implements KubeService {
 		return result;
 	}
 	
-	public V1PersistentVolumeClaim createPVC(String workflowName, String workflowId, String workflowActivityId, String pvcSize) {
+	public V1PersistentVolumeClaim createPVC(String workflowName, String workflowId, String workflowActivityId, String pvcSize)  throws ApiException, IOException{
 		
 		// Setup	
 		CoreV1Api api = new CoreV1Api();
@@ -368,6 +383,95 @@ public class KubeServiceImpl implements KubeService {
 				System.out.println(" PVC Name: " + pvc.getMetadata().getName());
 			});
 			return persistentVolumeClaimList.getItems().get(0).getMetadata().getName();
+		} catch (ApiException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		return "";
+	}
+
+	@Override
+	public V1ConfigMap createConfigMap(String workflowName, String workflowId, String workflowActivityId, Map<String, String> data) throws ApiException, IOException {
+		// Setup	
+		CoreV1Api api = new CoreV1Api();
+		String namespace = kubeNamespace; // String | object name and auth scope, such as for teams and projects
+		String pretty = "true"; // String | If 'true', then the output is pretty printed.
+		V1ConfigMap body = new V1ConfigMap(); // V1PersistentVolumeClaim |
+		
+		// Create Metadata
+		V1ObjectMeta metadata = new V1ObjectMeta();
+		Map<String, String> annotations = new HashMap<String, String>();
+		annotations.put("boomerangplatform.net/org", "bmrg");
+		annotations.put("boomerangplatform.net/app", "bmrg-flow");
+		annotations.put("boomerangplatform.net/workflow-name", workflowName);
+		annotations.put("boomerangplatform.net/workflow-id", workflowId);
+		annotations.put("boomerangplatform.net/workflow-activity-id", workflowActivityId);
+		metadata.annotations(annotations);
+		Map<String, String> labels = new HashMap<String, String>();
+		labels.put("org", "bmrg");
+		labels.put("app", "bmrg-flow");
+		labels.put("workflow-name", workflowName);
+		labels.put("workflow-id", workflowId);
+		labels.put("workflow-activity-id", workflowActivityId);
+		metadata.labels(labels);
+		metadata.generateName("bmrg-flow-cfg-");
+		body.metadata(metadata);
+		
+		//Create Data
+		body.data(data);
+		//TODO: Add checks for the key's in the data to match Kube standards. "Each key must consist of alphanumeric characters, '-', '_' or '.'."
+		
+		//Create ConfigMap
+		V1ConfigMap result = new V1ConfigMap();
+		try {
+		    result = api.createNamespacedConfigMap(namespace, body, pretty);
+		    System.out.println(result);
+		    return result;
+		} catch (ApiException e) {
+		    System.err.println("Exception when calling CoreV1Api#createNamespacedConfigMap");
+		    e.printStackTrace();
+		}
+		return null;
+	}
+	
+	@Override
+	public V1ConfigMap watchConfigMap(String workflowId, String workflowActivityId) throws ApiException, IOException {
+		System.out.println("----- Start Watcher -----");
+		
+		CoreV1Api api = new CoreV1Api();
+		
+		Watch<V1ConfigMap> watch = Watch.createWatch(
+				createWatcherApiClient(), api.listNamespacedConfigMapCall(kubeNamespace, "true", null, null, null, "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId, null, null, null, true, null, null),
+				new TypeToken<Watch.Response<V1ConfigMap>>() {
+				}.getType());
+		V1ConfigMap result = null;
+		try {
+			for (Watch.Response<V1ConfigMap> item : watch) {
+				System.out.printf("%s : %s%n", item.type, item.object.getMetadata().getName());
+				result = item.object;
+				break;
+			}
+		} finally {
+			watch.close();
+		}
+		System.out.println("----- End Watcher -----");
+		return result;
+	}
+	
+	private String getConfigMapName(String workflowId, String workflowActivityId) {
+		System.out.println("----- Start getConfigMap() -----");
+		
+		CoreV1Api api = new CoreV1Api();
+		String namespace = kubeNamespace; // String | object name and auth scope, such as for teams and projects
+		String pretty = "true"; // String | If 'true', then the output is pretty printed.
+		try {
+			V1ConfigMapList configMapList = api.listNamespacedConfigMap(namespace, pretty, null, null, null, "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId, null, null, 60, false);
+			configMapList.getItems().forEach(cfgmap -> {
+				System.out.println(cfgmap.toString());
+				System.out.println(" ConfigMap Name: " + cfgmap.getMetadata().getName());
+			});
+			return configMapList.getItems().get(0).getMetadata().getName();
 		} catch (ApiException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
