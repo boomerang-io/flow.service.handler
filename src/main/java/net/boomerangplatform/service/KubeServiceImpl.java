@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -138,22 +139,8 @@ public class KubeServiceImpl implements KubeService {
 
 		// Create Metadata
 		V1ObjectMeta metadata = new V1ObjectMeta();
-		Map<String, String> annotations = new HashMap<String, String>();
-		annotations.put("boomerangplatform.net/org", "bmrg");
-		annotations.put("boomerangplatform.net/app", "bmrg-flow");
-		annotations.put("boomerangplatform.net/workflow-name", workflowName);
-		annotations.put("boomerangplatform.net/workflow-id", workflowId);
-		annotations.put("boomerangplatform.net/workflow-activity-id", workflowActivityId);
-		annotations.put("boomerangplatform.net/task-id", taskId);
-		metadata.annotations(annotations);
-		Map<String, String> labels = new HashMap<String, String>();
-		labels.put("org", "bmrg");
-		labels.put("app", "bmrg-flow");
-		labels.put("workflow-name", workflowName);
-		labels.put("workflow-id", workflowId);
-		labels.put("workflow-activity-id", workflowActivityId);
-		labels.put("task-id", taskId);
-		metadata.labels(labels);
+		metadata.annotations(createAnnotations(workflowName, workflowId, workflowActivityId, taskId));
+		metadata.labels(createLabels(workflowName, workflowId, workflowActivityId, taskId));
 		metadata.generateName("bmrg-flow-");
 //		metadata.name("bmrg-flow-"+taskId);
 		body.metadata(metadata);
@@ -269,20 +256,8 @@ public class KubeServiceImpl implements KubeService {
 
 		// Create Metadata
 		V1ObjectMeta metadata = new V1ObjectMeta();
-		Map<String, String> annotations = new HashMap<String, String>();
-		annotations.put("boomerangplatform.net/org", "bmrg");
-		annotations.put("boomerangplatform.net/app", "bmrg-flow");
-		annotations.put("boomerangplatform.net/workflow-name", workflowName);
-		annotations.put("boomerangplatform.net/workflow-id", workflowId);
-		annotations.put("boomerangplatform.net/workflow-activity-id", workflowActivityId);
-		metadata.annotations(annotations);
-		Map<String, String> labels = new HashMap<String, String>();
-		labels.put("org", "bmrg");
-		labels.put("app", "bmrg-flow");
-		labels.put("workflow-name", workflowName);
-		labels.put("workflow-id", workflowId);
-		labels.put("workflow-activity-id", workflowActivityId);
-		metadata.labels(labels);
+		metadata.annotations(createAnnotations(workflowName, workflowId, workflowActivityId, null));
+		metadata.labels(createLabels(workflowName, workflowId, workflowActivityId, null));
 		metadata.generateName("bmrg-flow-pvc-");
 		body.metadata(metadata);
 
@@ -402,20 +377,8 @@ public class KubeServiceImpl implements KubeService {
 		
 		// Create Metadata
 		V1ObjectMeta metadata = new V1ObjectMeta();
-		Map<String, String> annotations = new HashMap<String, String>();
-		annotations.put("boomerangplatform.net/org", "bmrg");
-		annotations.put("boomerangplatform.net/app", "bmrg-flow");
-		annotations.put("boomerangplatform.net/workflow-name", workflowName);
-		annotations.put("boomerangplatform.net/workflow-id", workflowId);
-		annotations.put("boomerangplatform.net/workflow-activity-id", workflowActivityId);
-		metadata.annotations(annotations);
-		Map<String, String> labels = new HashMap<String, String>();
-		labels.put("org", "bmrg");
-		labels.put("app", "bmrg-flow");
-		labels.put("workflow-name", workflowName);
-		labels.put("workflow-id", workflowId);
-		labels.put("workflow-activity-id", workflowActivityId);
-		metadata.labels(labels);
+		metadata.annotations(createAnnotations(workflowName, workflowId, workflowActivityId, null));
+		metadata.labels(createLabels(workflowName, workflowId, workflowActivityId, null));
 		metadata.generateName("bmrg-flow-cfg-");
 		body.metadata(metadata);
 		
@@ -545,6 +508,30 @@ public class KubeServiceImpl implements KubeService {
 		envVar.setName(key);
 		envVar.setValue(value);
 		return envVar;
+	}
+	
+	private Map<String, String> createAnnotations(String workflowName, String workflowId, String workflowActivityId, String taskId) {
+		Map<String, String> annotations = new HashMap<String, String>();
+		annotations.put("boomerangplatform.net/org", "bmrg");
+		annotations.put("boomerangplatform.net/app", "bmrg-flow");
+		annotations.put("boomerangplatform.net/workflow-name", workflowName);
+		annotations.put("boomerangplatform.net/workflow-id", workflowId);
+		annotations.put("boomerangplatform.net/workflow-activity-id", workflowActivityId);
+		Optional.ofNullable(taskId).ifPresent(str -> annotations.put("boomerangplatform.net/task-id", str));
+		
+		return annotations;
+	}
+	
+	private Map<String, String> createLabels(String workflowName, String workflowId, String workflowActivityId, String taskId) {
+		Map<String, String> labels = new HashMap<String, String>();
+		labels.put("org", "bmrg");
+		labels.put("app", "bmrg-flow");
+		labels.put("workflow-name", workflowName);
+		labels.put("workflow-id", workflowId);
+		labels.put("workflow-activity-id", workflowActivityId);
+		Optional.ofNullable(taskId).ifPresent(str -> labels.put("task-id", str));
+		
+		return labels;
 	}
 
 	@Override
