@@ -1,8 +1,14 @@
 package net.boomerangplatform.service;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import io.kubernetes.client.models.V1EnvVar;
 import net.boomerangplatform.model.Task;
 import net.boomerangplatform.model.Workflow;
 
@@ -33,7 +39,11 @@ public class ControllerServiceImpl implements ControllerService {
 				kubeService.watchPVC(workflow.getWorkflowId(), workflow.getWorkflowActivityId()).getPhase();
 			}
 			if (workflow.getInputs() != null && !workflow.getInputs().isEmpty()) {
-				kubeService.createConfigMap(workflow.getWorkflowName(), workflow.getWorkflowId(), workflow.getWorkflowActivityId(), workflow.getInputs());
+				Map<String, String> inputsWithFixedKeys = new HashMap<String, String>();
+				workflow.getInputs().forEach((key, value) -> {
+					inputsWithFixedKeys.put(key.replace("-", "_").replace(".", "_").toUpperCase(), value);
+				});
+				kubeService.createConfigMap(workflow.getWorkflowName(), workflow.getWorkflowId(), workflow.getWorkflowActivityId(), inputsWithFixedKeys);
 				kubeService.watchConfigMap(workflow.getWorkflowId(), workflow.getWorkflowActivityId());
 			}
 		} catch (Exception e) {
