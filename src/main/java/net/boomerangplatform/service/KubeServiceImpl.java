@@ -180,7 +180,7 @@ public class KubeServiceImpl implements KubeService {
 			configMapEnvSource.name(getConfigMapName(workflowId, workflowActivityId));
 			V1EnvFromSource envFromSource = new V1EnvFromSource();
 			envFromSource.configMapRef(configMapEnvSource);
-			envFromSource.prefix("WFINPUTS_");
+			envFromSource.prefix("WFINPUTS_PROPS_");
 			List<V1EnvFromSource> envFromSourceList = new ArrayList<V1EnvFromSource>();
 			envFromSourceList.add(envFromSource);
 			container.envFrom(envFromSourceList);
