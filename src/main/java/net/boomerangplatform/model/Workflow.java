@@ -17,11 +17,11 @@ public class Workflow {
 	@JsonProperty("workflowActivityId")
     private String workflowActivityId;
 	
-	@JsonProperty("persistentVolume")
-    private WorkflowStorage persistentVolume;
+	@JsonProperty("storage")
+    private WorkflowStorage storage;
 	
-	@JsonProperty("configMapData")
-    private Map<String, String> configMapData;
+	@JsonProperty("inputs")
+    private Map<String, String> inputs;
 
 	public String getWorkflowName() {
 		return workflowName;
@@ -47,19 +47,19 @@ public class Workflow {
 		this.workflowActivityId = workflowActivityId;
 	}
 
-	public WorkflowStorage getPersistentVolume() {
-		return persistentVolume;
+	public WorkflowStorage getWorkflowStorage() {
+		return storage;
 	}
 
-	public void setPersistentVolume(WorkflowStorage persistentVolume) {
-		this.persistentVolume = persistentVolume;
+	public void setWorkflowStorage(WorkflowStorage storage) {
+		this.storage = storage;
 	}
 
-	public Map<String, String> getConfigMapData() {
-		return configMapData;
+	public Map<String, String> getInputs() {
+		return inputs;
 	}
 
-	public void setConfigMapData(Map<String, String> configMapData) {
-		this.configMapData = configMapData;
+	public void setInputs(Map<String, String> inputs) {
+		this.inputs = inputs;
 	}
 }

@@ -28,12 +28,12 @@ public class ControllerServiceImpl implements ControllerService {
 	@Override
 	public String createWorkflow(Workflow workflow) {
 		try {
-			if (workflow.getPersistentVolume().getEnable()) {
-				kubeService.createPVC(workflow.getWorkflowName(), workflow.getWorkflowId(), workflow.getWorkflowActivityId(), workflow.getPersistentVolume().getSize());
+			if (workflow.getWorkflowStorage().getEnable()) {
+				kubeService.createPVC(workflow.getWorkflowName(), workflow.getWorkflowId(), workflow.getWorkflowActivityId(), workflow.getWorkflowStorage().getSize());
 				kubeService.watchPVC(workflow.getWorkflowId(), workflow.getWorkflowActivityId()).getPhase();
 			}
-			if (workflow.getConfigMapData() != null && !workflow.getConfigMapData().isEmpty()) {
-				kubeService.createConfigMap(workflow.getWorkflowName(), workflow.getWorkflowId(), workflow.getWorkflowActivityId(), workflow.getConfigMapData());
+			if (workflow.getInputs() != null && !workflow.getInputs().isEmpty()) {
+				kubeService.createConfigMap(workflow.getWorkflowName(), workflow.getWorkflowId(), workflow.getWorkflowActivityId(), workflow.getInputs());
 				kubeService.watchConfigMap(workflow.getWorkflowId(), workflow.getWorkflowActivityId());
 			}
 		} catch (Exception e) {
