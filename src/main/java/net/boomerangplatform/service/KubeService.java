@@ -25,4 +25,5 @@ public interface KubeService {
 	V1PersistentVolumeClaimStatus watchPVC(String workflowId, String workflowActivityId) throws ApiException, IOException;
 	V1ConfigMap createConfigMap(String workflowName, String workflowId, String workflowActivityId, Map<String, String> data) throws ApiException, IOException;
 	V1ConfigMap watchConfigMap(String workflowId, String workflowActivityId) throws ApiException, IOException;
+	V1Status deleteConfigMap(String workflowId, String workflowActivityId);
 }

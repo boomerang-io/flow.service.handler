@@ -27,8 +27,6 @@ public class ControllerServiceImpl implements ControllerService {
 	
 	@Override
 	public String createWorkflow(Workflow workflow) {
-		
-		
 		try {
 			if (workflow.getPersistentVolume().getEnable()) {
 				kubeService.createPVC(workflow.getWorkflowName(), workflow.getWorkflowId(), workflow.getWorkflowActivityId(), workflow.getPersistentVolume().getSize());
@@ -48,16 +46,13 @@ public class ControllerServiceImpl implements ControllerService {
 	
 	@Override
 	public String terminateWorkflow(Workflow workflow) {
-		
-		if (workflow.getPersistentVolume().getEnable()) {
 		try {
 			kubeService.deletePVC(workflow.getWorkflowId(), workflow.getWorkflowActivityId());
-			return "success";
+			kubeService.deleteConfigMap(workflow.getWorkflowId(), workflow.getWorkflowActivityId());
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 			return e.toString();
-		}
 		}
 		return "success";
 	}

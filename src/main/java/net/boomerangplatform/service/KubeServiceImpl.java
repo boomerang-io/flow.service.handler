@@ -22,9 +22,11 @@ import io.kubernetes.client.apis.CoreV1Api;
 import io.kubernetes.client.auth.ApiKeyAuth;
 import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.models.V1ConfigMap;
+import io.kubernetes.client.models.V1ConfigMapEnvSource;
 import io.kubernetes.client.models.V1ConfigMapList;
 import io.kubernetes.client.models.V1Container;
 import io.kubernetes.client.models.V1DeleteOptions;
+import io.kubernetes.client.models.V1EnvFromSource;
 import io.kubernetes.client.models.V1EnvVar;
 import io.kubernetes.client.models.V1Job;
 import io.kubernetes.client.models.V1JobList;
@@ -187,17 +189,14 @@ public class KubeServiceImpl implements KubeService {
 			podSpec.volumes(volumesList);
 		}
 		if (!getConfigMapName(workflowId, workflowActivityId).isEmpty()) {
-			V1VolumeMount volMount = new V1VolumeMount();
-			volMount.name("bmrg-flow-vol-" + workflowActivityId);
-			volMount.mountPath("/inputs");
-			container.addVolumeMountsItem(volMount);
-			List<V1Volume> volumesList = new ArrayList<V1Volume>();
-			V1Volume workerVolume = new V1Volume();
-			workerVolume.name("bmrg-flow-vol-" + workflowActivityId);
-			V1PersistentVolumeClaimVolumeSource workerVolumePVCSource = new V1PersistentVolumeClaimVolumeSource();
-			workerVolume.persistentVolumeClaim(workerVolumePVCSource.claimName(getPVCName(workflowId, workflowActivityId)));
-			volumesList.add(workerVolume);
-			podSpec.volumes(volumesList);
+			V1ConfigMapEnvSource configMapEnvSource = new V1ConfigMapEnvSource();
+			configMapEnvSource.name(getConfigMapName(workflowId, workflowActivityId));
+			V1EnvFromSource envFromSource = new V1EnvFromSource();
+			envFromSource.configMapRef(configMapEnvSource);
+			envFromSource.prefix("WFINPUTS_");
+			List<V1EnvFromSource> envFromSourceList = new ArrayList<V1EnvFromSource>();
+			envFromSourceList.add(envFromSource);
+			container.envFrom(envFromSourceList);
 		}
 		List<V1Container> containerList = new ArrayList<V1Container>();
 		containerList.add(container);
@@ -345,13 +344,13 @@ public class KubeServiceImpl implements KubeService {
 	public V1Status deletePVC(String workflowId, String workflowActivityId) {
 		System.out.println("----- Start deletePVC() -----");
 		CoreV1Api api = new CoreV1Api();
-		V1DeleteOptions pvcDeleteOptions = new V1DeleteOptions();
+		V1DeleteOptions deleteOptions = new V1DeleteOptions();
 		V1Status result = new V1Status();
 		String namespace = kubeNamespace; // String | object name and auth scope, such as for teams and projects
 		String pretty = "true"; // String | If 'true', then the output is pretty printed.
 		
 		try {
-			result = api.deleteNamespacedPersistentVolumeClaim(getPVCName(workflowId, workflowActivityId), namespace, pvcDeleteOptions, pretty, null, null, null);
+			result = api.deleteNamespacedPersistentVolumeClaim(getPVCName(workflowId, workflowActivityId), namespace, deleteOptions, pretty, null, null, null);
 		} catch (JsonSyntaxException e) {
             if (e.getCause() instanceof IllegalStateException) {
                 IllegalStateException ise = (IllegalStateException) e.getCause();
@@ -382,7 +381,9 @@ public class KubeServiceImpl implements KubeService {
 				System.out.println(pvc.toString());
 				System.out.println(" PVC Name: " + pvc.getMetadata().getName());
 			});
-			return persistentVolumeClaimList.getItems().get(0).getMetadata().getName();
+			if (!persistentVolumeClaimList.getItems().isEmpty() && persistentVolumeClaimList.getItems().get(0).getMetadata().getName() != null) {
+				return persistentVolumeClaimList.getItems().get(0).getMetadata().getName();
+			}
 		} catch (ApiException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -471,13 +472,43 @@ public class KubeServiceImpl implements KubeService {
 				System.out.println(cfgmap.toString());
 				System.out.println(" ConfigMap Name: " + cfgmap.getMetadata().getName());
 			});
-			return configMapList.getItems().get(0).getMetadata().getName();
+			if (!configMapList.getItems().isEmpty() && configMapList.getItems().get(0).getMetadata().getName() != null) {
+				return configMapList.getItems().get(0).getMetadata().getName();
+			}
 		} catch (ApiException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
 		return "";
+	}
+	
+	@Override
+	public V1Status deleteConfigMap(String workflowId, String workflowActivityId) {
+		System.out.println("----- Start deleteConfigMap() -----");
+		CoreV1Api api = new CoreV1Api();
+		V1DeleteOptions deleteOptions = new V1DeleteOptions();
+		V1Status result = new V1Status();
+		String namespace = kubeNamespace; // String | object name and auth scope, such as for teams and projects
+		String pretty = "true"; // String | If 'true', then the output is pretty printed.
+		
+		try {
+			result = api.deleteNamespacedConfigMap(getConfigMapName(workflowId, workflowActivityId), namespace, deleteOptions, pretty, null, null, null);
+		} catch (JsonSyntaxException e) {
+            if (e.getCause() instanceof IllegalStateException) {
+                IllegalStateException ise = (IllegalStateException) e.getCause();
+                if (ise.getMessage() != null && ise.getMessage().contains("Expected a string but was BEGIN_OBJECT")) {
+                	System.out.println("Catching exception because of issue https://github.com/kubernetes-client/java/issues/86");
+            	} else {
+	                System.err.println("Exception when running deleteConfigMap()");
+	    		    e.printStackTrace();
+            	}
+            }
+        } catch (ApiException e) {
+		    System.err.println("Exception when running deleteConfigMap()");
+		    e.printStackTrace();
+		}
+		return result;
 	}
 	
 	private ApiClient createWatcherApiClient() {
