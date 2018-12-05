@@ -1,10 +1,100 @@
 {
 	"info": {
-		"_postman_id": "94641d26-93a3-4424-a145-8a382b09bae0",
+		"_postman_id": "1ac51ea1-fce6-4571-8f4b-3d051c8c4c97",
 		"name": "boomerang.service.controller",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
+		{
+			"name": "Create Workflow",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"workflowName\": \"tysons-test-workflow\",\n\t\"workflowId\": \"19880224\",\n\t\"workflowActivityId\": \"201812055\",\n\t\"storage\": {\n\t\t\"enable\":\"false\"\n\t},\n\t\"inputs\": {\n\t\t\"CHANNEL\":\"@twlawrie\",\n\t\t\"key2\":\"value2\"\n\t}\n}"
+				},
+				"url": {
+					"raw": "http://localhost:7731/controller/workflow/create",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "7731",
+					"path": [
+						"controller",
+						"workflow",
+						"create"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete Workflow",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"workflowName\": \"tysons-test-workflow\",\n\t\"workflowId\": \"19880224\",\n\t\"workflowActivityId\": \"201812055\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:7731/controller/workflow/terminate",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "7731",
+					"path": [
+						"controller",
+						"workflow",
+						"terminate"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create Task",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"workflowName\": \"tysons-test-workflow\",\n\t\"workflowId\": \"19880224\",\n\t\"workflowActivityId\": \"201812055\",\n\t\"taskId\": \"19881988\",\n\t\"inputs\":{\n\t\t\"properties\": {\n\t\t\t\"channel\":\"$(WFINPUTS_PROPS_CHANNEL)\",\n\t\t\t\"title\":\"Hello\",\n\t\t\t\"message\":\"This is a test through Postman\"\n\t\t}\n\t},\n\t\"arguments\": [\n\t\t\"sendSlackMessage\",\n\t\t\"$(INPUTS_PROPS_CHANNEL)\",\n\t\t\"$(INPUTS_PROPS_TITLE)\",\n\t\t\"$(INPUTS_PROPS_MESSAGE)\"\n\t]\n}"
+				},
+				"url": {
+					"raw": "http://localhost:7731/controller/task/create",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "7731",
+					"path": [
+						"controller",
+						"task",
+						"create"
+					]
+				}
+			},
+			"response": []
+		},
 		{
 			"name": "Swagger",
 			"request": {
