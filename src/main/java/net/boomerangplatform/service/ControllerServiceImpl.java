@@ -39,11 +39,7 @@ public class ControllerServiceImpl implements ControllerService {
 				kubeService.watchPVC(workflow.getWorkflowId(), workflow.getWorkflowActivityId()).getPhase();
 			}
 			if (workflow.getInputs() != null && !workflow.getInputs().isEmpty()) {
-				Map<String, String> inputsWithFixedKeys = new HashMap<String, String>();
-				workflow.getInputs().forEach((key, value) -> {
-					inputsWithFixedKeys.put(key.replace("-", "_").replace(".", "_").toUpperCase(), value);
-				});
-				kubeService.createConfigMap(workflow.getWorkflowName(), workflow.getWorkflowId(), workflow.getWorkflowActivityId(), inputsWithFixedKeys);
+				kubeService.createConfigMap(workflow.getWorkflowName(), workflow.getWorkflowId(), workflow.getWorkflowActivityId(), workflow.getInputs());
 				kubeService.watchConfigMap(workflow.getWorkflowId(), workflow.getWorkflowActivityId());
 			}
 		} catch (Exception e) {

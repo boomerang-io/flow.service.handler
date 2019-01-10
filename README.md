@@ -6,6 +6,10 @@ It uses the Kubernetes Java Client to interact with Kubernetes.
 
 When writing new controller integrations, it is recommended to look through the Docs to find the exact Client method to use and then look at the API code to see how it works for advance configurations such as the Watcher API.
 
+## Development
+
+When running the service locally you need access to a kubernetes API endpoint
+
 ## References
 
 - Kubernetes Java Client: https://github.com/kubernetes-client/java

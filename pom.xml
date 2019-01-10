@@ -143,6 +143,11 @@
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
+		    <groupId>com.github.fge</groupId>
+		    <artifactId>json-patch</artifactId>
+		    <version>1.9</version>
+		</dependency>
+		<dependency>
 			<groupId>net.boomerangplatform</groupId>
 			<artifactId>lib-security</artifactId>
 			<version>0.1.13</version>
