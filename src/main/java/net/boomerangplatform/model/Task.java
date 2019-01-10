@@ -21,7 +21,7 @@ public class Task {
     private String taskId;
 	
 	@JsonProperty("inputs")
-	private TaskInputs inputs;
+	private TaskProperties inputs;
 	
 	@JsonProperty("arguments")
     private List<String> arguments;
@@ -58,11 +58,11 @@ public class Task {
 		this.taskId = taskId;
 	}
 
-	public TaskInputs getInputs() {
+	public TaskProperties getInputs() {
 		return inputs;
 	}
 
-	public void setInputs(TaskInputs inputs) {
+	public void setInputs(TaskProperties inputs) {
 		this.inputs = inputs;
 	}
 

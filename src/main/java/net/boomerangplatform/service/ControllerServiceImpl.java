@@ -1,15 +1,13 @@
 package net.boomerangplatform.service;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import io.kubernetes.client.models.V1EnvVar;
 import net.boomerangplatform.model.Task;
+import net.boomerangplatform.model.TaskProperties;
+import net.boomerangplatform.model.TaskResponse;
 import net.boomerangplatform.model.Workflow;
 
 @Service
@@ -17,19 +15,8 @@ public class ControllerServiceImpl implements ControllerService {
 	
 	@Autowired
     private KubeService kubeService;
-
-	@Override
-	public String executeTask(Task task) {
-		
-		try {
-			kubeService.createJob(task.getWorkflowName(), task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId(), task.getArguments(), task.getInputs().getProperties());
-			return kubeService.watchJob(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			return e.toString();
-		}
-	}
+	
+	private static HashMap<String, HashMap<String, String>> jobOutputPropertyCache = new HashMap<String,HashMap<String, String>>();
 	
 	@Override
 	public String createWorkflow(Workflow workflow) {
@@ -60,6 +47,34 @@ public class ControllerServiceImpl implements ControllerService {
 			e.printStackTrace();
 			return e.toString();
 		}
+		return "success";
+	}
+
+	@Override
+	public TaskResponse executeTask(Task task) {
+		
+		try {
+			kubeService.createJob(task.getWorkflowName(), task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId(), task.getArguments(), task.getInputs().getProperties());
+			kubeService.watchJob(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
+			TaskResponse response = new TaskResponse("0","", jobOutputPropertyCache.get(task.getTaskId()));
+			return response;
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			TaskResponse response = new TaskResponse("1",e.toString(), jobOutputPropertyCache.get(task.getTaskId()));
+			e.printStackTrace();
+			return response;
+		}
+	}
+	
+	@Override
+	public String setJobOutputProperty(String jobId, String key, String value) {
+		HashMap<String, String> properties = new HashMap<String,String>();
+		if (jobOutputPropertyCache.containsKey(jobId)) {
+			properties = jobOutputPropertyCache.get(jobId);
+		}
+		properties.put(key, value);
+		jobOutputPropertyCache.put(jobId, properties);
+		
 		return "success";
 	}
 }

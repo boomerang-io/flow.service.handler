@@ -25,5 +25,4 @@ public class WorkflowController {
     public String terminateFlow(@RequestBody Workflow workflow) {
     	return controllerService.terminateWorkflow(workflow);
     }
-
 }

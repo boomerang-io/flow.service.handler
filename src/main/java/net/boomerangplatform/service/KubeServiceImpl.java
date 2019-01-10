@@ -73,40 +73,47 @@ import io.kubernetes.client.util.Watch;
 public class KubeServiceImpl implements KubeService {
 	
 	@Value("${kube.api.base.path}")
-	public String kubeApiBasePath;
+	private String kubeApiBasePath;
 
 	@Value("${kube.api.token}")
-	public String kubeApiToken;
+	private String kubeApiToken;
 	
 	@Value("${kube.api.debug}")
-	public String kubeApiDebug;
+	private String kubeApiDebug;
 	
 	@Value("${kube.api.type}")
-	public String kubeApiType;
+	private String kubeApiType;
 
 	@Value("${kube.namespace}")
-	public String kubeNamespace;
+	private String kubeNamespace;
 	
 	@Value("${kube.image}")
-	public String kubeImage;
+	private String kubeImage;
 	
 	@Value("${kube.image.pullPolicy}")
-	public String kubeImagePullPolicy;
+	private String kubeImagePullPolicy;
 	
 	@Value("${kube.worker.pvc.initialSize}")
-	public String kubeWorkerPVCInitialSize;
+	private String kubeWorkerPVCInitialSize;
 	
 	@Value("${proxy.enable}")
-	public Boolean proxyEnabled;
+	private Boolean proxyEnabled;
 	
 	@Value("${proxy.host}")
-	public String proxyHost;
+	private String proxyHost;
 	
 	@Value("${proxy.port}")
-	public String proxyPort;
+	private String proxyPort;
 	
 	@Value("${proxy.ignore}")
-	public String proxyIgnore;
+	private String proxyIgnore;
+	
+	@Value("${controller.service.host}")
+	private String bmrgControllerServiceURL;
+	
+	final static String PREFIX_CFGMAP = "bmrg-flow-cfg-";
+	
+	final static String API_PRETTY = "true";
 	
 	@Override
 	public V1NamespaceList getAllNamespaces() {
@@ -147,7 +154,7 @@ public class KubeServiceImpl implements KubeService {
 	}
 	
 	@Override
-	public V1Job createJob(String workflowName, String workflowId, String workflowActivityId, String taskId, List<String> arguments, Map<String, String> inputProperties) {
+	public V1Job createJob(String workflowName, String workflowId, String workflowActivityId, String taskId, List<String> arguments, Map<String, String> taskInputProperties) {
 
 		// Set Variables
 		String volMountPath = "/data";
@@ -208,7 +215,9 @@ public class KubeServiceImpl implements KubeService {
 			envFromSourceList.add(envFromSource);
 			container.envFrom(envFromSourceList);*/
 			//Add to ConfigMap
-			patchConfigMap(getConfigMapName(wfConfigMap), "input.properties", getConfigMapDataProp(wfConfigMap, "input.properties"), createConfigMapProp(inputProperties, "TASK_PROPS_"));
+			Map<String, String> taskSysProperties =  new HashMap<String, String>();
+			taskSysProperties.put("id", taskId);
+			patchConfigMap(getConfigMapName(wfConfigMap), "input.properties", getConfigMapDataProp(wfConfigMap, "input.properties"), createConfigMapProp(taskInputProperties, "TASK_PROPS_") + createConfigMapProp(taskSysProperties, "TASK_SYS_"));
 			
 			//File Method
 			V1VolumeMount volMount = new V1VolumeMount();
@@ -438,6 +447,7 @@ public class KubeServiceImpl implements KubeService {
 				System.out.println(" PVC Name: " + pvc.getMetadata().getName());
 			});
 			if (!persistentVolumeClaimList.getItems().isEmpty() && persistentVolumeClaimList.getItems().get(0).getMetadata().getName() != null) {
+				System.out.println("----- End getPVCName() -----");
 				return persistentVolumeClaimList.getItems().get(0).getMetadata().getName();
 			}
 		} catch (ApiException e) {
@@ -445,11 +455,13 @@ public class KubeServiceImpl implements KubeService {
 			e.printStackTrace();
 		}
 		
+		
+		System.out.println("----- End getPVCName() -----");
 		return "";
 	}
 
 	@Override
-	public V1ConfigMap createConfigMap(String workflowName, String workflowId, String workflowActivityId, Map<String, String> data) throws ApiException, IOException {
+	public V1ConfigMap createConfigMap(String workflowName, String workflowId, String workflowActivityId, Map<String, String> wfProps) throws ApiException, IOException {
 		// Setup	
 		CoreV1Api api = new CoreV1Api();
 		String namespace = kubeNamespace; // String | object name and auth scope, such as for teams and projects
@@ -460,17 +472,20 @@ public class KubeServiceImpl implements KubeService {
 		V1ObjectMeta metadata = new V1ObjectMeta();
 		metadata.annotations(createAnnotations(workflowName, workflowId, workflowActivityId, null));
 		metadata.labels(createLabels(workflowName, workflowId, workflowActivityId, null));
-		metadata.generateName("bmrg-flow-cfg-");
+		//metadata.generateName("bmrg-flow-cfg-");
+		metadata.name(PREFIX_CFGMAP + workflowActivityId);
 		body.metadata(metadata);
 		
 		//Create Data
-		//Data to match Kube standards. "Each key must consist of alphanumeric characters, '-', '_' or '.'."
 		Map<String, String> inputsWithFixedKeys = new HashMap<String, String>();
-		//data.forEach((key, value) -> {
-		//	inputsWithFixedKeys.put(key.replace("-", "_").replace(".", "_").toUpperCase(), value);
-		//});
-		inputsWithFixedKeys.put("input.properties", createConfigMapProp(data, "WF_PROPS_"));
-		inputsWithFixedKeys.put("output.properties", "SYS_EXITCODE=\n");
+		//inputsWithFixedKeys.put("input.properties", createConfigMapProp(data, "WF_PROPS_"));
+		//inputsWithFixedKeys.put("output.properties", "SYS_EXITCODE=\n");
+		Map<String, String> sysProps = new HashMap<String, String>();
+		sysProps.put("activityId", workflowActivityId);
+		sysProps.put("workflowId", workflowId);
+		sysProps.put("controller_service_url", bmrgControllerServiceURL);
+		inputsWithFixedKeys.put("workflow.input.properties", createConfigMapProp(wfProps, "WF_PROPS_"));
+		inputsWithFixedKeys.put("workflow.system.properties", createConfigMapProp(sysProps, "WF_SYS_"));
 		body.data(inputsWithFixedKeys);
 		
 		//Create ConfigMap
