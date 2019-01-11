@@ -21,14 +21,14 @@ public class Response {
 		this.message = desc;
 	}
 
-	public String getDesc() {
+	public String getMessage() {
 		return this.message;
 	}
 	public String getCode() {
 		return this.code;
 	}
 
-	public void setDesc(String desc) {
+	public void setMessage(String desc) {
 		this.message = desc;
 	}
 

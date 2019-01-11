@@ -18,12 +18,17 @@ public interface KubeService {
 	V1NamespaceList getAllNamespaces();
 	V1JobList getAllJobs();
 	void watchNamespace() throws ApiException, IOException;
-	String watchJob(String workflowId, String workflowActivityId, String taskId) throws ApiException, IOException;
-	V1Job createJob(String workflowName, String workflowId, String workflowActivityId, String taskId, List<String> arguments, Map<String, String> inputProperties);
+	String watchJob(String workflowId, String workflowActivityId, String taskId) throws Exception;
 	V1PersistentVolumeClaim createPVC(String workflowName, String workflowId, String workflowActivityId, String pvcSize) throws ApiException, IOException;
 	V1Status deletePVC(String workflowId, String workflowActivityId);
 	V1PersistentVolumeClaimStatus watchPVC(String workflowId, String workflowActivityId) throws ApiException, IOException;
-	V1ConfigMap createConfigMap(String workflowName, String workflowId, String workflowActivityId, Map<String, String> data) throws ApiException, IOException;
-	V1ConfigMap watchConfigMap(String workflowId, String workflowActivityId) throws ApiException, IOException;
-	V1Status deleteConfigMap(String workflowId, String workflowActivityId);
+	V1ConfigMap createWorkflowConfigMap(String workflowName, String workflowId, String workflowActivityId, Map<String, String> data) throws ApiException, IOException;
+	V1Job createJob(String workflowName, String workflowId, String workflowActivityId, String taskName, String taskId,
+			List<String> arguments, Map<String, String> taskInputProperties);
+	V1ConfigMap watchConfigMap(String workflowId, String workflowActivityId, String taskId)
+			throws ApiException, IOException;
+	V1ConfigMap createTaskConfigMap(String workflowName, String workflowId, String workflowActivityId, String taskName,
+			String taskId, Map<String, String> inputProps) throws ApiException, IOException;
+	V1Status deleteConfigMap(String workflowId, String workflowActivityId, String taskId);
+	String patchConfigMap(String name, String dataKey, String origData, String newData);
 }

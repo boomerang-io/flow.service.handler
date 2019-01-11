@@ -3,27 +3,15 @@ package net.boomerangplatform.service;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.github.fge.jsonpatch.JsonPatch;
-import com.github.fge.jsonpatch.JsonPatchException;
-import com.github.fge.jsonpatch.mergepatch.JsonMergePatch;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -38,12 +26,11 @@ import io.kubernetes.client.apis.CoreV1Api;
 import io.kubernetes.client.auth.ApiKeyAuth;
 import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.models.V1ConfigMap;
-import io.kubernetes.client.models.V1ConfigMapEnvSource;
 import io.kubernetes.client.models.V1ConfigMapList;
+import io.kubernetes.client.models.V1ConfigMapProjection;
 import io.kubernetes.client.models.V1ConfigMapVolumeSource;
 import io.kubernetes.client.models.V1Container;
 import io.kubernetes.client.models.V1DeleteOptions;
-import io.kubernetes.client.models.V1EnvFromSource;
 import io.kubernetes.client.models.V1EnvVar;
 import io.kubernetes.client.models.V1Job;
 import io.kubernetes.client.models.V1JobList;
@@ -62,10 +49,12 @@ import io.kubernetes.client.models.V1PersistentVolumeClaimVolumeSource;
 import io.kubernetes.client.models.V1PodList;
 import io.kubernetes.client.models.V1PodSpec;
 import io.kubernetes.client.models.V1PodTemplateSpec;
+import io.kubernetes.client.models.V1ProjectedVolumeSource;
 import io.kubernetes.client.models.V1ResourceRequirements;
 import io.kubernetes.client.models.V1Status;
 import io.kubernetes.client.models.V1Volume;
 import io.kubernetes.client.models.V1VolumeMount;
+import io.kubernetes.client.models.V1VolumeProjection;
 import io.kubernetes.client.util.Config;
 import io.kubernetes.client.util.Watch;
 
@@ -111,10 +100,17 @@ public class KubeServiceImpl implements KubeService {
 	@Value("${controller.service.host}")
 	private String bmrgControllerServiceURL;
 	
-	final static String PREFIX_CFGMAP = "bmrg-flow-cfg-";
+	final static String PREFIX_FLOW = "bmrg-flow-";
+	
+	final static String PREFIX_CFGMAP = PREFIX_FLOW + "cfg-";
+	
+	final static String PREFIX_PVC = PREFIX_FLOW + "pvc-";
+	
+	final static String PREFIX_VOL = PREFIX_FLOW + "vol-";
 	
 	final static String API_PRETTY = "true";
 	
+	//TODO most likely remove
 	@Override
 	public V1NamespaceList getAllNamespaces() {
 		V1NamespaceList list = new V1NamespaceList();
@@ -127,6 +123,7 @@ public class KubeServiceImpl implements KubeService {
 		return list;
 	}
 
+	//TODO update to return all the boomerang flow jobs and their status
 	@Override
 	public V1JobList getAllJobs() {
 		V1JobList list = new V1JobList();
@@ -154,11 +151,11 @@ public class KubeServiceImpl implements KubeService {
 	}
 	
 	@Override
-	public V1Job createJob(String workflowName, String workflowId, String workflowActivityId, String taskId, List<String> arguments, Map<String, String> taskInputProperties) {
+	public V1Job createJob(String workflowName, String workflowId, String workflowActivityId,String taskName, String taskId, List<String> arguments, Map<String, String> taskInputProperties) {
 
 		// Set Variables
-		String volMountPath = "/data";
-		String cfgMapMountPath = "/props";
+		final String volMountPath = "/data";
+		final String cfgMapMountPath = "/props";
 
 		// Initialize Job Body
 		V1Job body = new V1Job(); // V1Job |
@@ -167,7 +164,7 @@ public class KubeServiceImpl implements KubeService {
 		V1ObjectMeta jobMetadata = new V1ObjectMeta();
 		jobMetadata.annotations(createAnnotations(workflowName, workflowId, workflowActivityId, taskId));
 		jobMetadata.labels(createLabels(workflowName, workflowId, workflowActivityId, taskId));
-		jobMetadata.generateName("bmrg-flow-");
+		jobMetadata.generateName(PREFIX_FLOW);
 //		metadata.name("bmrg-flow-"+taskId);
 		body.metadata(jobMetadata);
 
@@ -177,7 +174,7 @@ public class KubeServiceImpl implements KubeService {
 		V1PodSpec podSpec = new V1PodSpec();
 		V1Container container = new V1Container();
 		container.image(kubeImage);
-		container.name("bmrg-flow-worker-cntr");
+		container.name(PREFIX_FLOW + "worker-cntr");
 		container.imagePullPolicy(kubeImagePullPolicy);
 		List<V1EnvVar> envVars = new ArrayList<V1EnvVar>();
 		//inputProperties.forEach((key, value) -> {
@@ -191,19 +188,19 @@ public class KubeServiceImpl implements KubeService {
 		container.args(arguments);
 		if (!getPVCName(workflowId, workflowActivityId).isEmpty()) {
 			V1VolumeMount volMount = new V1VolumeMount();
-			volMount.name("bmrg-flow-vol-" + workflowActivityId);
+			volMount.name(PREFIX_VOL + "data");
 			volMount.mountPath(volMountPath);
 			container.addVolumeMountsItem(volMount);
 			//List<V1Volume> volumesList = new ArrayList<V1Volume>();
 			V1Volume workerVolume = new V1Volume();
-			workerVolume.name("bmrg-flow-vol-" + workflowActivityId);
+			workerVolume.name(PREFIX_VOL + "data");
 			V1PersistentVolumeClaimVolumeSource workerVolumePVCSource = new V1PersistentVolumeClaimVolumeSource();
 			workerVolume.persistentVolumeClaim(workerVolumePVCSource.claimName(getPVCName(workflowId, workflowActivityId)));
 			podSpec.addVolumesItem(workerVolume);
 			//volumesList.add(workerVolume);
 			//podSpec.volumes(volumesList);
 		}
-		V1ConfigMap wfConfigMap = getConfigMap(workflowId, workflowActivityId);
+		V1ConfigMap wfConfigMap = getConfigMap(workflowId, workflowActivityId, taskId);
 		if (wfConfigMap != null && !getConfigMapName(wfConfigMap).isEmpty()) {
 			//Env Var Method
 /*			V1ConfigMapEnvSource configMapEnvSource = new V1ConfigMapEnvSource();
@@ -214,28 +211,65 @@ public class KubeServiceImpl implements KubeService {
 			List<V1EnvFromSource> envFromSourceList = new ArrayList<V1EnvFromSource>();
 			envFromSourceList.add(envFromSource);
 			container.envFrom(envFromSourceList);*/
-			//Add to ConfigMap
-			Map<String, String> taskSysProperties =  new HashMap<String, String>();
-			taskSysProperties.put("id", taskId);
-			patchConfigMap(getConfigMapName(wfConfigMap), "input.properties", getConfigMapDataProp(wfConfigMap, "input.properties"), createConfigMapProp(taskInputProperties, "TASK_PROPS_") + createConfigMapProp(taskSysProperties, "TASK_SYS_"));
 			
-			//File Method
-			V1VolumeMount volMount = new V1VolumeMount();
-			volMount.name("bmrg-flow-props-" + workflowActivityId);
-			volMount.mountPath(cfgMapMountPath);
-			container.addVolumeMountsItem(volMount);
-			V1Volume workerVolume = new V1Volume();
-			workerVolume.name("bmrg-flow-props-" + workflowActivityId);
-			V1ConfigMapVolumeSource configMapVolSource = new V1ConfigMapVolumeSource();
-			configMapVolSource.name(getConfigMapName(wfConfigMap));
-			//List<V1KeyToPath> keyList = new ArrayList<V1KeyToPath>();
-			//V1KeyToPath keyPath = new V1KeyToPath().key("output.properties").path("output.properties");
-			//keyList.add(keyPath);
-			//keyPath = new V1KeyToPath().key("input.properties").path("input.properties");
-			//keyList.add(keyPath);
-			//configMapVolSource.items(keyList);
-			workerVolume.configMap(configMapVolSource);
-			podSpec.addVolumesItem(workerVolume);
+			//Create Task ConfigMap Data
+			//String fileName = taskName.replace(" ", "") + ".input.properties";
+			//patchConfigMap(getConfigMapName(wfConfigMap), fileName, getConfigMapDataProp(wfConfigMap, fileName), createConfigMapProp(taskInputProperties));
+			//Map<String, String> taskSysProperties =  new HashMap<String, String>();
+			//taskSysProperties.put("id", taskId);
+			//fileName = taskName.replace(" ", "") + ".system.properties";
+			//patchConfigMap(getConfigMapName(wfConfigMap), fileName, getConfigMapDataProp(wfConfigMap, fileName), createConfigMapProp(taskSysProperties));
+			
+			//Container ConfigMap Mount
+			V1VolumeMount volMountConfigMap = new V1VolumeMount();
+			volMountConfigMap.name(PREFIX_VOL + "props");
+			volMountConfigMap.mountPath(cfgMapMountPath);
+			container.addVolumeMountsItem(volMountConfigMap);
+			
+			//Creation of Projected Volume with multiple ConfigMaps
+			V1Volume volumeProps = new V1Volume();
+			volumeProps.name(PREFIX_VOL + "props");
+			V1ProjectedVolumeSource projectedVolPropsSource = new V1ProjectedVolumeSource();
+			List<V1VolumeProjection> projectPropsVolumeList = new ArrayList<V1VolumeProjection>();
+			
+			V1ConfigMapProjection projectedConfigMapWorkflow = new V1ConfigMapProjection();
+			projectedConfigMapWorkflow.name(PREFIX_CFGMAP + workflowActivityId);
+			V1VolumeProjection configMapVolSourceWorkflow = new V1VolumeProjection();
+			configMapVolSourceWorkflow.configMap(projectedConfigMapWorkflow);
+			projectPropsVolumeList.add(configMapVolSourceWorkflow);
+			
+			V1ConfigMapProjection projectedConfigMapTask = new V1ConfigMapProjection();
+			projectedConfigMapTask.name(PREFIX_CFGMAP + workflowActivityId + "-" + taskId);
+			V1VolumeProjection configMapVolSourceTask = new V1VolumeProjection();
+			configMapVolSourceTask.configMap(projectedConfigMapTask);
+			projectPropsVolumeList.add(configMapVolSourceTask);
+			
+			projectedVolPropsSource.sources(projectPropsVolumeList);
+			volumeProps.projected(projectedVolPropsSource);
+			podSpec.addVolumesItem(volumeProps);
+			
+			//Workflow Configmap Mount --> Switched from ConfigMap volume to projected
+			//V1ConfigMapVolumeSource configMapVolSourceWorkflow = new V1ConfigMapVolumeSource();
+			//configMapVolSource.name(getConfigMapName(wfConfigMap)); //For now this is replaced with hardcoded string name
+			//configMapVolSourceWorkflow.name(PREFIX_CFGMAP + workflowActivityId);
+			//volumeConfigMapWorkflow.configMap(configMapVolSourceWorkflow);
+			
+			//Task ConfigMap Mount --> Switched from ConfigMap volume to projected
+//			V1VolumeMount volMountTask = new V1VolumeMount();
+//			volMountTask.name(PREFIX_PROPS + workflowActivityId + "-" + taskId);
+//			volMountTask.mountPath(cfgMapMountPath);
+//			container.addVolumeMountsItem(volMountTask);
+//			V1Volume volumeConfigMapTask = new V1Volume();
+//			volumeConfigMapTask.name(PREFIX_PROPS + workflowActivityId + "-" + taskId);
+//			V1ConfigMapVolumeSource configMapVolSourceTask = new V1ConfigMapVolumeSource();
+//			configMapVolSourceTask.name(PREFIX_CFGMAP + workflowActivityId + "-" + taskId);
+//			List<V1KeyToPath> keyList = new ArrayList<V1KeyToPath>();
+//			V1KeyToPath keyPath = new V1KeyToPath().key("task.input.properties").path("task.input.properties");
+//			keyList.add(keyPath);
+//			keyPath = new V1KeyToPath().key("task.system.properties").path("task.system.properties");
+//			keyList.add(keyPath);
+//			configMapVolSourceTask.items(keyList);
+//			podSpec.addVolumesItem(volumeConfigMapTask);
 		}
 		List<V1Container> containerList = new ArrayList<V1Container>();
 		containerList.add(container);
@@ -258,13 +292,9 @@ public class KubeServiceImpl implements KubeService {
 		body.spec(jobSpec);
 		
 		V1Job jobResult = new V1Job();
-		String namespace = kubeNamespace; // String | object name and auth scope, such as for teams and projects
-		String pretty = "true"; // String | If 'true', then the output is pretty printed.
-
 		try {
 			BatchV1Api api = new BatchV1Api();
-			jobResult = api.createNamespacedJob(namespace, body, pretty);
-
+			jobResult = api.createNamespacedJob(kubeNamespace, body, API_PRETTY);
 		} catch (ApiException e) {
 			if (e.getCause() instanceof SocketTimeoutException) {
 				SocketTimeoutException ste = (SocketTimeoutException) e.getCause();
@@ -275,14 +305,16 @@ public class KubeServiceImpl implements KubeService {
             	} else {
 	                e.printStackTrace();
             	}
-            }
+            } else {
+                e.printStackTrace();
+        	}
 		}
 		
 		return jobResult;
 	}
 	
 	@Override
-	public String watchJob(String workflowId, String workflowActivityId, String taskId) throws ApiException, IOException {
+	public String watchJob(String workflowId, String workflowActivityId, String taskId) throws Exception {
 		System.out.println("----- Start Watcher -----");
 		
 		BatchV1Api api = new BatchV1Api();
@@ -292,7 +324,7 @@ public class KubeServiceImpl implements KubeService {
 						"org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId+",task-id="+taskId, null, null, null, true, null, null),
 				new TypeToken<Watch.Response<V1Job>>() {
 				}.getType());
-		String result = "failure";
+		String result = "1";
 		try {
 			for (Watch.Response<V1Job> item : watch) {
 				System.out.println(item.type + " : " + item.object.getMetadata().getName());
@@ -302,8 +334,10 @@ public class KubeServiceImpl implements KubeService {
 						System.out.println("Container Name: " + container.getName());
 						System.out.println("Container Image: " + container.getImage());
 					}
-					result = "success";
+					result = "0";
 					break;
+				} else if (item.object.getStatus().getFailed() != null && item.object.getStatus().getFailed() >= 3) {
+					throw new Exception("Task (" + taskId + ") has failed to execute 3 times triggering failure");
 				}
 			}
 		} finally {
@@ -336,7 +370,8 @@ public class KubeServiceImpl implements KubeService {
 		System.out.println("----- End getJobPod() -----");
 	}
 	
-	public V1PersistentVolumeClaim createPVC(String workflowName, String workflowId, String workflowActivityId, String pvcSize)  throws ApiException, IOException{
+	public V1PersistentVolumeClaim createPVC(String workflowName, String workflowId, String workflowActivityId, String pvcSize) throws ApiException {
+		System.out.println("----- Start createPVC() -----");
 		
 		// Setup	
 		CoreV1Api api = new CoreV1Api();
@@ -348,7 +383,7 @@ public class KubeServiceImpl implements KubeService {
 		V1ObjectMeta metadata = new V1ObjectMeta();
 		metadata.annotations(createAnnotations(workflowName, workflowId, workflowActivityId, null));
 		metadata.labels(createLabels(workflowName, workflowId, workflowActivityId, null));
-		metadata.generateName("bmrg-flow-pvc-");
+		metadata.generateName(PREFIX_PVC);
 		body.metadata(metadata);
 
 		// Create PVC Spec
@@ -367,15 +402,12 @@ public class KubeServiceImpl implements KubeService {
 		body.spec(pvcSpec);
 		
 		V1PersistentVolumeClaim result = new V1PersistentVolumeClaim();
-		try {
-		    result = api.createNamespacedPersistentVolumeClaim(namespace, body, pretty);
-		    System.out.println(result);
-		    return result;
-		} catch (ApiException e) {
-		    System.err.println("Exception when calling CoreV1Api#createNamespacedPersistentVolumeClaim");
-		    e.printStackTrace();
-		}
-		return null;
+	    result = api.createNamespacedPersistentVolumeClaim(namespace, body, pretty);
+	    System.out.println(result);
+	    System.out.println("----- End createPVC() -----");
+		
+		System.out.println("----- End createPVC() -----");
+		return result;
 	}
 	
 	@Override
@@ -461,54 +493,89 @@ public class KubeServiceImpl implements KubeService {
 	}
 
 	@Override
-	public V1ConfigMap createConfigMap(String workflowName, String workflowId, String workflowActivityId, Map<String, String> wfProps) throws ApiException, IOException {
-		// Setup	
-		CoreV1Api api = new CoreV1Api();
-		String namespace = kubeNamespace; // String | object name and auth scope, such as for teams and projects
-		String pretty = "true"; // String | If 'true', then the output is pretty printed.
+	public V1ConfigMap createWorkflowConfigMap(String workflowName, String workflowId, String workflowActivityId, Map<String, String> inputProps) throws ApiException, IOException {
 		V1ConfigMap body = new V1ConfigMap(); // V1PersistentVolumeClaim |
 		
 		// Create Metadata
 		V1ObjectMeta metadata = new V1ObjectMeta();
 		metadata.annotations(createAnnotations(workflowName, workflowId, workflowActivityId, null));
 		metadata.labels(createLabels(workflowName, workflowId, workflowActivityId, null));
-		//metadata.generateName("bmrg-flow-cfg-");
-		metadata.name(PREFIX_CFGMAP + workflowActivityId);
+		//metadata.generateName(PREFIX_CFGMAP);
+		metadata.name(PREFIX_CFGMAP + workflowActivityId); //We are using a fixed name to make it easier to find for subsequent calls as not all the configmap API's search on labels. Some take name as the parameter.
 		body.metadata(metadata);
 		
 		//Create Data
 		Map<String, String> inputsWithFixedKeys = new HashMap<String, String>();
-		//inputsWithFixedKeys.put("input.properties", createConfigMapProp(data, "WF_PROPS_"));
-		//inputsWithFixedKeys.put("output.properties", "SYS_EXITCODE=\n");
 		Map<String, String> sysProps = new HashMap<String, String>();
 		sysProps.put("activityId", workflowActivityId);
 		sysProps.put("workflowId", workflowId);
-		sysProps.put("controller_service_url", bmrgControllerServiceURL);
-		inputsWithFixedKeys.put("workflow.input.properties", createConfigMapProp(wfProps, "WF_PROPS_"));
-		inputsWithFixedKeys.put("workflow.system.properties", createConfigMapProp(sysProps, "WF_SYS_"));
+		sysProps.put("controllerServiceUrl", bmrgControllerServiceURL);
+		inputsWithFixedKeys.put("workflow.input.properties", createConfigMapProp(inputProps));
+		inputsWithFixedKeys.put("workflow.system.properties", createConfigMapProp(sysProps));
 		body.data(inputsWithFixedKeys);
+		
+		//Create ConfigMap
+		V1ConfigMap result = createConfigMap(body);
+		return result;
+	}
+	
+	@Override
+	public V1ConfigMap createTaskConfigMap(String workflowName, String workflowId, String workflowActivityId, String taskName, String taskId, Map<String, String> inputProps) throws ApiException, IOException {
+		V1ConfigMap body = new V1ConfigMap(); // V1PersistentVolumeClaim |
+		
+		// Create Metadata
+		V1ObjectMeta metadata = new V1ObjectMeta();
+		metadata.annotations(createAnnotations(workflowName, workflowId, workflowActivityId, taskId));
+		metadata.labels(createLabels(workflowName, workflowId, workflowActivityId, taskId));
+		//metadata.generateName(PREFIX_CFGMAP);
+		metadata.name(PREFIX_CFGMAP + workflowActivityId + "-" + taskId); //We are using a fixed name to make it easier to find for subsequent calls as not all the configmap API's search on labels. Some take name as the parameter.
+		body.metadata(metadata);
+		
+		//Create Data
+		Map<String, String> inputsWithFixedKeys = new HashMap<String, String>();
+		Map<String, String> sysProps = new HashMap<String, String>();
+		sysProps.put("taskId", taskId);
+		sysProps.put("taskName", taskName);
+		inputsWithFixedKeys.put("task.input.properties", createConfigMapProp(inputProps));
+		inputsWithFixedKeys.put("task.system.properties", createConfigMapProp(sysProps));
+		body.data(inputsWithFixedKeys);
+		
+		//Create ConfigMap
+		V1ConfigMap result = createConfigMap(body);
+		return result;
+	}
+	
+	private V1ConfigMap createConfigMap(V1ConfigMap body) throws ApiException, IOException {
+		System.out.println("----- Start createConfigMap() -----");
+		CoreV1Api api = new CoreV1Api();
 		
 		//Create ConfigMap
 		V1ConfigMap result = new V1ConfigMap();
 		try {
-		    result = api.createNamespacedConfigMap(namespace, body, pretty);
+		    result = api.createNamespacedConfigMap(kubeNamespace, body, API_PRETTY);
 		    System.out.println(result);
-		    return result;
 		} catch (ApiException e) {
 		    System.err.println("Exception when calling CoreV1Api#createNamespacedConfigMap");
 		    e.printStackTrace();
 		}
-		return null;
+		System.out.println("----- End createConfigMap() -----");
+		return result;
 	}
 	
 	@Override
-	public V1ConfigMap watchConfigMap(String workflowId, String workflowActivityId) throws ApiException, IOException {
+	public V1ConfigMap watchConfigMap(String workflowId, String workflowActivityId, String taskId) throws ApiException, IOException {
 		System.out.println("----- Start Watcher -----");
 		
 		CoreV1Api api = new CoreV1Api();
+		String fieldSelector = "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId;
+		if (taskId != null) {
+			fieldSelector = fieldSelector.concat(",task-id=" + taskId);
+		}
+		System.out.println("  task-id: " + taskId);
+		System.out.println("  fieldSelector: " + fieldSelector);
 		
 		Watch<V1ConfigMap> watch = Watch.createWatch(
-				createWatcherApiClient(), api.listNamespacedConfigMapCall(kubeNamespace, "true", null, null, null, "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId, null, null, null, true, null, null),
+				createWatcherApiClient(), api.listNamespacedConfigMapCall(kubeNamespace, API_PRETTY, null, null, null, fieldSelector, null, null, null, true, null, null),
 				new TypeToken<Watch.Response<V1ConfigMap>>() {
 				}.getType());
 		V1ConfigMap result = null;
@@ -525,16 +592,20 @@ public class KubeServiceImpl implements KubeService {
 		return result;
 	}
 	
-	private V1ConfigMap getConfigMap(String workflowId, String workflowActivityId) {
+	private V1ConfigMap getConfigMap(String workflowId, String workflowActivityId, String taskId) {
 		System.out.println("----- Start getConfigMap() -----");
 		
 		V1ConfigMap configMap = null;
 		
 		CoreV1Api api = new CoreV1Api();
-		String namespace = kubeNamespace; // String | object name and auth scope, such as for teams and projects
-		String pretty = "true"; // String | If 'true', then the output is pretty printed.
+		String fieldSelector = "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId;
+		if (taskId != null) {
+			fieldSelector = fieldSelector.concat(",task-id=" + taskId);
+		}
+		System.out.println("  task-id: " + taskId);
+		System.out.println("  fieldSelector: " + fieldSelector);
 		try {
-			V1ConfigMapList configMapList = api.listNamespacedConfigMap(namespace, pretty, null, null, null, "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId, null, null, 60, false);
+			V1ConfigMapList configMapList = api.listNamespacedConfigMap(kubeNamespace, API_PRETTY, null, null, null, fieldSelector, null, null, 60, false);
 			configMapList.getItems().forEach(cfgmap -> {
 				System.out.println(cfgmap.toString());
 			});
@@ -581,7 +652,8 @@ public class KubeServiceImpl implements KubeService {
 		return configMapDataProp;
 	}
 	
-	private String patchConfigMap(String name, String dataKey, String origData, String newData) {
+	@Override
+	public String patchConfigMap(String name, String dataKey, String origData, String newData) {
 		System.out.println("----- Start patchConfigMap() -----");
 
 		CoreV1Api api = new CoreV1Api();
@@ -605,20 +677,26 @@ public class KubeServiceImpl implements KubeService {
 		    e.printStackTrace();
 		}
 		
+		System.out.println("----- End patchConfigMap() -----");
 		return "fail"; // need to update with the status from result once its printed out and understood
 	}
 	
 	@Override
-	public V1Status deleteConfigMap(String workflowId, String workflowActivityId) {
+	public V1Status deleteConfigMap(String workflowId, String workflowActivityId, String taskId) {
 		System.out.println("----- Start deleteConfigMap() -----");
 		CoreV1Api api = new CoreV1Api();
 		V1DeleteOptions deleteOptions = new V1DeleteOptions();
 		V1Status result = new V1Status();
-		String namespace = kubeNamespace; // String | object name and auth scope, such as for teams and projects
-		String pretty = "true"; // String | If 'true', then the output is pretty printed.
+		
+		String name = PREFIX_CFGMAP + workflowActivityId;
+		if (taskId != null) {
+			name = name.concat("-" + taskId);
+		}
+		System.out.println("  Configmap to delete: " + name);
 		
 		try {
-			result = api.deleteNamespacedConfigMap(getConfigMapName(getConfigMap(workflowId, workflowActivityId)), namespace, deleteOptions, pretty, null, null, null);
+			//result = api.deleteNamespacedConfigMap(getConfigMapName(getConfigMap(workflowId, workflowActivityId, taskId)), kubeNamespace, deleteOptions, API_PRETTY, null, null, null);
+			result = api.deleteNamespacedConfigMap(name, kubeNamespace, deleteOptions, API_PRETTY, null, null, null);
 		} catch (JsonSyntaxException e) {
             if (e.getCause() instanceof IllegalStateException) {
                 IllegalStateException ise = (IllegalStateException) e.getCause();
@@ -696,7 +774,21 @@ public class KubeServiceImpl implements KubeService {
 		return labels;
 	}
 	
-	private String createConfigMapProp(Map<String, String> properties, String prefix) {
+	private String createConfigMapProp(Map<String, String> properties) {
+		StringBuilder propsString = new StringBuilder();
+		
+		properties.forEach((key, value) -> {
+			//propsString.append(key.replace("-", "_").replace(".", "_").toUpperCase());
+			propsString.append(key);
+			propsString.append("=");
+			propsString.append(value);
+			propsString.append("\n");
+		});
+		
+		return propsString.toString();
+	}
+	
+	private String createConfigMapPropWithPrefix(Map<String, String> properties, String prefix) {
 		StringBuilder propsString = new StringBuilder();
 		
 		properties.forEach((key, value) -> {

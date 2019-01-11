@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import net.boomerangplatform.model.Response;
 import net.boomerangplatform.model.Workflow;
 import net.boomerangplatform.service.ControllerService;
 
@@ -17,12 +18,12 @@ public class WorkflowController {
     private ControllerService controllerService;
     
     @RequestMapping(value = "/create", method = RequestMethod.POST)
-    public String createWorkflow(@RequestBody Workflow workflow) {
+    public Response createWorkflow(@RequestBody Workflow workflow) {
     	return controllerService.createWorkflow(workflow);
     }
     
     @RequestMapping(value = "/terminate", method = RequestMethod.POST)
-    public String terminateFlow(@RequestBody Workflow workflow) {
+    public Response terminateFlow(@RequestBody Workflow workflow) {
     	return controllerService.terminateWorkflow(workflow);
     }
 }

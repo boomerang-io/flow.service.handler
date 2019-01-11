@@ -5,8 +5,8 @@ import java.util.HashMap;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import net.boomerangplatform.model.Response;
 import net.boomerangplatform.model.Task;
-import net.boomerangplatform.model.TaskProperties;
 import net.boomerangplatform.model.TaskResponse;
 import net.boomerangplatform.model.Workflow;
 
@@ -19,55 +19,61 @@ public class ControllerServiceImpl implements ControllerService {
 	private static HashMap<String, HashMap<String, String>> jobOutputPropertyCache = new HashMap<String,HashMap<String, String>>();
 	
 	@Override
-	public String createWorkflow(Workflow workflow) {
+	public Response createWorkflow(Workflow workflow) {
+		Response response = new Response("0","Workflow Activity (" + workflow.getWorkflowActivityId() + ") has been created successfully.");
 		try {
 			if (workflow.getWorkflowStorage().getEnable()) {
 				kubeService.createPVC(workflow.getWorkflowName(), workflow.getWorkflowId(), workflow.getWorkflowActivityId(), workflow.getWorkflowStorage().getSize());
 				kubeService.watchPVC(workflow.getWorkflowId(), workflow.getWorkflowActivityId()).getPhase();
 			}
 			if (workflow.getInputs() != null && !workflow.getInputs().isEmpty()) {
-				kubeService.createConfigMap(workflow.getWorkflowName(), workflow.getWorkflowId(), workflow.getWorkflowActivityId(), workflow.getInputs());
-				kubeService.watchConfigMap(workflow.getWorkflowId(), workflow.getWorkflowActivityId());
+				kubeService.createWorkflowConfigMap(workflow.getWorkflowName(), workflow.getWorkflowId(), workflow.getWorkflowActivityId(), workflow.getInputs());
+				kubeService.watchConfigMap(workflow.getWorkflowId(), workflow.getWorkflowActivityId(), null);
 			}
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
-			return e.toString();
+			response.setCode("1");
+			response.setMessage(e.toString());
 		}
-		return "success";
+		return response;
 	}
 	
 	@Override
-	public String terminateWorkflow(Workflow workflow) {
+	public Response terminateWorkflow(Workflow workflow) {
+		Response response = new Response("0","Workflow Activity (" + workflow.getWorkflowActivityId() + ") has been terminated successfully.");
 		try {
 			kubeService.deletePVC(workflow.getWorkflowId(), workflow.getWorkflowActivityId());
-			kubeService.deleteConfigMap(workflow.getWorkflowId(), workflow.getWorkflowActivityId());
+			kubeService.deleteConfigMap(workflow.getWorkflowId(), workflow.getWorkflowActivityId(), null);
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
-			return e.toString();
+			response.setCode("1");
+			response.setMessage(e.toString());
 		}
-		return "success";
+		return response;
 	}
 
 	@Override
 	public TaskResponse executeTask(Task task) {
-		
+		TaskResponse response = new TaskResponse("0","Task (" + task.getTaskId() + ") has been executed successfully.", null);
 		try {
-			kubeService.createJob(task.getWorkflowName(), task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId(), task.getArguments(), task.getInputs().getProperties());
+			kubeService.createTaskConfigMap(task.getWorkflowName(), task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(), task.getInputs().getProperties());
+			kubeService.watchConfigMap(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
+			kubeService.createJob(task.getWorkflowName(), task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(), task.getArguments(), task.getInputs().getProperties());
 			kubeService.watchJob(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
-			TaskResponse response = new TaskResponse("0","", jobOutputPropertyCache.get(task.getTaskId()));
-			return response;
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			TaskResponse response = new TaskResponse("1",e.toString(), jobOutputPropertyCache.get(task.getTaskId()));
 			e.printStackTrace();
-			return response;
+			response.setCode("1");
+			response.setMessage(e.toString());
+		} finally {
+			response.setOutput(jobOutputPropertyCache.get(task.getTaskId()));
+			kubeService.deleteConfigMap(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
 		}
+		return response;
 	}
 	
 	@Override
-	public String setJobOutputProperty(String jobId, String key, String value) {
+	public Response setJobOutputProperty(String jobId, String key, String value) {
+		Response response = new Response("0","Property has been set against " + jobId);
 		HashMap<String, String> properties = new HashMap<String,String>();
 		if (jobOutputPropertyCache.containsKey(jobId)) {
 			properties = jobOutputPropertyCache.get(jobId);
@@ -75,6 +81,15 @@ public class ControllerServiceImpl implements ControllerService {
 		properties.put(key, value);
 		jobOutputPropertyCache.put(jobId, properties);
 		
-		return "success";
+		return response;
+	}
+	
+	@Override
+	public Response setJobExitCode(String jobId, String code) {
+		Response response = new Response("0","Exit code set.");
+		
+		//TODO
+		
+		return response;
 	}
 }

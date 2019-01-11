@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import net.boomerangplatform.model.Response;
 import net.boomerangplatform.model.Task;
 import net.boomerangplatform.model.TaskResponse;
 import net.boomerangplatform.service.ControllerService;
@@ -25,9 +26,12 @@ public class TaskController {
     }
 
     @RequestMapping(value = "/{taskId}/property/set", method = RequestMethod.PUT)
-    public String setOutPutProperty(@PathVariable String taskId, @RequestParam(value = "key", required = true) String key, @RequestParam(value = "value", required = true) String value) {
+    public Response setOutPutProperty(@PathVariable String taskId, @RequestParam(value = "key", required = true) String key, @RequestParam(value = "value", required = true) String value) {
     	return controllerService.setJobOutputProperty(taskId, key, value);
     }
-
-
+    
+    @RequestMapping(value = "/{taskId}/exit/set", method = RequestMethod.PUT)
+    public Response setOutPutProperty(@PathVariable String taskId, @RequestParam(value = "code", required = true) String code) {
+    	return controllerService.setJobExitCode(taskId, code);
+    }
 }
