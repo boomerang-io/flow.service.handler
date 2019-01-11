@@ -72,23 +72,22 @@ public class ControllerServiceImpl implements ControllerService {
 	}
 	
 	@Override
-	public Response setJobOutputProperty(String jobId, String key, String value) {
-		Response response = new Response("0","Property has been set against " + jobId);
-		HashMap<String, String> properties = new HashMap<String,String>();
-		if (jobOutputPropertyCache.containsKey(jobId)) {
-			properties = jobOutputPropertyCache.get(jobId);
-		}
-		properties.put(key, value);
-		jobOutputPropertyCache.put(jobId, properties);
+	public Response setJobOutputProperty(String workflowId, String workflowActivityId, String taskId, String taskName, String key, String value) {
+		Response response = new Response("0","Property has been set against workflow (" + workflowActivityId + ") and task (" + taskId + ")");
+//		HashMap<String, String> properties = new HashMap<String,String>();
+//		if (jobOutputPropertyCache.containsKey(taskId)) {
+//			properties = jobOutputPropertyCache.get(taskId);
+//		}
+//		properties.put(key, value);
+//		jobOutputPropertyCache.put(jobId, properties);
 		
-		return response;
-	}
-	
-	@Override
-	public Response setJobExitCode(String jobId, String code) {
-		Response response = new Response("0","Exit code set.");
-		
-		//TODO
+		try {
+			kubeService.patchTaskConfigMap(workflowActivityId, taskId, key, value);
+		} catch (Exception e) {
+			e.printStackTrace();
+			response.setCode("1");
+			response.setMessage(e.toString());
+		} 
 		
 		return response;
 	}

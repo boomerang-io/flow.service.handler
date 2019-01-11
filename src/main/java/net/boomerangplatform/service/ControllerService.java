@@ -10,6 +10,6 @@ public interface ControllerService {
 	TaskResponse executeTask(Task task);
 	Response createWorkflow(Workflow workflow);
 	Response terminateWorkflow(Workflow workflow);
-	Response setJobOutputProperty(String jobId, String key, String value);
-	Response setJobExitCode(String jobId, String code);
+	Response setJobOutputProperty(String workflowId, String workflowActivityId, String taskId, String taskName,
+			String key, String value);
 }

@@ -652,8 +652,7 @@ public class KubeServiceImpl implements KubeService {
 		return configMapDataProp;
 	}
 	
-	@Override
-	public String patchConfigMap(String name, String dataKey, String origData, String newData) {
+	private String patchConfigMap(String name, String dataKey, String origData, String newData) {
 		System.out.println("----- Start patchConfigMap() -----");
 
 		CoreV1Api api = new CoreV1Api();
@@ -679,6 +678,15 @@ public class KubeServiceImpl implements KubeService {
 		
 		System.out.println("----- End patchConfigMap() -----");
 		return "fail"; // need to update with the status from result once its printed out and understood
+	}
+	
+	@Override
+	public void patchTaskConfigMap(String workflowId, String workflowActivityId, String taskId, String taskName, String key, String value) {
+		V1ConfigMap wfConfigMap = getConfigMap(workflowId, workflowActivityId, null);
+		String fileName = taskName + ".output.properties";
+		Map<String, String> newValue = new HashMap<String, String>();
+		newValue.put(key, value);
+		patchConfigMap(getConfigMapName(wfConfigMap), fileName, getConfigMapDataProp(wfConfigMap, fileName), createConfigMapProp(newValue));
 	}
 	
 	@Override

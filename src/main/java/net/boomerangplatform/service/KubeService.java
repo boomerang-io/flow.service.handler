@@ -30,5 +30,6 @@ public interface KubeService {
 	V1ConfigMap createTaskConfigMap(String workflowName, String workflowId, String workflowActivityId, String taskName,
 			String taskId, Map<String, String> inputProps) throws ApiException, IOException;
 	V1Status deleteConfigMap(String workflowId, String workflowActivityId, String taskId);
-	String patchConfigMap(String name, String dataKey, String origData, String newData);
+	void patchTaskConfigMap(String workflowId, String workflowActivityId, String taskId, String taskName, String key,
+			String value);
 }

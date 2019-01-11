@@ -14,19 +14,13 @@ import net.boomerangplatform.model.TaskResponse;
 import net.boomerangplatform.service.ControllerService;
 
 @RestController
-@RequestMapping("/controller/task")
-public class TaskController {
+@RequestMapping("/controller/property")
+public class PropertyController {
     
     @Autowired
     private ControllerService controllerService;
-    
-    @RequestMapping(value = "/create", method = RequestMethod.POST)
-    public TaskResponse executeTask(@RequestBody Task task) {
-    	return controllerService.executeTask(task);
+     @RequestMapping(value = "/set", method = RequestMethod.PUT)
+    public Response setOutPutProperty(@RequestParam(value = "workflowId", required = true) String workflowId, @RequestParam(value = "workflowActivityId", required = true) String workflowActivityId, @RequestParam(value = "taskId", required = true) String taskId, @RequestParam(value = "taskName", required = true) String taskName, @RequestParam(value = "key", required = true) String key, @RequestParam(value = "value", required = true) String value) {
+    	return controllerService.setJobOutputProperty(workflowId, workflowActivityId, taskId, taskName, key, value);
     }
-
-//    @RequestMapping(value = "/{taskId}/property/set", method = RequestMethod.PUT)
-//    public Response setOutPutProperty(@PathVariable String taskId, @RequestParam(value = "key", required = true) String key, @RequestParam(value = "value", required = true) String value) {
-//    	return controllerService.setJobOutputProperty(taskId, key, value);
-//    }
 }
