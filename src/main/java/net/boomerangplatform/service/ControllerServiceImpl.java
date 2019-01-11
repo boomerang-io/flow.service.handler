@@ -26,10 +26,8 @@ public class ControllerServiceImpl implements ControllerService {
 				kubeService.createPVC(workflow.getWorkflowName(), workflow.getWorkflowId(), workflow.getWorkflowActivityId(), workflow.getWorkflowStorage().getSize());
 				kubeService.watchPVC(workflow.getWorkflowId(), workflow.getWorkflowActivityId()).getPhase();
 			}
-			if (workflow.getInputs() != null && !workflow.getInputs().isEmpty()) {
-				kubeService.createWorkflowConfigMap(workflow.getWorkflowName(), workflow.getWorkflowId(), workflow.getWorkflowActivityId(), workflow.getInputs());
-				kubeService.watchConfigMap(workflow.getWorkflowId(), workflow.getWorkflowActivityId(), null);
-			}
+			kubeService.createWorkflowConfigMap(workflow.getWorkflowName(), workflow.getWorkflowId(), workflow.getWorkflowActivityId(), workflow.getInputs());
+			kubeService.watchConfigMap(workflow.getWorkflowId(), workflow.getWorkflowActivityId(), null);
 		} catch (Exception e) {
 			e.printStackTrace();
 			response.setCode("1");

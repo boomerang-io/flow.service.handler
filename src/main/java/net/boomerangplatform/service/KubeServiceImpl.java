@@ -801,13 +801,18 @@ public class KubeServiceImpl implements KubeService {
 	private String createConfigMapProp(Map<String, String> properties) {
 		StringBuilder propsString = new StringBuilder();
 		
-		properties.forEach((key, value) -> {
-			//propsString.append(key.replace("-", "_").replace(".", "_").toUpperCase());
-			propsString.append(key);
-			propsString.append("=");
-			propsString.append(value);
+		//TODO fix up null check and handling
+		if (properties != null && !properties.isEmpty()) {
+			properties.forEach((key, value) -> {
+				//propsString.append(key.replace("-", "_").replace(".", "_").toUpperCase());
+				propsString.append(key);
+				propsString.append("=");
+				propsString.append(value);
+				propsString.append("\n");
+			});
+		} else {
 			propsString.append("\n");
-		});
+		}
 		
 		return propsString.toString();
 	}
