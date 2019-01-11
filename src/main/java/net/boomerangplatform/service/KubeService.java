@@ -32,4 +32,6 @@ public interface KubeService {
 	V1Status deleteConfigMap(String workflowId, String workflowActivityId, String taskId);
 	void patchTaskConfigMap(String workflowId, String workflowActivityId, String taskId, String taskName, String key,
 			String value);
+	Map<String, String> getTaskOutPutConfigMapData(String workflowId, String workflowActivityId, String taskId,
+			String taskName);
 }

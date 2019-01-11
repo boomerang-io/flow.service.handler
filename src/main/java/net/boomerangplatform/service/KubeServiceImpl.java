@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -28,7 +30,6 @@ import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.models.V1ConfigMap;
 import io.kubernetes.client.models.V1ConfigMapList;
 import io.kubernetes.client.models.V1ConfigMapProjection;
-import io.kubernetes.client.models.V1ConfigMapVolumeSource;
 import io.kubernetes.client.models.V1Container;
 import io.kubernetes.client.models.V1DeleteOptions;
 import io.kubernetes.client.models.V1EnvVar;
@@ -36,7 +37,6 @@ import io.kubernetes.client.models.V1Job;
 import io.kubernetes.client.models.V1JobList;
 import io.kubernetes.client.models.V1JobSpec;
 import io.kubernetes.client.models.V1JobStatus;
-import io.kubernetes.client.models.V1KeyToPath;
 import io.kubernetes.client.models.V1LocalObjectReference;
 import io.kubernetes.client.models.V1Namespace;
 import io.kubernetes.client.models.V1NamespaceList;
@@ -688,6 +688,21 @@ public class KubeServiceImpl implements KubeService {
 		Map<String, String> newValue = new HashMap<String, String>();
 		newValue.put(key, value);
 		patchConfigMap(getConfigMapName(wfConfigMap), fileName, getConfigMapDataProp(wfConfigMap, fileName), createConfigMapProp(newValue));
+	}
+	
+	@Override
+	public Map<String, String> getTaskOutPutConfigMapData(String workflowId, String workflowActivityId, String taskId, String taskName) {
+		Map<String, String> properties = new HashMap<String, String>();
+		V1ConfigMap wfConfigMap = getConfigMap(workflowId, workflowActivityId, null);
+		String fileName = taskName.replace(" ", "") + ".output.properties";
+		String dataString = getConfigMapDataProp(wfConfigMap, fileName);
+		
+		properties = Pattern.compile("\\s*\\n\\s*")
+			    .splitAsStream(dataString.trim())
+			    .map(s -> s.split("=", 2))
+			    .collect(Collectors.toMap(a -> a[0], a -> a.length>1? a[1]: ""));
+		
+		return properties;
 	}
 	
 	@Override

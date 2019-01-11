@@ -65,7 +65,7 @@ public class ControllerServiceImpl implements ControllerService {
 			response.setCode("1");
 			response.setMessage(e.toString());
 		} finally {
-			response.setOutput(jobOutputPropertyCache.get(task.getTaskId()));
+			response.setOutput(kubeService.getTaskOutPutConfigMapData(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId(), task.getTaskName()));
 			kubeService.deleteConfigMap(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
 		}
 		return response;
