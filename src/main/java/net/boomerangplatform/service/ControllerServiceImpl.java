@@ -82,7 +82,7 @@ public class ControllerServiceImpl implements ControllerService {
 //		jobOutputPropertyCache.put(jobId, properties);
 		
 		try {
-			kubeService.patchTaskConfigMap(workflowActivityId, taskId, key, value);
+			kubeService.patchTaskConfigMap(workflowId, workflowActivityId, taskId, taskName, key, value);
 		} catch (Exception e) {
 			e.printStackTrace();
 			response.setCode("1");

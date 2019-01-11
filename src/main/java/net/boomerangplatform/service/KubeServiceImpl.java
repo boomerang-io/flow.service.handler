@@ -557,6 +557,7 @@ public class KubeServiceImpl implements KubeService {
 		} catch (ApiException e) {
 		    System.err.println("Exception when calling CoreV1Api#createNamespacedConfigMap");
 		    e.printStackTrace();
+		    throw e;
 		}
 		System.out.println("----- End createConfigMap() -----");
 		return result;
