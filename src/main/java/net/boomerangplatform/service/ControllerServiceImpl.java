@@ -1,7 +1,5 @@
 package net.boomerangplatform.service;
 
-import java.util.HashMap;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -15,8 +13,6 @@ public class ControllerServiceImpl implements ControllerService {
 	
 	@Autowired
     private KubeService kubeService;
-	
-	private static HashMap<String, HashMap<String, String>> jobOutputPropertyCache = new HashMap<String,HashMap<String, String>>();
 	
 	@Override
 	public Response createWorkflow(Workflow workflow) {
@@ -71,14 +67,7 @@ public class ControllerServiceImpl implements ControllerService {
 	
 	@Override
 	public Response setJobOutputProperty(String workflowId, String workflowActivityId, String taskId, String taskName, String key, String value) {
-		Response response = new Response("0","Property has been set against workflow (" + workflowActivityId + ") and task (" + taskId + ")");
-//		HashMap<String, String> properties = new HashMap<String,String>();
-//		if (jobOutputPropertyCache.containsKey(taskId)) {
-//			properties = jobOutputPropertyCache.get(taskId);
-//		}
-//		properties.put(key, value);
-//		jobOutputPropertyCache.put(jobId, properties);
-		
+		Response response = new Response("0","Property has been set against workflow (" + workflowActivityId + ") and task (" + taskId + ")");	
 		try {
 			kubeService.patchTaskConfigMap(workflowId, workflowActivityId, taskId, taskName, key, value);
 		} catch (Exception e) {
@@ -86,7 +75,6 @@ public class ControllerServiceImpl implements ControllerService {
 			response.setCode("1");
 			response.setMessage(e.toString());
 		} 
-		
 		return response;
 	}
 }
