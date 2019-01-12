@@ -406,7 +406,6 @@ public class KubeServiceImpl implements KubeService {
 	    System.out.println(result);
 	    System.out.println("----- End createPVC() -----");
 		
-		System.out.println("----- End createPVC() -----");
 		return result;
 	}
 	
