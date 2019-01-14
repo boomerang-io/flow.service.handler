@@ -4,6 +4,10 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+import javax.servlet.http.HttpServletResponse;
+
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
+
 import io.kubernetes.client.ApiException;
 import io.kubernetes.client.models.V1ConfigMap;
 import io.kubernetes.client.models.V1Job;
@@ -34,4 +38,7 @@ public interface KubeService {
 			String value);
 	Map<String, String> getTaskOutPutConfigMapData(String workflowId, String workflowActivityId, String taskId,
 			String taskName);
+	String getPodLog(String workflowId, String workflowActivityId, String taskId) throws ApiException, IOException;
+	StreamingResponseBody streamPodLog(HttpServletResponse response, String workflowId, String workflowActivityId,
+			String taskId) throws ApiException, IOException;
 }

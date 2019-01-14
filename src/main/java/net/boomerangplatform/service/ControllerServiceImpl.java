@@ -1,7 +1,10 @@
 package net.boomerangplatform.service;
 
+import javax.servlet.http.HttpServletResponse;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import net.boomerangplatform.model.Response;
 import net.boomerangplatform.model.Task;
@@ -76,5 +79,29 @@ public class ControllerServiceImpl implements ControllerService {
 			response.setMessage(e.toString());
 		} 
 		return response;
+	}
+	
+	@Override
+	public Response getLogForTask(String workflowId, String workflowActivityId, String taskId) {
+		Response response = new Response("0","");
+		try {
+			response.setMessage(kubeService.getPodLog(workflowId, workflowActivityId, taskId));
+		} catch (Exception e) {
+			e.printStackTrace();
+			response.setCode("1");
+			response.setMessage(e.toString());
+		} 
+		return response;
+	}
+	
+	@Override
+	public StreamingResponseBody streamLogForTask(HttpServletResponse response, String workflowId, String workflowActivityId, String taskId) {
+		StreamingResponseBody srb = null;
+		try {
+			srb = kubeService.streamPodLog(response, workflowId, workflowActivityId, taskId);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return srb; 
 	}
 }

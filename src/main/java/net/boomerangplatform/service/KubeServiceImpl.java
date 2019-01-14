@@ -1,6 +1,8 @@
 package net.boomerangplatform.service;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -11,9 +13,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import javax.servlet.http.HttpServletResponse;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
+import com.google.common.io.ByteStreams;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -23,6 +29,7 @@ import com.google.gson.reflect.TypeToken;
 import io.kubernetes.client.ApiClient;
 import io.kubernetes.client.ApiException;
 import io.kubernetes.client.Configuration;
+import io.kubernetes.client.PodLogs;
 import io.kubernetes.client.apis.BatchV1Api;
 import io.kubernetes.client.apis.CoreV1Api;
 import io.kubernetes.client.auth.ApiKeyAuth;
@@ -46,6 +53,7 @@ import io.kubernetes.client.models.V1PersistentVolumeClaimList;
 import io.kubernetes.client.models.V1PersistentVolumeClaimSpec;
 import io.kubernetes.client.models.V1PersistentVolumeClaimStatus;
 import io.kubernetes.client.models.V1PersistentVolumeClaimVolumeSource;
+import io.kubernetes.client.models.V1Pod;
 import io.kubernetes.client.models.V1PodList;
 import io.kubernetes.client.models.V1PodSpec;
 import io.kubernetes.client.models.V1PodTemplateSpec;
@@ -370,6 +378,58 @@ public class KubeServiceImpl implements KubeService {
 		System.out.println("----- End getJobPod() -----");
 	}
 	
+	@Override
+	public String getPodLog(String workflowId, String workflowActivityId, String taskId) throws ApiException, IOException {
+		System.out.println("----- Start getPodLog -----");
+		
+		CoreV1Api api = new CoreV1Api();
+		String labelSelector = "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId+",task-id=" + taskId;
+
+	    PodLogs logs = new PodLogs();
+	    V1Pod pod = 
+	    		api
+	            .listNamespacedPod(kubeNamespace, API_PRETTY, null, null, null, labelSelector, null, null, 60, false)
+	            .getItems()
+	            .get(0);
+
+	    InputStream is = logs.streamNamespacedPodLog(pod);
+	    ByteArrayOutputStream baos = new ByteArrayOutputStream(); 
+	    //ByteStreams.copy(is, System.out);
+	    ByteStreams.copy(is, baos);
+		
+		System.out.println("----- End getPodLog() -----");
+		return baos.toString();
+	}
+	
+	@Override
+	public StreamingResponseBody streamPodLog(HttpServletResponse response, String workflowId, String workflowActivityId, String taskId) throws ApiException, IOException {
+		System.out.println("----- Start streamPodLog() -----");
+		
+		CoreV1Api api = new CoreV1Api();
+		String labelSelector = "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId+",task-id=" + taskId;
+
+	    PodLogs logs = new PodLogs();
+	    V1Pod pod = 
+	    		api
+	            .listNamespacedPod(kubeNamespace, API_PRETTY, null, null, null, labelSelector, null, null, 60, false)
+	            .getItems()
+	            .get(0);
+
+	    InputStream is = logs.streamNamespacedPodLog(pod);
+	    ByteArrayOutputStream baos = new ByteArrayOutputStream(); 
+	    //ByteStreams.copy(is, System.out);
+	    ByteStreams.copy(is, baos);
+		
+		return outputStream -> {
+		    int nRead;
+		    byte[] data = new byte[1024];
+		    while ((nRead = is.read(data, 0, data.length)) != -1) {
+		        System.out.println("Writing some bytes of file...");
+		        outputStream.write(data, 0, nRead);
+		    }
+		};
+	}
+	
 	public V1PersistentVolumeClaim createPVC(String workflowName, String workflowId, String workflowActivityId, String pvcSize) throws ApiException {
 		System.out.println("----- Start createPVC() -----");
 		
@@ -567,15 +627,15 @@ public class KubeServiceImpl implements KubeService {
 		System.out.println("----- Start Watcher -----");
 		
 		CoreV1Api api = new CoreV1Api();
-		String fieldSelector = "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId;
+		String labelSelector = "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId;
 		if (taskId != null) {
-			fieldSelector = fieldSelector.concat(",task-id=" + taskId);
+			labelSelector = labelSelector.concat(",task-id=" + taskId);
 		}
 		System.out.println("  task-id: " + taskId);
-		System.out.println("  fieldSelector: " + fieldSelector);
+		System.out.println("  labelSelector: " + labelSelector);
 		
 		Watch<V1ConfigMap> watch = Watch.createWatch(
-				createWatcherApiClient(), api.listNamespacedConfigMapCall(kubeNamespace, API_PRETTY, null, null, null, fieldSelector, null, null, null, true, null, null),
+				createWatcherApiClient(), api.listNamespacedConfigMapCall(kubeNamespace, API_PRETTY, null, null, null, labelSelector, null, null, null, true, null, null),
 				new TypeToken<Watch.Response<V1ConfigMap>>() {
 				}.getType());
 		V1ConfigMap result = null;
@@ -598,14 +658,14 @@ public class KubeServiceImpl implements KubeService {
 		V1ConfigMap configMap = null;
 		
 		CoreV1Api api = new CoreV1Api();
-		String fieldSelector = "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId;
+		String labelSelector = "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId;
 		if (taskId != null) {
-			fieldSelector = fieldSelector.concat(",task-id=" + taskId);
+			labelSelector = labelSelector.concat(",task-id=" + taskId);
 		}
 		System.out.println("  task-id: " + taskId);
-		System.out.println("  fieldSelector: " + fieldSelector);
+		System.out.println("  labelSelector: " + labelSelector);
 		try {
-			V1ConfigMapList configMapList = api.listNamespacedConfigMap(kubeNamespace, API_PRETTY, null, null, null, fieldSelector, null, null, 60, false);
+			V1ConfigMapList configMapList = api.listNamespacedConfigMap(kubeNamespace, API_PRETTY, null, null, null, labelSelector, null, null, 60, false);
 			configMapList.getItems().forEach(cfgmap -> {
 				System.out.println(cfgmap.toString());
 			});
@@ -691,6 +751,7 @@ public class KubeServiceImpl implements KubeService {
 	
 	@Override
 	public Map<String, String> getTaskOutPutConfigMapData(String workflowId, String workflowActivityId, String taskId, String taskName) {
+		System.out.println("----- Start getTaskOutPutConfigMapData() -----");
 		Map<String, String> properties = new HashMap<String, String>();
 		V1ConfigMap wfConfigMap = getConfigMap(workflowId, workflowActivityId, null);
 		String fileName = taskName.replace(" ", "") + ".output.properties";
@@ -700,6 +761,10 @@ public class KubeServiceImpl implements KubeService {
 			    .splitAsStream(dataString.trim())
 			    .map(s -> s.split("=", 2))
 			    .collect(Collectors.toMap(a -> a[0], a -> a.length>1? a[1]: ""));
+		
+		System.out.println(properties.toString());
+		
+		System.out.println("----- End getTaskOutPutConfigMapData() -----");
 		
 		return properties;
 	}
