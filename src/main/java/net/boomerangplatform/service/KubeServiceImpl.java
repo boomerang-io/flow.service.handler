@@ -752,6 +752,7 @@ public class KubeServiceImpl implements KubeService {
 	@Override
 	public Map<String, String> getTaskOutPutConfigMapData(String workflowId, String workflowActivityId, String taskId, String taskName) {
 		System.out.println("----- Start getTaskOutPutConfigMapData() -----");
+		System.out.println("  taskName: " + taskName);
 		Map<String, String> properties = new HashMap<String, String>();
 		V1ConfigMap wfConfigMap = getConfigMap(workflowId, workflowActivityId, null);
 		String fileName = taskName.replace(" ", "") + ".output.properties";
@@ -762,7 +763,7 @@ public class KubeServiceImpl implements KubeService {
 			    .map(s -> s.split("=", 2))
 			    .collect(Collectors.toMap(a -> a[0], a -> a.length>1? a[1]: ""));
 		
-		System.out.println(properties.toString());
+		System.out.println("  properties: " + properties.toString());
 		
 		System.out.println("----- End getTaskOutPutConfigMapData() -----");
 		
