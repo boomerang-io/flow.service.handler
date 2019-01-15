@@ -386,16 +386,19 @@ public class KubeServiceImpl implements KubeService {
 		String labelSelector = "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId+",task-id=" + taskId;
 
 	    PodLogs logs = new PodLogs();
-	    V1Pod pod = 
+	    List<V1Pod> listOfPods = 
 	    		api
 	            .listNamespacedPod(kubeNamespace, API_PRETTY, null, null, null, labelSelector, null, null, 60, false)
-	            .getItems()
-	            .get(0);
-
-	    InputStream is = logs.streamNamespacedPodLog(pod);
+	            .getItems();
+	    V1Pod pod = new V1Pod();
 	    ByteArrayOutputStream baos = new ByteArrayOutputStream(); 
-	    //ByteStreams.copy(is, System.out);
-	    ByteStreams.copy(is, baos);
+	    
+	    if (!listOfPods.isEmpty()) {
+	    	pod = listOfPods.get(0);
+	    	InputStream is = logs.streamNamespacedPodLog(pod);
+		    //ByteStreams.copy(is, System.out);
+		    ByteStreams.copy(is, baos);
+	    }
 		
 		System.out.println("----- End getPodLog() -----");
 		return baos.toString();
