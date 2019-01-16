@@ -23,6 +23,8 @@ When running the service locally you need access to a kubernetes API endpoint
 
 We currently use projected volumes however subpath was considered.
 
+- Projected Volumes: https://unofficial-kubernetes.readthedocs.io/en/latest/tasks/configure-pod-container/projected-volume/
+- Projected Volumes: https://docs.okd.io/latest/dev_guide/projected_volumes.html
 - Projected Volumes: https://stackoverflow.com/questions/49287078/how-to-merge-two-configmaps-using-volume-mount-in-kubernetes
 - SubPath: https://blog.sebastian-daschner.com/entries/multiple-kubernetes-volumes-directory
 

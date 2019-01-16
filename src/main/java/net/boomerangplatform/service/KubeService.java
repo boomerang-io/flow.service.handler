@@ -34,11 +34,11 @@ public interface KubeService {
 	V1ConfigMap createTaskConfigMap(String workflowName, String workflowId, String workflowActivityId, String taskName,
 			String taskId, Map<String, String> inputProps) throws ApiException, IOException;
 	V1Status deleteConfigMap(String workflowId, String workflowActivityId, String taskId);
-	void patchTaskConfigMap(String workflowId, String workflowActivityId, String taskId, String taskName, String key,
-			String value);
 	Map<String, String> getTaskOutPutConfigMapData(String workflowId, String workflowActivityId, String taskId,
 			String taskName);
 	String getPodLog(String workflowId, String workflowActivityId, String taskId) throws ApiException, IOException;
 	StreamingResponseBody streamPodLog(HttpServletResponse response, String workflowId, String workflowActivityId,
 			String taskId) throws ApiException, IOException;
+	void patchTaskConfigMap(String workflowId, String workflowActivityId, String taskId, String taskName,
+			Map<String, String> properties);
 }

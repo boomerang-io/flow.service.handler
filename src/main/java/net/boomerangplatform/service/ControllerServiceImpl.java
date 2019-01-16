@@ -1,5 +1,8 @@
 package net.boomerangplatform.service;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -72,7 +75,24 @@ public class ControllerServiceImpl implements ControllerService {
 	public Response setJobOutputProperty(String workflowId, String workflowActivityId, String taskId, String taskName, String key, String value) {
 		Response response = new Response("0","Property has been set against workflow (" + workflowActivityId + ") and task (" + taskId + ")");	
 		try {
-			kubeService.patchTaskConfigMap(workflowId, workflowActivityId, taskId, taskName, key, value);
+			Map<String, String> properties = new HashMap<String, String>();
+			properties.put(key, value);
+			kubeService.patchTaskConfigMap(workflowId, workflowActivityId, taskId, taskName, properties);
+		} catch (Exception e) {
+			e.printStackTrace();
+			response.setCode("1");
+			response.setMessage(e.toString());
+		} 
+		return response;
+	}
+	
+	@Override
+	public Response setJobOutputProperties(String workflowId, String workflowActivityId, String taskId, String taskName, Map<String, String> properties) {
+		Response response = new Response("0","Properties have been set against workflow (" + workflowActivityId + ") and task (" + taskId + ")");
+		
+		System.out.println(properties);
+		try {
+			kubeService.patchTaskConfigMap(workflowId, workflowActivityId, taskId, taskName, properties);
 		} catch (Exception e) {
 			e.printStackTrace();
 			response.setCode("1");

@@ -1,5 +1,7 @@
 package net.boomerangplatform.service;
 
+import java.util.Map;
+
 import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
@@ -19,4 +21,6 @@ public interface ControllerService {
 	Response getLogForTask(String workflowId, String workflowActivityId, String taskId);
 	StreamingResponseBody streamLogForTask(HttpServletResponse response, String workflowId, String workflowActivityId,
 			String taskId);
+	Response setJobOutputProperties(String workflowId, String workflowActivityId, String taskId, String taskName,
+			Map<String, String> properties);
 }

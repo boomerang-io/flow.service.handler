@@ -17,7 +17,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n\t\"workflowName\": \"tysons-test-workflow\",\n\t\"workflowId\": \"19880224\",\n\t\"workflowActivityId\": \"2019011134\",\n\t\"storage\": {\n\t\t\"enable\":\"false\"\n\t},\n\t\"inputs\": {\n\t\t\"channel\":\"@gchickma\",\n\t\t\"message\":\"tyson is cool\"\n\t}\n}"
+					"raw": "{\n\t\"workflowName\": \"tysons-test-workflow\",\n\t\"workflowId\": \"19880224\",\n\t\"workflowActivityId\": \"2019011401\",\n\t\"storage\": {\n\t\t\"enable\":\"false\"\n\t},\n\t\"inputs\": {\n\t\t\"channel\":\"@gchickma\",\n\t\t\"message\":\"tyson is cool\"\n\t}\n}"
 				},
 				"url": {
 					"raw": "http://localhost:7731/controller/workflow/create",
@@ -77,7 +77,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n\t\"workflowName\": \"tysons-test-workflow\",\n\t\"workflowId\": \"19880224\",\n\t\"workflowActivityId\": \"2019011134\",\n\t\"taskName\": \"Send Slack Message\",\n\t\"taskId\": \"19880224\",\n\t\"inputs\":{\n\t\t\"properties\": {\n\t\t\t\"channel\":\"${p:Send Slack Message/channel}\",\n\t\t\t\"title\":\"Hello\",\n\t\t\t\"message\":\"this should work\"\n\t\t}\n\t},\n\t\"arguments\": [\n\t\t\"slack\",\n\t\t\"sendWebhook\"\n\t]\n}"
+					"raw": "{\n\t\"workflowName\": \"tysons-test-workflow\",\n\t\"workflowId\": \"19880224\",\n\t\"workflowActivityId\": \"2019011401\",\n\t\"taskName\": \"Send Slack Message\",\n\t\"taskId\": \"19880224\",\n\t\"inputs\":{\n\t\t\"properties\": {\n\t\t\t\"channel\":\"${p:Send Slack Message/channel}\",\n\t\t\t\"title\":\"Hello\",\n\t\t\t\"message\":\"this should work\"\n\t\t}\n\t},\n\t\"arguments\": [\n\t\t\"slack\",\n\t\t\"sendWebhook\"\n\t]\n}"
 				},
 				"url": {
 					"raw": "http://localhost:7731/controller/task/create",
@@ -98,7 +98,7 @@
 		{
 			"name": "Set Output Property",
 			"request": {
-				"method": "PUT",
+				"method": "PATCH",
 				"header": [
 					{
 						"key": "Content-Type",
@@ -145,6 +145,158 @@
 						{
 							"key": "value",
 							"value": "@twlawrie"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Set Output Property Copy",
+			"request": {
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"key1\": \"value1\",\n\t\"key2\": \"value2\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:7731/controller/properties/set?workflowId=19880224&workflowActivityId=2019011134&taskId=19880224&taskName=SendSlackMessage",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "7731",
+					"path": [
+						"controller",
+						"properties",
+						"set"
+					],
+					"query": [
+						{
+							"key": "workflowId",
+							"value": "19880224"
+						},
+						{
+							"key": "workflowActivityId",
+							"value": "2019011134"
+						},
+						{
+							"key": "taskId",
+							"value": "19880224"
+						},
+						{
+							"key": "taskName",
+							"value": "SendSlackMessage"
+						},
+						{
+							"key": "key",
+							"value": "channel",
+							"disabled": true
+						},
+						{
+							"key": "value",
+							"value": "@twlawrie",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Log For Task",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "http://localhost:7731/controller/log/get?workflowId=19880224&workflowActivityId=2019011401&taskId=198802241",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "7731",
+					"path": [
+						"controller",
+						"log",
+						"get"
+					],
+					"query": [
+						{
+							"key": "workflowId",
+							"value": "19880224"
+						},
+						{
+							"key": "workflowActivityId",
+							"value": "2019011401"
+						},
+						{
+							"key": "taskId",
+							"value": "198802241"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Stream Log For Task",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "http://localhost:7731/controller/log/stream?workflowId=19880224&workflowActivityId=2019011134&taskId=19880224",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "7731",
+					"path": [
+						"controller",
+						"log",
+						"stream"
+					],
+					"query": [
+						{
+							"key": "workflowId",
+							"value": "19880224"
+						},
+						{
+							"key": "workflowActivityId",
+							"value": "2019011134"
+						},
+						{
+							"key": "taskId",
+							"value": "19880224"
 						}
 					]
 				}

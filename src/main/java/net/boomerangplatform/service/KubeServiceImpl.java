@@ -744,12 +744,10 @@ public class KubeServiceImpl implements KubeService {
 	}
 	
 	@Override
-	public void patchTaskConfigMap(String workflowId, String workflowActivityId, String taskId, String taskName, String key, String value) {
+	public void patchTaskConfigMap(String workflowId, String workflowActivityId, String taskId, String taskName, Map<String, String> properties) {
 		V1ConfigMap wfConfigMap = getConfigMap(workflowId, workflowActivityId, null);
 		String fileName = taskName + ".output.properties";
-		Map<String, String> newValue = new HashMap<String, String>();
-		newValue.put(key, value);
-		patchConfigMap(getConfigMapName(wfConfigMap), fileName, getConfigMapDataProp(wfConfigMap, fileName), createConfigMapProp(newValue));
+		patchConfigMap(getConfigMapName(wfConfigMap), fileName, getConfigMapDataProp(wfConfigMap, fileName), createConfigMapProp(properties));
 	}
 	
 	@Override
