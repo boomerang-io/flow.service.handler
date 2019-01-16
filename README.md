@@ -12,7 +12,17 @@ When running the service locally you need access to a kubernetes API endpoint
 
 ## References
 
-- Kubernetes Java Client: https://github.com/kubernetes-client/java
-- Kubernetes Java Client Examples: https://github.com/kubernetes-client/java/blob/master/examples/src/main/java/io/kubernetes/client/examples
-- Kubernetes Java Client API: https://github.com/kubernetes-client/java/tree/master/kubernetes/src/main/java/io/kubernetes/client/apis
-- Kubernetes Java Client Docs: https://github.com/kubernetes-client/java/tree/master/kubernetes/docs
+### Kubernetes Java Client
+
+- Client: https://github.com/kubernetes-client/java
+- Examples: https://github.com/kubernetes-client/java/blob/master/examples/src/main/java/io/kubernetes/client/examples
+- API: https://github.com/kubernetes-client/java/tree/master/kubernetes/src/main/java/io/kubernetes/client/apis
+- Docs: https://github.com/kubernetes-client/java/tree/master/kubernetes/docs
+
+### Kubernetes ConfigMap
+
+We currently use projected volumes however subpath was considered.
+
+- Projected Volumes: https://stackoverflow.com/questions/49287078/how-to-merge-two-configmaps-using-volume-mount-in-kubernetes
+- SubPath: https://blog.sebastian-daschner.com/entries/multiple-kubernetes-volumes-directory
+
