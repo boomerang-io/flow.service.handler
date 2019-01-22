@@ -93,6 +93,9 @@ public class KubeServiceImpl implements KubeService {
 	@Value("${kube.worker.pvc.initialSize}")
 	private String kubeWorkerPVCInitialSize;
 	
+	@Value("${kube.worker.job.faillimit}")
+	private Integer kubeWorkerJobFailLimit;
+	
 	@Value("${proxy.enable}")
 	private Boolean proxyEnabled;
 	
@@ -296,6 +299,7 @@ public class KubeServiceImpl implements KubeService {
 		podMetadata.labels(createLabels(workflowName, workflowId, workflowActivityId, taskId));
 		templateSpec.metadata(podMetadata);
 		
+		jobSpec.backoffLimit(1);
 		jobSpec.template(templateSpec);
 		body.spec(jobSpec);
 		
@@ -344,8 +348,9 @@ public class KubeServiceImpl implements KubeService {
 					}
 					result = "0";
 					break;
-				} else if (item.object.getStatus().getFailed() != null && item.object.getStatus().getFailed() >= 3) {
-					throw new Exception("Task (" + taskId + ") has failed to execute 3 times triggering failure");
+				} else if (item.object.getStatus().getFailed() != null && item.object.getStatus().getFailed() >= kubeWorkerJobFailLimit) {
+					//Implement manual check for failure as backOffLimit is not being respected in Kubernetes 1.10.4 and below
+					throw new Exception("Task (" + taskId + ") has failed to execute " + kubeWorkerJobFailLimit + " times triggering failure");
 				}
 			}
 		} finally {
