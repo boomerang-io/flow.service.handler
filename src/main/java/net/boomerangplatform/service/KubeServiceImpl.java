@@ -326,9 +326,7 @@ public class KubeServiceImpl implements KubeService {
 	}
 	
 	@Override
-	public String watchJob(String workflowId, String workflowActivityId, String taskId) throws Exception {
-		System.out.println("----- Start Watcher -----");
-		
+	public String watchJob(String workflowId, String workflowActivityId, String taskId) throws Exception {		
 		BatchV1Api api = new BatchV1Api();
 
 		Watch<V1Job> watch = Watch.createWatch(
@@ -357,14 +355,11 @@ public class KubeServiceImpl implements KubeService {
 			watch.close();
 		}
 		getJobPod(workflowId, workflowActivityId);
-		System.out.println("----- End Watcher -----");
 		return result;
 	}
 	
 	//Does not work
-	private void getJobPod(String workflowId, String workflowActivityId) {
-		System.out.println("----- Start getJobPod() -----");
-		
+	private void getJobPod(String workflowId, String workflowActivityId) {		
 		CoreV1Api api = new CoreV1Api();
 		String namespace = kubeNamespace; // String | object name and auth scope, such as for teams and projects
 		String pretty = "true"; // String | If 'true', then the output is pretty printed.
@@ -379,14 +374,10 @@ public class KubeServiceImpl implements KubeService {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
-		System.out.println("----- End getJobPod() -----");
 	}
 	
 	@Override
-	public String getPodLog(String workflowId, String workflowActivityId, String taskId) throws ApiException, IOException {
-		System.out.println("----- Start getPodLog -----");
-		
+	public String getPodLog(String workflowId, String workflowActivityId, String taskId) throws ApiException, IOException {		
 		CoreV1Api api = new CoreV1Api();
 		String labelSelector = "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId+",task-id=" + taskId;
 
@@ -404,15 +395,11 @@ public class KubeServiceImpl implements KubeService {
 		    //ByteStreams.copy(is, System.out);
 		    ByteStreams.copy(is, baos);
 	    }
-		
-		System.out.println("----- End getPodLog() -----");
 		return baos.toString();
 	}
 	
 	@Override
-	public StreamingResponseBody streamPodLog(HttpServletResponse response, String workflowId, String workflowActivityId, String taskId) throws ApiException, IOException {
-		System.out.println("----- Start streamPodLog() -----");
-		
+	public StreamingResponseBody streamPodLog(HttpServletResponse response, String workflowId, String workflowActivityId, String taskId) throws ApiException, IOException {		
 		CoreV1Api api = new CoreV1Api();
 		String labelSelector = "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId+",task-id=" + taskId;
 
@@ -439,8 +426,6 @@ public class KubeServiceImpl implements KubeService {
 	}
 	
 	public V1PersistentVolumeClaim createPVC(String workflowName, String workflowId, String workflowActivityId, String pvcSize) throws ApiException {
-		System.out.println("----- Start createPVC() -----");
-		
 		// Setup	
 		CoreV1Api api = new CoreV1Api();
 		String namespace = kubeNamespace; // String | object name and auth scope, such as for teams and projects
@@ -472,15 +457,11 @@ public class KubeServiceImpl implements KubeService {
 		V1PersistentVolumeClaim result = new V1PersistentVolumeClaim();
 	    result = api.createNamespacedPersistentVolumeClaim(namespace, body, pretty);
 	    System.out.println(result);
-	    System.out.println("----- End createPVC() -----");
-		
-		return result;
+	    return result;
 	}
 	
 	@Override
 	public V1PersistentVolumeClaimStatus watchPVC(String workflowId, String workflowActivityId) throws ApiException, IOException {
-		System.out.println("----- Start Watcher -----");
-		
 		CoreV1Api api = new CoreV1Api();
 		
 		Watch<V1PersistentVolumeClaim> watch = Watch.createWatch(
@@ -500,13 +481,11 @@ public class KubeServiceImpl implements KubeService {
 		} finally {
 			watch.close();
 		}
-		System.out.println("----- End Watcher -----");
 		return result;
 	}
 	
 	@Override
 	public V1Status deletePVC(String workflowId, String workflowActivityId) {
-		System.out.println("----- Start deletePVC() -----");
 		CoreV1Api api = new CoreV1Api();
 		V1DeleteOptions deleteOptions = new V1DeleteOptions();
 		V1Status result = new V1Status();
@@ -533,8 +512,6 @@ public class KubeServiceImpl implements KubeService {
 	}
 	
 	private String getPVCName(String workflowId, String workflowActivityId) {
-		System.out.println("----- Start getPVCName() -----");
-		
 		CoreV1Api api = new CoreV1Api();
 		String namespace = kubeNamespace; // String | object name and auth scope, such as for teams and projects
 		String pretty = "true"; // String | If 'true', then the output is pretty printed.
@@ -553,9 +530,6 @@ public class KubeServiceImpl implements KubeService {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
-		
-		System.out.println("----- End getPVCName() -----");
 		return "";
 	}
 
@@ -613,7 +587,6 @@ public class KubeServiceImpl implements KubeService {
 	}
 	
 	private V1ConfigMap createConfigMap(V1ConfigMap body) throws ApiException, IOException {
-		System.out.println("----- Start createConfigMap() -----");
 		CoreV1Api api = new CoreV1Api();
 		
 		//Create ConfigMap
@@ -626,14 +599,11 @@ public class KubeServiceImpl implements KubeService {
 		    e.printStackTrace();
 		    throw e;
 		}
-		System.out.println("----- End createConfigMap() -----");
 		return result;
 	}
 	
 	@Override
 	public V1ConfigMap watchConfigMap(String workflowId, String workflowActivityId, String taskId) throws ApiException, IOException {
-		System.out.println("----- Start Watcher -----");
-		
 		CoreV1Api api = new CoreV1Api();
 		String labelSelector = "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId;
 		if (taskId != null) {
@@ -656,13 +626,10 @@ public class KubeServiceImpl implements KubeService {
 		} finally {
 			watch.close();
 		}
-		System.out.println("----- End Watcher -----");
 		return result;
 	}
 	
 	private V1ConfigMap getConfigMap(String workflowId, String workflowActivityId, String taskId) {
-		System.out.println("----- Start getConfigMap() -----");
-		
 		V1ConfigMap configMap = null;
 		
 		CoreV1Api api = new CoreV1Api();
@@ -684,45 +651,30 @@ public class KubeServiceImpl implements KubeService {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
-		System.out.println("----- End getConfigMap() -----");
-		
 		return configMap;
 	}
 	
 	private String getConfigMapName(V1ConfigMap configMap) {
-		System.out.println("----- Start getConfigMapName() -----");
-		
 		String configMapName = "";
 		
 		if (configMap != null && !configMap.getMetadata().getName().isEmpty()) {
 			configMapName = configMap.getMetadata().getName();
 			System.out.println(" ConfigMap Name: " + configMapName);
 		}
-		
-		System.out.println("----- End getConfigMapName() -----");
-		
 		return configMapName;
 	}
 	
 	private String getConfigMapDataProp(V1ConfigMap configMap, String key) {
-		System.out.println("----- Start getConfigMapDataProp() -----");
-		
 		String configMapDataProp = "";
 		
 		if (configMap.getData().get(key) != null) {
 			configMapDataProp = configMap.getData().get(key);
 			System.out.println(" ConfigMap Input Properties Data: " + configMapDataProp);
 		}
-		
-		System.out.println("----- End getConfigMapDataProp() -----");
-		
 		return configMapDataProp;
 	}
 	
 	private String patchConfigMap(String name, String dataKey, String origData, String newData) {
-		System.out.println("----- Start patchConfigMap() -----");
-
 		CoreV1Api api = new CoreV1Api();
 		String namespace = kubeNamespace; // String | object name and auth scope, such as for teams and projects
 		String pretty = "true"; // String | If 'true', then the output is pretty printed.
@@ -743,8 +695,6 @@ public class KubeServiceImpl implements KubeService {
 		    System.err.println("Exception when calling CoreV1Api#patchNamespacedConfigMap");
 		    e.printStackTrace();
 		}
-		
-		System.out.println("----- End patchConfigMap() -----");
 		return "fail"; // need to update with the status from result once its printed out and understood
 	}
 	
@@ -757,7 +707,6 @@ public class KubeServiceImpl implements KubeService {
 	
 	@Override
 	public Map<String, String> getTaskOutPutConfigMapData(String workflowId, String workflowActivityId, String taskId, String taskName) {
-		System.out.println("----- Start getTaskOutPutConfigMapData() -----");
 		System.out.println("  taskName: " + taskName);
 		Map<String, String> properties = new HashMap<String, String>();
 		V1ConfigMap wfConfigMap = getConfigMap(workflowId, workflowActivityId, null);
@@ -770,15 +719,11 @@ public class KubeServiceImpl implements KubeService {
 			    .collect(Collectors.toMap(a -> a[0], a -> a.length>1? a[1]: ""));
 		
 		System.out.println("  properties: " + properties.toString());
-		
-		System.out.println("----- End getTaskOutPutConfigMapData() -----");
-		
 		return properties;
 	}
 	
 	@Override
 	public V1Status deleteConfigMap(String workflowId, String workflowActivityId, String taskId) {
-		System.out.println("----- Start deleteConfigMap() -----");
 		CoreV1Api api = new CoreV1Api();
 		V1DeleteOptions deleteOptions = new V1DeleteOptions();
 		V1Status result = new V1Status();
