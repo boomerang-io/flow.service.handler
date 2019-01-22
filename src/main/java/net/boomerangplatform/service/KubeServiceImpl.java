@@ -551,7 +551,7 @@ public class KubeServiceImpl implements KubeService {
 		sysProps.put("activity.id", workflowActivityId);
 		sysProps.put("workflow.name", workflowName);
 		sysProps.put("workflow.id", workflowId);
-		sysProps.put("controllerServiceUrl", bmrgControllerServiceURL);
+		sysProps.put("controller.service.url", bmrgControllerServiceURL);
 		inputsWithFixedKeys.put("workflow.input.properties", createConfigMapProp(inputProps));
 		inputsWithFixedKeys.put("workflow.system.properties", createConfigMapProp(sysProps));
 		body.data(inputsWithFixedKeys);
