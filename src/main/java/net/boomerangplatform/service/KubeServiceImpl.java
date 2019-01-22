@@ -807,7 +807,7 @@ public class KubeServiceImpl implements KubeService {
 		Map<String, String> labels = new HashMap<String, String>();
 		labels.put("org", "bmrg");
 		labels.put("app", "bmrg-flow");
-		labels.put("workflow-name", workflowName);
+		labels.put("workflow-name", workflowName.replace(" ", ""));
 		labels.put("workflow-id", workflowId);
 		labels.put("workflow-activity-id", workflowActivityId);
 		Optional.ofNullable(taskId).ifPresent(str -> labels.put("task-id", str));
