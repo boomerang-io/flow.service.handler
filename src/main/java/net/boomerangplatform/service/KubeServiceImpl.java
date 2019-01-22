@@ -548,9 +548,9 @@ public class KubeServiceImpl implements KubeService {
 		//Create Data
 		Map<String, String> inputsWithFixedKeys = new HashMap<String, String>();
 		Map<String, String> sysProps = new HashMap<String, String>();
-		sysProps.put("activityId", workflowActivityId);
-		sysProps.put("workflowName", workflowName);
-		sysProps.put("workflowId", workflowId);
+		sysProps.put("activity.id", workflowActivityId);
+		sysProps.put("workflow.name", workflowName);
+		sysProps.put("workflow.id", workflowId);
 		sysProps.put("controllerServiceUrl", bmrgControllerServiceURL);
 		inputsWithFixedKeys.put("workflow.input.properties", createConfigMapProp(inputProps));
 		inputsWithFixedKeys.put("workflow.system.properties", createConfigMapProp(sysProps));
@@ -576,8 +576,8 @@ public class KubeServiceImpl implements KubeService {
 		//Create Data
 		Map<String, String> inputsWithFixedKeys = new HashMap<String, String>();
 		Map<String, String> sysProps = new HashMap<String, String>();
-		sysProps.put("taskId", taskId);
-		sysProps.put("taskName", taskName);
+		sysProps.put("task.id", taskId);
+		sysProps.put("task.name", taskName);
 		inputsWithFixedKeys.put("task.input.properties", createConfigMapProp(inputProps));
 		inputsWithFixedKeys.put("task.system.properties", createConfigMapProp(sysProps));
 		body.data(inputsWithFixedKeys);
