@@ -96,6 +96,9 @@ public class KubeServiceImpl implements KubeService {
 	@Value("${kube.worker.job.faillimit}")
 	private Integer kubeWorkerJobFailLimit;
 	
+	@Value("${kube.worker.debug}")
+	private Boolean kubeWorkerDebug;
+	
 	@Value("${proxy.enable}")
 	private Boolean proxyEnabled;
 	
@@ -551,6 +554,7 @@ public class KubeServiceImpl implements KubeService {
 		sysProps.put("activity.id", workflowActivityId);
 		sysProps.put("workflow.name", workflowName);
 		sysProps.put("workflow.id", workflowId);
+		sysProps.put("worker.debug", kubeWorkerDebug.toString());
 		sysProps.put("controller.service.url", bmrgControllerServiceURL);
 		inputsWithFixedKeys.put("workflow.input.properties", createConfigMapProp(inputProps));
 		inputsWithFixedKeys.put("workflow.system.properties", createConfigMapProp(sysProps));
@@ -675,7 +679,7 @@ public class KubeServiceImpl implements KubeService {
 		return configMapDataProp;
 	}
 	
-	private String patchConfigMap(String name, String dataKey, String origData, String newData) {
+	private void patchConfigMap(String name, String dataKey, String origData, String newData) {
 		CoreV1Api api = new CoreV1Api();
 		String namespace = kubeNamespace; // String | object name and auth scope, such as for teams and projects
 		String pretty = "true"; // String | If 'true', then the output is pretty printed.
@@ -685,18 +689,18 @@ public class KubeServiceImpl implements KubeService {
 		} else {
 			combinedData = origData + "\n" + newData;
 		}
+		System.out.println("  combinedData: " + combinedData);
 		String jsonPatchStr = "{\"op\":\"add\",\"path\":\"/data/" + dataKey + "\",\"value\":\"" + combinedData + "\"}";
+		System.out.println("  jsonPatchStr: " + jsonPatchStr);
 		ArrayList<JsonObject> arr = new ArrayList<>();
 	    arr.add(((JsonElement) (new Gson()).fromJson(jsonPatchStr, JsonElement.class)).getAsJsonObject());
 		try {
 		    V1ConfigMap result = api.patchNamespacedConfigMap(name, namespace, arr, pretty);
 		    System.out.println(result);
-		    return "success"; // need to update with the status from result once its printed out and understood
 		} catch (ApiException e) {
 		    System.err.println("Exception when calling CoreV1Api#patchNamespacedConfigMap");
 		    e.printStackTrace();
 		}
-		return "fail"; // need to update with the status from result once its printed out and understood
 	}
 	
 	@Override
