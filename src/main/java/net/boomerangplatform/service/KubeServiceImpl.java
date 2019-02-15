@@ -683,17 +683,14 @@ public class KubeServiceImpl implements KubeService {
 		CoreV1Api api = new CoreV1Api();
 		String namespace = kubeNamespace; // String | object name and auth scope, such as for teams and projects
 		String pretty = "true"; // String | If 'true', then the output is pretty printed.
-		String combinedData = "";
-		if (origData.endsWith("\n")) {
-			combinedData = origData + newData;
-		} else {
-			combinedData = origData + "\n" + newData;
-		}
-		System.out.println("  combinedData: " + combinedData);
-		String jsonPatchStr = "{\"op\":\"add\",\"path\":\"/data/" + dataKey + "\",\"value\":\"" + combinedData + "\"}";
-		System.out.println("  jsonPatchStr: " + jsonPatchStr);
+
+		JsonObject jsonPatchObj = new JsonObject();
+		jsonPatchObj.addProperty("op", "add");
+		jsonPatchObj.addProperty("path", "/data/" + dataKey);
+		jsonPatchObj.addProperty("value", origData.endsWith("\n") ? origData + newData : origData + "\n" + newData);
+		
 		ArrayList<JsonObject> arr = new ArrayList<>();
-	    arr.add(((JsonElement) (new Gson()).fromJson(jsonPatchStr, JsonElement.class)).getAsJsonObject());
+	    arr.add(((JsonElement) (new Gson()).fromJson(jsonPatchObj.toString(), JsonElement.class)).getAsJsonObject());
 		try {
 		    V1ConfigMap result = api.patchNamespacedConfigMap(name, namespace, arr, pretty);
 		    System.out.println(result);
