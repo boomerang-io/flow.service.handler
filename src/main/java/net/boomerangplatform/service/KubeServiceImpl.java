@@ -342,7 +342,7 @@ public class KubeServiceImpl implements KubeService {
 			for (Watch.Response<V1Job> item : watch) {
 				System.out.println(item.type + " : " + item.object.getMetadata().getName());
 				System.out.println(item.object.getStatus());
-				if (!item.object.getStatus().getConditions().isEmpty() && item.object.getStatus().getSucceeded() != null && item.object.getStatus().getSucceeded() >= 1) {
+				if (item.object.getStatus().getConditions() != null && !item.object.getStatus().getConditions().isEmpty() && item.object.getStatus().getSucceeded() != null && item.object.getStatus().getSucceeded() >= 1) {
 ////					for (V1Container container : item.object.getSpec().getTemplate().getSpec().getContainers()) {
 ////						System.out.println("Container Name: " + container.getName());
 ////						System.out.println("Container Image: " + container.getImage());
@@ -355,12 +355,12 @@ public class KubeServiceImpl implements KubeService {
 ////					throw new Exception("Task (" + taskId + ") has failed to execute " + kubeWorkerJobFailLimit + " times triggering failure");
 //				} else if (item.object.getStatus().getFailed() != null && item.object.getStatus().getFailed() == 1) {
 //					break;
-				} else if (!item.object.getStatus().getConditions().isEmpty() && item.object.getStatus().getFailed() != null && item.object.getStatus().getFailed() >= 1) {
+				} else if (item.object.getStatus().getConditions() != null && !item.object.getStatus().getConditions().isEmpty() && item.object.getStatus().getFailed() != null && item.object.getStatus().getFailed() >= 1) {
 					System.out.println("Job Failed");
 					result = "1";
 					break;
 				}
-				if (!item.object.getStatus().getConditions().isEmpty()) {
+				if (item.object.getStatus().getConditions() != null && !item.object.getStatus().getConditions().isEmpty()) {
 					System.out.println(item.object.getStatus().getConditions().get(0));
 				}
 			}
