@@ -93,8 +93,8 @@ public class KubeServiceImpl implements KubeService {
 	@Value("${kube.worker.pvc.initialSize}")
 	private String kubeWorkerPVCInitialSize;
 	
-	@Value("${kube.worker.job.faillimit}")
-	private Integer kubeWorkerJobFailLimit;
+	@Value("${kube.worker.job.backOffLimit}")
+	private Integer kubeWorkerJobBackOffLimit;
 	
 	@Value("${kube.worker.debug}")
 	private Boolean kubeWorkerDebug;
@@ -124,6 +124,8 @@ public class KubeServiceImpl implements KubeService {
 	
 	final static String API_PRETTY = "true";
 	
+	final static Boolean API_INCLUDEUNINITIALIZED = false;
+	
 	//TODO most likely remove
 	@Override
 	public V1NamespaceList getAllNamespaces() {
@@ -142,11 +144,8 @@ public class KubeServiceImpl implements KubeService {
 	public V1JobList getAllJobs() {
 		V1JobList list = new V1JobList();
 
-		String namespace = kubeNamespace;
-		String pretty = "true";
 		String _continue = "";
 		String fieldSelector = "";
-		Boolean includeUninitialized = false;
 		String labelSelector = "";
 		Integer limit = 25;
 		String resourceVersion = "";
@@ -155,7 +154,7 @@ public class KubeServiceImpl implements KubeService {
 
 		try {
 			BatchV1Api api = new BatchV1Api();
-			list = api.listNamespacedJob(namespace, pretty, _continue, fieldSelector, includeUninitialized,
+			list = api.listNamespacedJob(kubeNamespace, API_INCLUDEUNINITIALIZED, API_PRETTY, _continue, fieldSelector,
 					labelSelector, limit, resourceVersion, timeoutSeconds, watch);
 
 		} catch (ApiException e) {
@@ -302,14 +301,14 @@ public class KubeServiceImpl implements KubeService {
 		podMetadata.labels(createLabels(workflowName, workflowId, workflowActivityId, taskId));
 		templateSpec.metadata(podMetadata);
 		
-		jobSpec.backoffLimit(1);
+		jobSpec.backoffLimit(kubeWorkerJobBackOffLimit);
 		jobSpec.template(templateSpec);
 		body.spec(jobSpec);
 		
 		V1Job jobResult = new V1Job();
 		try {
 			BatchV1Api api = new BatchV1Api();
-			jobResult = api.createNamespacedJob(kubeNamespace, body, API_PRETTY);
+			jobResult = api.createNamespacedJob(kubeNamespace, body, API_INCLUDEUNINITIALIZED, API_PRETTY, null);
 		} catch (ApiException e) {
 			if (e.getCause() instanceof SocketTimeoutException) {
 				SocketTimeoutException ste = (SocketTimeoutException) e.getCause();
@@ -329,55 +328,53 @@ public class KubeServiceImpl implements KubeService {
 	}
 	
 	@Override
-	public String watchJob(String workflowId, String workflowActivityId, String taskId) throws Exception {		
+	public V1Job watchJob(String workflowId, String workflowActivityId, String taskId) throws Exception {		
 		BatchV1Api api = new BatchV1Api();
 
+		String labelSelector = "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId+",task-id="+taskId;
+
 		Watch<V1Job> watch = Watch.createWatch(
-				createWatcherApiClient(), api.listNamespacedJobCall(kubeNamespace, "true", null, null, null,
-						"org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId+",task-id="+taskId, null, null, null, true, null, null),
+				createWatcherApiClient(), api.listNamespacedJobCall(kubeNamespace, API_INCLUDEUNINITIALIZED, API_PRETTY, null, null, labelSelector, null, null, null, true, null, null),
 				new TypeToken<Watch.Response<V1Job>>() {
 				}.getType());
-		String result = "1";
+		
+		V1Job jobResult = new V1Job();
 		try {
 			for (Watch.Response<V1Job> item : watch) {
 				System.out.println(item.type + " : " + item.object.getMetadata().getName());
 				System.out.println(item.object.getStatus());
-				if (item.object.getStatus().getSucceeded() != null && item.object.getStatus().getSucceeded() == 1) {
-					for (V1Container container : item.object.getSpec().getTemplate().getSpec().getContainers()) {
-						System.out.println("Container Name: " + container.getName());
-						System.out.println("Container Image: " + container.getImage());
+				if (item.object.getStatus().getConditions() != null && !item.object.getStatus().getConditions().isEmpty()) {
+					if (item.object.getStatus().getConditions().get(0).getType().equals("Complete")) {
+						jobResult = item.object;
+						break;
+					} else if (item.object.getStatus().getConditions().get(0).getType().equals("Failed")) {
+						throw new Exception("Task (" + taskId + ") has failed to execute " + kubeWorkerJobBackOffLimit + " times triggering failure.");
 					}
-					result = "0";
-					break;
-				} else if (item.object.getStatus().getFailed() != null && item.object.getStatus().getFailed() >= kubeWorkerJobFailLimit) {
-					//Implement manual check for failure as backOffLimit is not being respected in Kubernetes 1.10.4 and below
-					throw new Exception("Task (" + taskId + ") has failed to execute " + kubeWorkerJobFailLimit + " times triggering failure");
 				}
 			}
 		} finally {
 			watch.close();
 		}
-		getJobPod(workflowId, workflowActivityId);
-		return result;
+//		getJobPod(workflowId, workflowActivityId);
+		return jobResult;
 	}
 	
-	//Does not work
-	private void getJobPod(String workflowId, String workflowActivityId) {		
-		CoreV1Api api = new CoreV1Api();
-		String namespace = kubeNamespace; // String | object name and auth scope, such as for teams and projects
-		String pretty = "true"; // String | If 'true', then the output is pretty printed.
-		
-		try {
-			V1PodList podList = api.listNamespacedPod(namespace, pretty, null, null, null, "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId, null, null, 60, false);
-			podList.getItems().forEach(pod -> {
-				System.out.println(pod.toString());
-				System.out.println(" pod Name: " + pod.getMetadata().getName());
-			});
-		} catch (ApiException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
+	//Commenting out to determine if it is needed. This was in there as a delay.
+//	private void getJobPod(String workflowId, String workflowActivityId) {		
+//		CoreV1Api api = new CoreV1Api();
+//		String labelSelector = "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId;
+//		
+//		try {
+//			V1PodList podList = api.listNamespacedPod(kubeNamespace, API_INCLUDEUNINITIALIZED, API_PRETTY, null, null, labelSelector, null, null, 60, false);
+//			podList.getItems().forEach(pod -> {
+//				System.out.println(pod.toString());
+//				System.out.println(" pod Name: " + pod.getMetadata().getName());
+//			});
+//		} catch (ApiException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+//	}
 	
 	@Override
 	public String getPodLog(String workflowId, String workflowActivityId, String taskId) throws ApiException, IOException {		
@@ -387,7 +384,7 @@ public class KubeServiceImpl implements KubeService {
 	    PodLogs logs = new PodLogs();
 	    List<V1Pod> listOfPods = 
 	    		api
-	            .listNamespacedPod(kubeNamespace, API_PRETTY, null, null, null, labelSelector, null, null, 60, false)
+	            .listNamespacedPod(kubeNamespace, API_INCLUDEUNINITIALIZED, API_PRETTY, null, null, labelSelector, null, null, 60, false)
 	            .getItems();
 	    V1Pod pod = new V1Pod();
 	    ByteArrayOutputStream baos = new ByteArrayOutputStream(); 
@@ -409,7 +406,7 @@ public class KubeServiceImpl implements KubeService {
 	    PodLogs logs = new PodLogs();
 	    V1Pod pod = 
 	    		api
-	            .listNamespacedPod(kubeNamespace, API_PRETTY, null, null, null, labelSelector, null, null, 60, false)
+	            .listNamespacedPod(kubeNamespace, API_INCLUDEUNINITIALIZED, API_PRETTY, null, null, labelSelector, null, null, 60, false)
 	            .getItems()
 	            .get(0);
 
@@ -431,8 +428,6 @@ public class KubeServiceImpl implements KubeService {
 	public V1PersistentVolumeClaim createPVC(String workflowName, String workflowId, String workflowActivityId, String pvcSize) throws ApiException {
 		// Setup	
 		CoreV1Api api = new CoreV1Api();
-		String namespace = kubeNamespace; // String | object name and auth scope, such as for teams and projects
-		String pretty = "true"; // String | If 'true', then the output is pretty printed.
 		V1PersistentVolumeClaim body = new V1PersistentVolumeClaim(); // V1PersistentVolumeClaim |
 
 		// Create Metadata
@@ -458,7 +453,7 @@ public class KubeServiceImpl implements KubeService {
 		body.spec(pvcSpec);
 		
 		V1PersistentVolumeClaim result = new V1PersistentVolumeClaim();
-	    result = api.createNamespacedPersistentVolumeClaim(namespace, body, pretty);
+	    result = api.createNamespacedPersistentVolumeClaim(kubeNamespace, body, API_INCLUDEUNINITIALIZED, API_PRETTY, null);
 	    System.out.println(result);
 	    return result;
 	}
@@ -466,9 +461,10 @@ public class KubeServiceImpl implements KubeService {
 	@Override
 	public V1PersistentVolumeClaimStatus watchPVC(String workflowId, String workflowActivityId) throws ApiException, IOException {
 		CoreV1Api api = new CoreV1Api();
+		String labelSelector = "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId;
 		
 		Watch<V1PersistentVolumeClaim> watch = Watch.createWatch(
-				createWatcherApiClient(), api.listNamespacedPersistentVolumeClaimCall(kubeNamespace, "true", null, null, null, "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId, null, null, null, true, null, null),
+				createWatcherApiClient(), api.listNamespacedPersistentVolumeClaimCall(kubeNamespace, API_INCLUDEUNINITIALIZED, API_PRETTY, null, null, labelSelector, null, null, null, true, null, null),
 				new TypeToken<Watch.Response<V1PersistentVolumeClaim>>() {
 				}.getType());
 		V1PersistentVolumeClaimStatus result = null;
@@ -492,11 +488,9 @@ public class KubeServiceImpl implements KubeService {
 		CoreV1Api api = new CoreV1Api();
 		V1DeleteOptions deleteOptions = new V1DeleteOptions();
 		V1Status result = new V1Status();
-		String namespace = kubeNamespace; // String | object name and auth scope, such as for teams and projects
-		String pretty = "true"; // String | If 'true', then the output is pretty printed.
 		
 		try {
-			result = api.deleteNamespacedPersistentVolumeClaim(getPVCName(workflowId, workflowActivityId), namespace, deleteOptions, pretty, null, null, null);
+			result = api.deleteNamespacedPersistentVolumeClaim(getPVCName(workflowId, workflowActivityId), kubeNamespace, deleteOptions, API_PRETTY, null, null, null, null);
 		} catch (JsonSyntaxException e) {
             if (e.getCause() instanceof IllegalStateException) {
                 IllegalStateException ise = (IllegalStateException) e.getCause();
@@ -516,11 +510,10 @@ public class KubeServiceImpl implements KubeService {
 	
 	private String getPVCName(String workflowId, String workflowActivityId) {
 		CoreV1Api api = new CoreV1Api();
-		String namespace = kubeNamespace; // String | object name and auth scope, such as for teams and projects
-		String pretty = "true"; // String | If 'true', then the output is pretty printed.
+		String labelSelector = "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId;
 		
 		try {
-			V1PersistentVolumeClaimList persistentVolumeClaimList = api.listNamespacedPersistentVolumeClaim(namespace, pretty, null, null, null, "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId, null, null, 60, false);
+			V1PersistentVolumeClaimList persistentVolumeClaimList = api.listNamespacedPersistentVolumeClaim(kubeNamespace, API_INCLUDEUNINITIALIZED, API_PRETTY, null, null, labelSelector, null, null, 60, false);
 			persistentVolumeClaimList.getItems().forEach(pvc -> {
 				System.out.println(pvc.toString());
 				System.out.println(" PVC Name: " + pvc.getMetadata().getName());
@@ -597,7 +590,7 @@ public class KubeServiceImpl implements KubeService {
 		//Create ConfigMap
 		V1ConfigMap result = new V1ConfigMap();
 		try {
-		    result = api.createNamespacedConfigMap(kubeNamespace, body, API_PRETTY);
+		    result = api.createNamespacedConfigMap(kubeNamespace, body, API_INCLUDEUNINITIALIZED, API_PRETTY, null);
 		    System.out.println(result);
 		} catch (ApiException e) {
 		    System.err.println("Exception when calling CoreV1Api#createNamespacedConfigMap");
@@ -618,7 +611,7 @@ public class KubeServiceImpl implements KubeService {
 		System.out.println("  labelSelector: " + labelSelector);
 		
 		Watch<V1ConfigMap> watch = Watch.createWatch(
-				createWatcherApiClient(), api.listNamespacedConfigMapCall(kubeNamespace, API_PRETTY, null, null, null, labelSelector, null, null, null, true, null, null),
+				createWatcherApiClient(), api.listNamespacedConfigMapCall(kubeNamespace, API_INCLUDEUNINITIALIZED, API_PRETTY, null, null, labelSelector, null, null, null, true, null, null),
 				new TypeToken<Watch.Response<V1ConfigMap>>() {
 				}.getType());
 		V1ConfigMap result = null;
@@ -645,7 +638,7 @@ public class KubeServiceImpl implements KubeService {
 		System.out.println("  task-id: " + taskId);
 		System.out.println("  labelSelector: " + labelSelector);
 		try {
-			V1ConfigMapList configMapList = api.listNamespacedConfigMap(kubeNamespace, API_PRETTY, null, null, null, labelSelector, null, null, 60, false);
+			V1ConfigMapList configMapList = api.listNamespacedConfigMap(kubeNamespace, API_INCLUDEUNINITIALIZED, API_PRETTY, null, null, labelSelector, null, null, 60, false);
 			configMapList.getItems().forEach(cfgmap -> {
 				System.out.println(cfgmap.toString());
 			});
@@ -681,8 +674,6 @@ public class KubeServiceImpl implements KubeService {
 	
 	private void patchConfigMap(String name, String dataKey, String origData, String newData) {
 		CoreV1Api api = new CoreV1Api();
-		String namespace = kubeNamespace; // String | object name and auth scope, such as for teams and projects
-		String pretty = "true"; // String | If 'true', then the output is pretty printed.
 
 		JsonObject jsonPatchObj = new JsonObject();
 		jsonPatchObj.addProperty("op", "add");
@@ -692,7 +683,7 @@ public class KubeServiceImpl implements KubeService {
 		ArrayList<JsonObject> arr = new ArrayList<>();
 	    arr.add(((JsonElement) (new Gson()).fromJson(jsonPatchObj.toString(), JsonElement.class)).getAsJsonObject());
 		try {
-		    V1ConfigMap result = api.patchNamespacedConfigMap(name, namespace, arr, pretty);
+		    V1ConfigMap result = api.patchNamespacedConfigMap(name, kubeNamespace, arr, API_PRETTY, null);
 		    System.out.println(result);
 		} catch (ApiException e) {
 		    System.err.println("Exception when calling CoreV1Api#patchNamespacedConfigMap");
@@ -737,8 +728,7 @@ public class KubeServiceImpl implements KubeService {
 		System.out.println("  Configmap to delete: " + name);
 		
 		try {
-			//result = api.deleteNamespacedConfigMap(getConfigMapName(getConfigMap(workflowId, workflowActivityId, taskId)), kubeNamespace, deleteOptions, API_PRETTY, null, null, null);
-			result = api.deleteNamespacedConfigMap(name, kubeNamespace, deleteOptions, API_PRETTY, null, null, null);
+			result = api.deleteNamespacedConfigMap(name, kubeNamespace, deleteOptions, API_PRETTY, null, null, null, null);
 		} catch (JsonSyntaxException e) {
             if (e.getCause() instanceof IllegalStateException) {
                 IllegalStateException ise = (IllegalStateException) e.getCause();
