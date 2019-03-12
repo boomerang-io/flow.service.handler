@@ -343,16 +343,19 @@ public class KubeServiceImpl implements KubeService {
 				System.out.println(item.type + " : " + item.object.getMetadata().getName());
 				System.out.println(item.object.getStatus());
 				if (item.object.getStatus().getSucceeded() != null && item.object.getStatus().getSucceeded() == 1) {
-//					for (V1Container container : item.object.getSpec().getTemplate().getSpec().getContainers()) {
-//						System.out.println("Container Name: " + container.getName());
-//						System.out.println("Container Image: " + container.getImage());
-//					}
+////					for (V1Container container : item.object.getSpec().getTemplate().getSpec().getContainers()) {
+////						System.out.println("Container Name: " + container.getName());
+////						System.out.println("Container Image: " + container.getImage());
+////					}
 					result = "0";
 					break;
-//				} else if (item.object.getStatus().getFailed() != null && item.object.getStatus().getFailed() >= kubeWorkerJobFailLimit) {
-//					//Implement manual check for failure as backOffLimit is not being respected in Kubernetes 1.10.4 and below
-//					throw new Exception("Task (" + taskId + ") has failed to execute " + kubeWorkerJobFailLimit + " times triggering failure");
-				} else if (item.object.getStatus().getFailed() != null && item.object.getStatus().getFailed() == 1) {
+////				} else if (item.object.getStatus().getFailed() != null && item.object.getStatus().getFailed() >= kubeWorkerJobFailLimit) {
+////					//Implement manual check for failure as backOffLimit is not being respected in Kubernetes 1.10.4 and below
+////					throw new Exception("Task (" + taskId + ") has failed to execute " + kubeWorkerJobFailLimit + " times triggering failure");
+//				} else if (item.object.getStatus().getFailed() != null && item.object.getStatus().getFailed() == 1) {
+//					break;
+				} else if (item.object.getStatus().getActive() == null && item.object.getStatus().getFailed() >= 1) {
+					result = "1";
 					break;
 				}
 			}
