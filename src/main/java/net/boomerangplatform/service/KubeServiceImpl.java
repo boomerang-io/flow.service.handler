@@ -93,8 +93,8 @@ public class KubeServiceImpl implements KubeService {
 	@Value("${kube.worker.pvc.initialSize}")
 	private String kubeWorkerPVCInitialSize;
 	
-	@Value("${kube.worker.job.faillimit}")
-	private Integer kubeWorkerJobFailLimit;
+	@Value("${kube.worker.job.backOffLimit}")
+	private Integer kubeWorkerJobBackOffLimit;
 	
 	@Value("${kube.worker.debug}")
 	private Boolean kubeWorkerDebug;
@@ -301,7 +301,7 @@ public class KubeServiceImpl implements KubeService {
 		podMetadata.labels(createLabels(workflowName, workflowId, workflowActivityId, taskId));
 		templateSpec.metadata(podMetadata);
 		
-		jobSpec.backoffLimit(1);
+		jobSpec.backoffLimit(kubeWorkerJobBackOffLimit);
 		jobSpec.template(templateSpec);
 		body.spec(jobSpec);
 		
@@ -328,7 +328,7 @@ public class KubeServiceImpl implements KubeService {
 	}
 	
 	@Override
-	public String watchJob(String workflowId, String workflowActivityId, String taskId) throws Exception {		
+	public V1Job watchJob(String workflowId, String workflowActivityId, String taskId) throws Exception {		
 		BatchV1Api api = new BatchV1Api();
 
 		String labelSelector = "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId+",task-id="+taskId;
@@ -337,38 +337,39 @@ public class KubeServiceImpl implements KubeService {
 				createWatcherApiClient(), api.listNamespacedJobCall(kubeNamespace, API_INCLUDEUNINITIALIZED, API_PRETTY, null, null, labelSelector, null, null, null, true, null, null),
 				new TypeToken<Watch.Response<V1Job>>() {
 				}.getType());
-		String result = "1";
+		
+		V1Job jobResult = new V1Job();
 		try {
 			for (Watch.Response<V1Job> item : watch) {
 				System.out.println(item.type + " : " + item.object.getMetadata().getName());
 				System.out.println(item.object.getStatus());
-				if (item.object.getStatus().getConditions() != null && !item.object.getStatus().getConditions().isEmpty() && item.object.getStatus().getSucceeded() != null && item.object.getStatus().getSucceeded() >= 1) {
-////					for (V1Container container : item.object.getSpec().getTemplate().getSpec().getContainers()) {
-////						System.out.println("Container Name: " + container.getName());
-////						System.out.println("Container Image: " + container.getImage());
-////					}
-					System.out.println("Job Succeeded");
-					result = "0";
-					break;
-////				} else if (item.object.getStatus().getFailed() != null && item.object.getStatus().getFailed() >= kubeWorkerJobFailLimit) {
-////					//Implement manual check for failure as backOffLimit is not being respected in Kubernetes 1.10.4 and below
-////					throw new Exception("Task (" + taskId + ") has failed to execute " + kubeWorkerJobFailLimit + " times triggering failure");
-//				} else if (item.object.getStatus().getFailed() != null && item.object.getStatus().getFailed() == 1) {
-//					break;
-				} else if (item.object.getStatus().getConditions() != null && !item.object.getStatus().getConditions().isEmpty() && item.object.getStatus().getFailed() != null && item.object.getStatus().getFailed() >= 1) {
-					System.out.println("Job Failed");
-					result = "1";
-					break;
-				}
 				if (item.object.getStatus().getConditions() != null && !item.object.getStatus().getConditions().isEmpty()) {
-					System.out.println(item.object.getStatus().getConditions().get(0));
+					if (item.object.getStatus().getConditions().get(0).getType().equals("Complete")) {
+//					if (item.object.getStatus().getSucceeded() != null && item.object.getStatus().getSucceeded() >= 1) {
+	////					for (V1Container container : item.object.getSpec().getTemplate().getSpec().getContainers()) {
+	////						System.out.println("Container Name: " + container.getName());
+	////						System.out.println("Container Image: " + container.getImage());
+	////					}
+						jobResult = item.object;
+						System.out.println("Job Succeeded");
+						break;
+	////				} else if (item.object.getStatus().getFailed() != null && item.object.getStatus().getFailed() >= kubeWorkerJobFailLimit) {
+	////					//Implement manual check for failure as backOffLimit is not being respected in Kubernetes 1.10.4 and below
+	////					throw new Exception("Task (" + taskId + ") has failed to execute " + kubeWorkerJobFailLimit + " times triggering failure");
+	//				} else if (item.object.getStatus().getFailed() != null && item.object.getStatus().getFailed() == 1) {
+	//					break;
+//					} else if (item.object.getStatus().getFailed() != null && item.object.getStatus().getFailed() >= 1) {
+					} else if (item.object.getStatus().getConditions().get(0).getType().equals("Failed")) {
+						System.out.println("Job Failed");
+						throw new Exception("Task (" + taskId + ") has failed to execute " + kubeWorkerJobBackOffLimit + " times triggering failure.");
+					}
 				}
 			}
 		} finally {
 			watch.close();
 		}
 		getJobPod(workflowId, workflowActivityId);
-		return result;
+		return jobResult;
 	}
 	
 	//Does not work

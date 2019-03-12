@@ -22,7 +22,7 @@ public interface KubeService {
 	V1NamespaceList getAllNamespaces();
 	V1JobList getAllJobs();
 	void watchNamespace() throws ApiException, IOException;
-	String watchJob(String workflowId, String workflowActivityId, String taskId) throws Exception;
+	V1Job watchJob(String workflowId, String workflowActivityId, String taskId) throws Exception;
 	V1PersistentVolumeClaim createPVC(String workflowName, String workflowId, String workflowActivityId, String pvcSize) throws ApiException, IOException;
 	V1Status deletePVC(String workflowId, String workflowActivityId);
 	V1PersistentVolumeClaimStatus watchPVC(String workflowId, String workflowActivityId) throws ApiException, IOException;
