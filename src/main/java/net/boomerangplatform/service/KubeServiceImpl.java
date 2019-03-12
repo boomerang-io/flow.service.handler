@@ -345,22 +345,9 @@ public class KubeServiceImpl implements KubeService {
 				System.out.println(item.object.getStatus());
 				if (item.object.getStatus().getConditions() != null && !item.object.getStatus().getConditions().isEmpty()) {
 					if (item.object.getStatus().getConditions().get(0).getType().equals("Complete")) {
-//					if (item.object.getStatus().getSucceeded() != null && item.object.getStatus().getSucceeded() >= 1) {
-	////					for (V1Container container : item.object.getSpec().getTemplate().getSpec().getContainers()) {
-	////						System.out.println("Container Name: " + container.getName());
-	////						System.out.println("Container Image: " + container.getImage());
-	////					}
 						jobResult = item.object;
-						System.out.println("Job Succeeded");
 						break;
-	////				} else if (item.object.getStatus().getFailed() != null && item.object.getStatus().getFailed() >= kubeWorkerJobFailLimit) {
-	////					//Implement manual check for failure as backOffLimit is not being respected in Kubernetes 1.10.4 and below
-	////					throw new Exception("Task (" + taskId + ") has failed to execute " + kubeWorkerJobFailLimit + " times triggering failure");
-	//				} else if (item.object.getStatus().getFailed() != null && item.object.getStatus().getFailed() == 1) {
-	//					break;
-//					} else if (item.object.getStatus().getFailed() != null && item.object.getStatus().getFailed() >= 1) {
 					} else if (item.object.getStatus().getConditions().get(0).getType().equals("Failed")) {
-						System.out.println("Job Failed");
 						throw new Exception("Task (" + taskId + ") has failed to execute " + kubeWorkerJobBackOffLimit + " times triggering failure.");
 					}
 				}
@@ -368,26 +355,26 @@ public class KubeServiceImpl implements KubeService {
 		} finally {
 			watch.close();
 		}
-		getJobPod(workflowId, workflowActivityId);
+//		getJobPod(workflowId, workflowActivityId);
 		return jobResult;
 	}
 	
-	//Does not work
-	private void getJobPod(String workflowId, String workflowActivityId) {		
-		CoreV1Api api = new CoreV1Api();
-		String labelSelector = "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId;
-		
-		try {
-			V1PodList podList = api.listNamespacedPod(kubeNamespace, API_INCLUDEUNINITIALIZED, API_PRETTY, null, null, labelSelector, null, null, 60, false);
-			podList.getItems().forEach(pod -> {
-				System.out.println(pod.toString());
-				System.out.println(" pod Name: " + pod.getMetadata().getName());
-			});
-		} catch (ApiException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
+	//Commenting out to determine if it is needed. This was in there as a delay.
+//	private void getJobPod(String workflowId, String workflowActivityId) {		
+//		CoreV1Api api = new CoreV1Api();
+//		String labelSelector = "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId;
+//		
+//		try {
+//			V1PodList podList = api.listNamespacedPod(kubeNamespace, API_INCLUDEUNINITIALIZED, API_PRETTY, null, null, labelSelector, null, null, 60, false);
+//			podList.getItems().forEach(pod -> {
+//				System.out.println(pod.toString());
+//				System.out.println(" pod Name: " + pod.getMetadata().getName());
+//			});
+//		} catch (ApiException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+//	}
 	
 	@Override
 	public String getPodLog(String workflowId, String workflowActivityId, String taskId) throws ApiException, IOException {		
