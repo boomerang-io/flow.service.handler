@@ -1,6 +1,5 @@
 package net.boomerangplatform.kube.service;
 
-import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -9,15 +8,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
-import io.kubernetes.client.ApiException;
-import io.kubernetes.client.apis.BatchV1Api;
 import io.kubernetes.client.models.V1ConfigMap;
 import io.kubernetes.client.models.V1ConfigMapProjection;
 import io.kubernetes.client.models.V1Container;
 import io.kubernetes.client.models.V1EnvVar;
 import io.kubernetes.client.models.V1Job;
 import io.kubernetes.client.models.V1JobSpec;
-import io.kubernetes.client.models.V1JobStatus;
 import io.kubernetes.client.models.V1LocalObjectReference;
 import io.kubernetes.client.models.V1ObjectMeta;
 import io.kubernetes.client.models.V1PersistentVolumeClaimVolumeSource;
@@ -35,8 +31,10 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
 	@Value("${kube.image}")
 	private String kubeImage;
 	
+	final static String PREFIX = "bmrg-flow-";
+	
 	@Override
-	public V1Job createJob(String workflowName, String workflowId, String activityId,String taskName, String taskId, List<String> arguments, Map<String, String> taskInputProperties) {
+	protected V1Job createJobBody(String workflowName, String workflowId, String activityId,String taskName, String taskId, List<String> arguments, Map<String, String> taskInputProperties) {
 
 		// Set Variables
 		final String volMountPath = "/data";
@@ -175,25 +173,16 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
 		jobSpec.template(templateSpec);
 		body.spec(jobSpec);
 		
-		V1Job jobResult = new V1Job();
-		try {
-			BatchV1Api api = new BatchV1Api();
-			jobResult = api.createNamespacedJob(kubeNamespace, body, API_INCLUDEUNINITIALIZED, API_PRETTY, null);
-		} catch (ApiException e) {
-			if (e.getCause() instanceof SocketTimeoutException) {
-				SocketTimeoutException ste = (SocketTimeoutException) e.getCause();
-                if (ste.getMessage() != null && ste.getMessage().contains("timeout")) {
-                	System.out.println("Catching timeout and return as task error");
-                	V1JobStatus badStatus = new V1JobStatus();
-                	return body.status(badStatus.failed(1));
-            	} else {
-	                e.printStackTrace();
-            	}
-            } else {
-                e.printStackTrace();
-        	}
-		}
-		
-		return jobResult;
+		return body;
 	}
+	
+	  protected String getLabelSelector(String workflowId, String workflowActivityId) {
+		    String labelSelector = "org=bmrg,app="+PREFIX+",workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId;
+		    return labelSelector;
+		  }
+	
+	  protected String getLabelSelector(String workflowId, String workflowActivityId, String taskId) {
+		    String labelSelector = "org=bmrg,app="+PREFIX+",workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId+",task-id="+taskId;
+		    return labelSelector;
+		  }
 }

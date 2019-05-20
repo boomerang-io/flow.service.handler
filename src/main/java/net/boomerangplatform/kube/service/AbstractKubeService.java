@@ -36,4 +36,5 @@ public interface AbstractKubeService {
 			String taskId) throws ApiException, IOException;
 	void patchTaskConfigMap(String workflowId, String workflowActivityId, String taskId, String taskName,
 			Map<String, String> properties);
+
 }

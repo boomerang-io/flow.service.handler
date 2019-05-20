@@ -25,7 +25,7 @@ public class CICDControllerServiceImpl implements ControllerService {
 	
 	@Override
 	public Response createWorkflow(Workflow workflow) {
-		Response response = new Response("0","Workflow Activity (" + workflow.getWorkflowActivityId() + ") has been created successfully.");
+		Response response = new Response("0","Component Activity (" + workflow.getWorkflowActivityId() + ") has been created successfully.");
 		try {
 			if (workflow.getWorkflowStorage().getEnable()) {
 				kubeService.createPVC(workflow.getWorkflowName(), workflow.getWorkflowId(), workflow.getWorkflowActivityId(), workflow.getWorkflowStorage().getSize());
@@ -43,7 +43,7 @@ public class CICDControllerServiceImpl implements ControllerService {
 	
 	@Override
 	public Response terminateWorkflow(Workflow workflow) {
-		Response response = new Response("0","Workflow Activity (" + workflow.getWorkflowActivityId() + ") has been terminated successfully.");
+		Response response = new Response("0","Component Activity (" + workflow.getWorkflowActivityId() + ") has been terminated successfully.");
 		try {
 			kubeService.deletePVC(workflow.getWorkflowId(), workflow.getWorkflowActivityId());
 			kubeService.deleteConfigMap(workflow.getWorkflowId(), workflow.getWorkflowActivityId(), null);

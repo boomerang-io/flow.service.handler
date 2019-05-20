@@ -3,6 +3,7 @@ package net.boomerangplatform.kube.service;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -36,6 +37,7 @@ import io.kubernetes.client.models.V1ConfigMapList;
 import io.kubernetes.client.models.V1DeleteOptions;
 import io.kubernetes.client.models.V1EnvVar;
 import io.kubernetes.client.models.V1Job;
+import io.kubernetes.client.models.V1JobStatus;
 import io.kubernetes.client.models.V1ObjectMeta;
 import io.kubernetes.client.models.V1PersistentVolumeClaim;
 import io.kubernetes.client.models.V1PersistentVolumeClaimList;
@@ -59,6 +61,12 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	
 	@Value("${kube.api.type}")
 	protected String kubeApiType;
+	
+	@Value("${kube.api.pretty}")
+	private String kubeApiPretty;
+
+	@Value("${kube.api.includeunitialized}")
+	protected Boolean kubeApiIncludeuninitialized;
 
 	@Value("${kube.namespace}")
 	protected String kubeNamespace;
@@ -90,7 +98,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	@Value("${controller.service.host}")
 	protected String bmrgControllerServiceURL;
 	
-	final static String PREFIX = "bmrg-flow-";
+	final static String PREFIX = "bmrg-";
 	
 	final static String PREFIX_CFGMAP = PREFIX + "cfg-";
 	
@@ -103,16 +111,42 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	final static Boolean API_INCLUDEUNINITIALIZED = false;
 	
 	@Override
-	public abstract V1Job createJob(String workflowName, String workflowId, String workflowActivityId,String taskName, String taskId, List<String> arguments, Map<String, String> taskInputProperties);
+	public V1Job createJob(String workflowName, String workflowId, String workflowActivityId,String taskName, String taskId, List<String> arguments, Map<String, String> taskInputProperties) {
+		// Initialize Job Body
+		V1Job body = createJobBody(workflowName, workflowId, workflowActivityId, taskName, taskId, arguments, taskInputProperties); // V1Job |
+		
+		V1Job jobResult = new V1Job();
+		try {
+			BatchV1Api api = new BatchV1Api();
+			jobResult = api.createNamespacedJob(kubeNamespace, body, kubeApiIncludeuninitialized, kubeApiPretty, null);
+		} catch (ApiException e) {
+			if (e.getCause() instanceof SocketTimeoutException) {
+				SocketTimeoutException ste = (SocketTimeoutException) e.getCause();
+                if (ste.getMessage() != null && ste.getMessage().contains("timeout")) {
+                	System.out.println("Catching timeout and return as task error");
+                	V1JobStatus badStatus = new V1JobStatus();
+                	return body.status(badStatus.failed(1));
+            	} else {
+	                e.printStackTrace();
+            	}
+            } else {
+                e.printStackTrace();
+        	}
+		}
+		
+		return jobResult;
+	};
+	
+	protected abstract V1Job createJobBody(String workflowName, String workflowId, String workflowActivityId,String taskName, String taskId, List<String> arguments, Map<String, String> taskInputProperties);
 	
 	@Override
 	public V1Job watchJob(String workflowId, String workflowActivityId, String taskId) throws Exception {		
 		BatchV1Api api = new BatchV1Api();
 
-		String labelSelector = "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId+",task-id="+taskId;
+		String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
 
 		Watch<V1Job> watch = Watch.createWatch(
-				createWatcherApiClient(), api.listNamespacedJobCall(kubeNamespace, API_INCLUDEUNINITIALIZED, API_PRETTY, null, null, labelSelector, null, null, null, true, null, null),
+				createWatcherApiClient(), api.listNamespacedJobCall(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null, null, labelSelector, null, null, null, true, null, null),
 				new TypeToken<Watch.Response<V1Job>>() {
 				}.getType());
 		
@@ -133,9 +167,10 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 		} finally {
 			watch.close();
 		}
-//		getJobPod(workflowId, workflowActivityId);
 		return jobResult;
 	}
+
+  protected abstract String getLabelSelector(String workflowId, String workflowActivityId, String taskId);
 	
 	//Commenting out to determine if it is needed. This was in there as a delay.
 //	private void getJobPod(String workflowId, String workflowActivityId) {		
@@ -157,12 +192,12 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	@Override
 	public String getPodLog(String workflowId, String workflowActivityId, String taskId) throws ApiException, IOException {		
 		CoreV1Api api = new CoreV1Api();
-		String labelSelector = "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId+",task-id=" + taskId;
+		String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
 
 	    PodLogs logs = new PodLogs();
 	    List<V1Pod> listOfPods = 
 	    		api
-	            .listNamespacedPod(kubeNamespace, API_INCLUDEUNINITIALIZED, API_PRETTY, null, null, labelSelector, null, null, 60, false)
+	            .listNamespacedPod(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null, null, labelSelector, null, null, 60, false)
 	            .getItems();
 	    V1Pod pod = new V1Pod();
 	    ByteArrayOutputStream baos = new ByteArrayOutputStream(); 
@@ -179,12 +214,12 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	@Override
 	public StreamingResponseBody streamPodLog(HttpServletResponse response, String workflowId, String workflowActivityId, String taskId) throws ApiException, IOException {		
 		CoreV1Api api = new CoreV1Api();
-		String labelSelector = "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId+",task-id=" + taskId;
+		String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
 
 	    PodLogs logs = new PodLogs();
 	    V1Pod pod = 
 	    		api
-	            .listNamespacedPod(kubeNamespace, API_INCLUDEUNINITIALIZED, API_PRETTY, null, null, labelSelector, null, null, 60, false)
+	            .listNamespacedPod(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null, null, labelSelector, null, null, 60, false)
 	            .getItems()
 	            .get(0);
 
@@ -206,7 +241,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	public V1PersistentVolumeClaim createPVC(String workflowName, String workflowId, String workflowActivityId, String pvcSize) throws ApiException {
 		// Setup	
 		CoreV1Api api = new CoreV1Api();
-		V1PersistentVolumeClaim body = new V1PersistentVolumeClaim(); // V1PersistentVolumeClaim |
+		V1PersistentVolumeClaim body = new V1PersistentVolumeClaim();
 
 		// Create Metadata
 		V1ObjectMeta metadata = new V1ObjectMeta();
@@ -231,7 +266,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 		body.spec(pvcSpec);
 		
 		V1PersistentVolumeClaim result = new V1PersistentVolumeClaim();
-	    result = api.createNamespacedPersistentVolumeClaim(kubeNamespace, body, API_INCLUDEUNINITIALIZED, API_PRETTY, null);
+	    result = api.createNamespacedPersistentVolumeClaim(kubeNamespace, body, kubeApiIncludeuninitialized, kubeApiPretty, null);
 	    System.out.println(result);
 	    return result;
 	}
@@ -239,10 +274,10 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	@Override
 	public V1PersistentVolumeClaimStatus watchPVC(String workflowId, String workflowActivityId) throws ApiException, IOException {
 		CoreV1Api api = new CoreV1Api();
-		String labelSelector = "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId;
+		String labelSelector = getLabelSelector(workflowId, workflowActivityId, null);
 		
 		Watch<V1PersistentVolumeClaim> watch = Watch.createWatch(
-				createWatcherApiClient(), api.listNamespacedPersistentVolumeClaimCall(kubeNamespace, API_INCLUDEUNINITIALIZED, API_PRETTY, null, null, labelSelector, null, null, null, true, null, null),
+				createWatcherApiClient(), api.listNamespacedPersistentVolumeClaimCall(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null, null, labelSelector, null, null, null, true, null, null),
 				new TypeToken<Watch.Response<V1PersistentVolumeClaim>>() {
 				}.getType());
 		V1PersistentVolumeClaimStatus result = null;
@@ -288,7 +323,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	
 	protected String getPVCName(String workflowId, String workflowActivityId) {
 		CoreV1Api api = new CoreV1Api();
-		String labelSelector = "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId;
+		String labelSelector = getLabelSelector(workflowId, workflowActivityId, null);
 		
 		try {
 			V1PersistentVolumeClaimList persistentVolumeClaimList = api.listNamespacedPersistentVolumeClaim(kubeNamespace, API_INCLUDEUNINITIALIZED, API_PRETTY, null, null, labelSelector, null, null, 60, false);
@@ -381,12 +416,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	@Override
 	public V1ConfigMap watchConfigMap(String workflowId, String workflowActivityId, String taskId) throws ApiException, IOException {
 		CoreV1Api api = new CoreV1Api();
-		String labelSelector = "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId;
-		if (taskId != null) {
-			labelSelector = labelSelector.concat(",task-id=" + taskId);
-		}
-		System.out.println("  task-id: " + taskId);
-		System.out.println("  labelSelector: " + labelSelector);
+		String labelSelector = getLabelSelector(workflowId, workflowActivityId, null);
 		
 		Watch<V1ConfigMap> watch = Watch.createWatch(
 				createWatcherApiClient(), api.listNamespacedConfigMapCall(kubeNamespace, API_INCLUDEUNINITIALIZED, API_PRETTY, null, null, labelSelector, null, null, null, true, null, null),
