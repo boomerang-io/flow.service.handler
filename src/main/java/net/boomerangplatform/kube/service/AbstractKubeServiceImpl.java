@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -46,6 +45,7 @@ import io.kubernetes.client.models.V1PersistentVolumeClaimStatus;
 import io.kubernetes.client.models.V1Pod;
 import io.kubernetes.client.models.V1ResourceRequirements;
 import io.kubernetes.client.models.V1Status;
+import io.kubernetes.client.util.Config;
 import io.kubernetes.client.util.Watch;
 
 public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
@@ -74,11 +74,17 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	@Value("${kube.image.pullPolicy}")
 	protected String kubeImagePullPolicy;
 	
+	@Value("${kube.image.pullSecret}")
+  protected String kubeImagePullSecret;
+	
 	@Value("${kube.worker.pvc.initialSize}")
 	protected String kubeWorkerPVCInitialSize;
 	
 	@Value("${kube.worker.job.backOffLimit}")
 	protected Integer kubeWorkerJobBackOffLimit;
+	
+	@Value("${kube.worker.job.restartPolicy}")
+	protected String kubeWorkerJobRestartPolicy;
 	
 	@Value("${kube.worker.debug}")
 	protected Boolean kubeWorkerDebug;
@@ -105,10 +111,6 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	final static String PREFIX_PVC = PREFIX + "pvc-";
 	
 	final static String PREFIX_VOL = PREFIX + "vol-";
-	
-	final static String API_PRETTY = "true";
-	
-	final static Boolean API_INCLUDEUNINITIALIZED = false;
 	
 	@Override
 	public V1Job createJob(String workflowName, String workflowId, String workflowActivityId,String taskName, String taskId, List<String> arguments, Map<String, String> taskInputProperties) {
@@ -178,7 +180,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 //		String labelSelector = "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId;
 //		
 //		try {
-//			V1PodList podList = api.listNamespacedPod(kubeNamespace, API_INCLUDEUNINITIALIZED, API_PRETTY, null, null, labelSelector, null, null, 60, false);
+//			V1PodList podList = api.listNamespacedPod(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null, null, labelSelector, null, null, 60, false);
 //			podList.getItems().forEach(pod -> {
 //				System.out.println(pod.toString());
 //				System.out.println(" pod Name: " + pod.getMetadata().getName());
@@ -296,6 +298,27 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 		return result;
 	}
 	
+	protected String getPVCName(String workflowId, String workflowActivityId) {
+		CoreV1Api api = new CoreV1Api();
+		String labelSelector = getLabelSelector(workflowId, workflowActivityId, null);
+		
+		try {
+			V1PersistentVolumeClaimList persistentVolumeClaimList = api.listNamespacedPersistentVolumeClaim(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null, null, labelSelector, null, null, 60, false);
+			persistentVolumeClaimList.getItems().forEach(pvc -> {
+				System.out.println(pvc.toString());
+				System.out.println(" PVC Name: " + pvc.getMetadata().getName());
+			});
+			if (!persistentVolumeClaimList.getItems().isEmpty() && persistentVolumeClaimList.getItems().get(0).getMetadata().getName() != null) {
+				System.out.println("----- End getPVCName() -----");
+				return persistentVolumeClaimList.getItems().get(0).getMetadata().getName();
+			}
+		} catch (ApiException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return "";
+	}
+	
 	@Override
 	public V1Status deletePVC(String workflowId, String workflowActivityId) {
 		CoreV1Api api = new CoreV1Api();
@@ -303,7 +326,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 		V1Status result = new V1Status();
 		
 		try {
-			result = api.deleteNamespacedPersistentVolumeClaim(getPVCName(workflowId, workflowActivityId), kubeNamespace, deleteOptions, API_PRETTY, null, null, null, null);
+			result = api.deleteNamespacedPersistentVolumeClaim(getPVCName(workflowId, workflowActivityId), kubeNamespace, deleteOptions, kubeApiPretty, null, null, null, null);
 		} catch (JsonSyntaxException e) {
             if (e.getCause() instanceof IllegalStateException) {
                 IllegalStateException ise = (IllegalStateException) e.getCause();
@@ -320,90 +343,37 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 		}
 		return result;
 	}
-	
-	protected String getPVCName(String workflowId, String workflowActivityId) {
-		CoreV1Api api = new CoreV1Api();
-		String labelSelector = getLabelSelector(workflowId, workflowActivityId, null);
-		
-		try {
-			V1PersistentVolumeClaimList persistentVolumeClaimList = api.listNamespacedPersistentVolumeClaim(kubeNamespace, API_INCLUDEUNINITIALIZED, API_PRETTY, null, null, labelSelector, null, null, 60, false);
-			persistentVolumeClaimList.getItems().forEach(pvc -> {
-				System.out.println(pvc.toString());
-				System.out.println(" PVC Name: " + pvc.getMetadata().getName());
-			});
-			if (!persistentVolumeClaimList.getItems().isEmpty() && persistentVolumeClaimList.getItems().get(0).getMetadata().getName() != null) {
-				System.out.println("----- End getPVCName() -----");
-				return persistentVolumeClaimList.getItems().get(0).getMetadata().getName();
-			}
-		} catch (ApiException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return "";
-	}
 
 	@Override
 	public V1ConfigMap createWorkflowConfigMap(String workflowName, String workflowId, String workflowActivityId, Map<String, String> inputProps) throws ApiException, IOException {
-		V1ConfigMap body = new V1ConfigMap(); // V1PersistentVolumeClaim |
-		
-		// Create Metadata
-		V1ObjectMeta metadata = new V1ObjectMeta();
-		metadata.annotations(createAnnotations(workflowName, workflowId, workflowActivityId, null));
-		metadata.labels(createLabels(workflowName, workflowId, workflowActivityId, null));
-		//metadata.generateName(PREFIX_CFGMAP);
-		metadata.name(PREFIX_CFGMAP + workflowActivityId); //We are using a fixed name to make it easier to find for subsequent calls as not all the configmap API's search on labels. Some take name as the parameter.
-		body.metadata(metadata);
-		
-		//Create Data
-		Map<String, String> inputsWithFixedKeys = new HashMap<String, String>();
-		Map<String, String> sysProps = new HashMap<String, String>();
-		sysProps.put("activity.id", workflowActivityId);
-		sysProps.put("workflow.name", workflowName);
-		sysProps.put("workflow.id", workflowId);
-		sysProps.put("worker.debug", kubeWorkerDebug.toString());
-		sysProps.put("controller.service.url", bmrgControllerServiceURL);
-		inputsWithFixedKeys.put("workflow.input.properties", createConfigMapProp(inputProps));
-		inputsWithFixedKeys.put("workflow.system.properties", createConfigMapProp(sysProps));
-		body.data(inputsWithFixedKeys);
-		
-		//Create ConfigMap
-		V1ConfigMap result = createConfigMap(body);
-		return result;
+		return createConfigMap(createWorkflowConfigMapBody(workflowName, workflowId, workflowActivityId, inputProps));
 	}
+
+  protected abstract V1ConfigMap createWorkflowConfigMapBody(
+      String workflowName,
+      String workflowId,
+      String workflowActivityId,
+      Map<String, String> inputProps);
 	
 	@Override
 	public V1ConfigMap createTaskConfigMap(String workflowName, String workflowId, String workflowActivityId, String taskName, String taskId, Map<String, String> inputProps) throws ApiException, IOException {
-		V1ConfigMap body = new V1ConfigMap(); // V1PersistentVolumeClaim |
-		
-		// Create Metadata
-		V1ObjectMeta metadata = new V1ObjectMeta();
-		metadata.annotations(createAnnotations(workflowName, workflowId, workflowActivityId, taskId));
-		metadata.labels(createLabels(workflowName, workflowId, workflowActivityId, taskId));
-		//metadata.generateName(PREFIX_CFGMAP);
-		metadata.name(PREFIX_CFGMAP + workflowActivityId + "-" + taskId); //We are using a fixed name to make it easier to find for subsequent calls as not all the configmap API's search on labels. Some take name as the parameter.
-		body.metadata(metadata);
-		
-		//Create Data
-		Map<String, String> inputsWithFixedKeys = new HashMap<String, String>();
-		Map<String, String> sysProps = new HashMap<String, String>();
-		sysProps.put("task.id", taskId);
-		sysProps.put("task.name", taskName);
-		inputsWithFixedKeys.put("task.input.properties", createConfigMapProp(inputProps));
-		inputsWithFixedKeys.put("task.system.properties", createConfigMapProp(sysProps));
-		body.data(inputsWithFixedKeys);
-		
-		//Create ConfigMap
-		V1ConfigMap result = createConfigMap(body);
-		return result;
+		return createConfigMap(createTaskConfigMapBody(
+	            workflowName, workflowId, workflowActivityId, taskName, taskId, inputProps));
 	}
+
+  protected abstract V1ConfigMap createTaskConfigMapBody(
+      String workflowName,
+      String workflowId,
+      String workflowActivityId,
+      String taskName,
+      String taskId,
+      Map<String, String> inputProps);
 	
 	protected V1ConfigMap createConfigMap(V1ConfigMap body) throws ApiException, IOException {
 		CoreV1Api api = new CoreV1Api();
-		
-		//Create ConfigMap
 		V1ConfigMap result = new V1ConfigMap();
 		try {
-		    result = api.createNamespacedConfigMap(kubeNamespace, body, API_INCLUDEUNINITIALIZED, API_PRETTY, null);
+		    result = api.createNamespacedConfigMap(kubeNamespace, body, kubeApiIncludeuninitialized, kubeApiPretty, null);
 		    System.out.println(result);
 		} catch (ApiException e) {
 		    System.err.println("Exception when calling CoreV1Api#createNamespacedConfigMap");
@@ -416,10 +386,11 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	@Override
 	public V1ConfigMap watchConfigMap(String workflowId, String workflowActivityId, String taskId) throws ApiException, IOException {
 		CoreV1Api api = new CoreV1Api();
-		String labelSelector = getLabelSelector(workflowId, workflowActivityId, null);
+		String taskIdSelect = taskId.isEmpty() ? null : taskId;
+		String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskIdSelect);
 		
 		Watch<V1ConfigMap> watch = Watch.createWatch(
-				createWatcherApiClient(), api.listNamespacedConfigMapCall(kubeNamespace, API_INCLUDEUNINITIALIZED, API_PRETTY, null, null, labelSelector, null, null, null, true, null, null),
+				createWatcherApiClient(), api.listNamespacedConfigMapCall(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null, null, labelSelector, null, null, null, true, null, null),
 				new TypeToken<Watch.Response<V1ConfigMap>>() {
 				}.getType());
 		V1ConfigMap result = null;
@@ -439,14 +410,10 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 		V1ConfigMap configMap = null;
 		
 		CoreV1Api api = new CoreV1Api();
-		String labelSelector = "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId;
-		if (taskId != null) {
-			labelSelector = labelSelector.concat(",task-id=" + taskId);
-		}
-		System.out.println("  task-id: " + taskId);
+		String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
 		System.out.println("  labelSelector: " + labelSelector);
 		try {
-			V1ConfigMapList configMapList = api.listNamespacedConfigMap(kubeNamespace, API_INCLUDEUNINITIALIZED, API_PRETTY, null, null, labelSelector, null, null, 60, false);
+			V1ConfigMapList configMapList = api.listNamespacedConfigMap(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null, null, labelSelector, null, null, 60, false);
 			configMapList.getItems().forEach(cfgmap -> {
 				System.out.println(cfgmap.toString());
 			});
@@ -491,7 +458,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 		ArrayList<JsonObject> arr = new ArrayList<>();
 	    arr.add(((JsonElement) (new Gson()).fromJson(jsonPatchObj.toString(), JsonElement.class)).getAsJsonObject());
 		try {
-		    V1ConfigMap result = api.patchNamespacedConfigMap(name, kubeNamespace, arr, API_PRETTY, null);
+		    V1ConfigMap result = api.patchNamespacedConfigMap(name, kubeNamespace, arr, kubeApiPretty, null);
 		    System.out.println(result);
 		} catch (ApiException e) {
 		    System.err.println("Exception when calling CoreV1Api#patchNamespacedConfigMap");
@@ -529,14 +496,8 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 		V1DeleteOptions deleteOptions = new V1DeleteOptions();
 		V1Status result = new V1Status();
 		
-		String name = PREFIX_CFGMAP + workflowActivityId;
-		if (taskId != null) {
-			name = name.concat("-" + taskId);
-		}
-		System.out.println("  Configmap to delete: " + name);
-		
 		try {
-			result = api.deleteNamespacedConfigMap(name, kubeNamespace, deleteOptions, API_PRETTY, null, null, null, null);
+			result = api.deleteNamespacedConfigMap(getConfigMapName(getConfigMap(workflowId, workflowActivityId, taskId)), kubeNamespace, deleteOptions, kubeApiPretty, null, null, null, null);
 		} catch (JsonSyntaxException e) {
             if (e.getCause() instanceof IllegalStateException) {
                 IllegalStateException ise = (IllegalStateException) e.getCause();
@@ -556,9 +517,10 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	
 	protected ApiClient createWatcherApiClient() {
 //		https://github.com/kubernetes-client/java/blob/master/util/src/main/java/io/kubernetes/client/util/Config.java#L57
-//		ApiClient watcherClient = Config.fromToken(kubeApiBasePath, kubeApiToken, false);
-		
 		ApiClient watcherClient = io.kubernetes.client.Configuration.getDefaultApiClient().setVerifyingSsl(false).setDebugging(false);
+		if (kubeApiType.equals("custom")) {
+			watcherClient = Config.fromToken(kubeApiBasePath, kubeApiToken, false);
+		}
 		
 		if (!kubeApiToken.isEmpty()) {
 			ApiKeyAuth watcherApiKeyAuth = (ApiKeyAuth) watcherClient.getAuthentication("BearerToken");
@@ -590,28 +552,9 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 		return envVar;
 	}
 	
-	protected Map<String, String> createAnnotations(String workflowName, String workflowId, String workflowActivityId, String taskId) {
-		Map<String, String> annotations = new HashMap<String, String>();
-		annotations.put("boomerangplatform.net/org", "bmrg");
-		annotations.put("boomerangplatform.net/app", "bmrg-flow");
-		annotations.put("boomerangplatform.net/workflow-name", workflowName);
-		annotations.put("boomerangplatform.net/workflow-id", workflowId);
-		annotations.put("boomerangplatform.net/workflow-activity-id", workflowActivityId);
-		Optional.ofNullable(taskId).ifPresent(str -> annotations.put("boomerangplatform.net/task-id", str));
-		
-		return annotations;
-	}
+	protected abstract Map<String, String> createAnnotations(String workflowName, String workflowId, String workflowActivityId, String taskId);
 	
-	protected Map<String, String> createLabels(String workflowName, String workflowId, String workflowActivityId, String taskId) {
-		Map<String, String> labels = new HashMap<String, String>();
-		labels.put("org", "bmrg");
-		labels.put("app", "bmrg-flow");
-		Optional.ofNullable(workflowName).ifPresent(str -> labels.put("workflow-name", str.replace(" ", "")));
-		Optional.ofNullable(workflowId).ifPresent(str -> labels.put("workflow-id", str));
-		Optional.ofNullable(workflowActivityId).ifPresent(str -> labels.put("workflow-activity-id", str));
-		Optional.ofNullable(taskId).ifPresent(str -> labels.put("task-id", str));
-		return labels;
-	}
+	protected abstract Map<String, String> createLabels(String workflowName, String workflowId, String workflowActivityId, String taskId);
 	
 	protected String createConfigMapProp(Map<String, String> properties) {
 		StringBuilder propsString = new StringBuilder();
