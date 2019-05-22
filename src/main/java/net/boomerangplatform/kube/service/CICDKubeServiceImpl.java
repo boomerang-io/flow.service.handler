@@ -22,6 +22,7 @@ import io.kubernetes.client.models.V1PersistentVolumeClaimVolumeSource;
 import io.kubernetes.client.models.V1PodSpec;
 import io.kubernetes.client.models.V1PodTemplateSpec;
 import io.kubernetes.client.models.V1ProjectedVolumeSource;
+import io.kubernetes.client.models.V1SecurityContext;
 import io.kubernetes.client.models.V1Volume;
 import io.kubernetes.client.models.V1VolumeMount;
 import io.kubernetes.client.models.V1VolumeProjection;
@@ -72,6 +73,9 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
 		container.image(kubeImage);
 		container.name("worker-cntr");
 		container.imagePullPolicy(kubeImagePullPolicy);
+		V1SecurityContext securityContext = new V1SecurityContext();
+		securityContext.setPrivileged(true);
+		container.setSecurityContext(securityContext);
 		List<V1EnvVar> envVars = new ArrayList<V1EnvVar>();
 		if (proxyEnabled) {
 			envVars.addAll(createProxyEnvVars());
