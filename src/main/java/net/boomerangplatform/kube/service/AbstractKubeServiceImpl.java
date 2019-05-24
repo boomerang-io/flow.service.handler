@@ -224,7 +224,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	            .listNamespacedPod(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null, null, labelSelector, null, null, 60, false)
 	            .getItems()
 	            .get(0);
-	    InputStream is = logs.streamNamespacedPodLog(pod.getMetadata().getNamespace(), pod.getMetadata().getName(), pod.getStatus().getContainerStatuses().get(0).getName(), 60, 10000, true);
+	    InputStream is = logs.streamNamespacedPodLog(pod);
 		
 		return outputStream -> {
 		  
