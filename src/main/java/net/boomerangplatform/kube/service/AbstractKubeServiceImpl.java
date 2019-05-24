@@ -224,13 +224,10 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	            .listNamespacedPod(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null, null, labelSelector, null, null, 60, false)
 	            .getItems()
 	            .get(0);
-
-	    InputStream is = logs.streamNamespacedPodLog(pod);
-	    ByteArrayOutputStream baos = new ByteArrayOutputStream(); 
-	    //ByteStreams.copy(is, System.out);
-	    ByteStreams.copy(is, baos);
+	    InputStream is = logs.streamNamespacedPodLog(pod.getMetadata().getNamespace(), pod.getMetadata().getName(), pod.getStatus().getContainerStatuses().get(0).getName(), 60, 10000, true);
 		
 		return outputStream -> {
+		  
 		    int nRead;
 		    byte[] data = new byte[1024];
 		    while ((nRead = is.read(data, 0, data.length)) != -1) {
