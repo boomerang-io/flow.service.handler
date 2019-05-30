@@ -531,10 +531,13 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	protected List<V1EnvVar> createProxyEnvVars() {
 		List<V1EnvVar> proxyEnvVars = new ArrayList<V1EnvVar>();
 		
-		proxyEnvVars.add(createEnvVar("HTTP_PROXY","http://" + proxyHost + ":" + proxyPort));
-		proxyEnvVars.add(createEnvVar("HTTPS_PROXY","https://" + proxyHost + ":" + proxyPort));
-		proxyEnvVars.add(createEnvVar("http_proxy","http://" + proxyHost + ":" + proxyPort));
-		proxyEnvVars.add(createEnvVar("https_proxy","https://" + proxyHost + ":" + proxyPort));
+		final String proxyUrl = "http://" + proxyHost + ":" + proxyPort;
+		proxyEnvVars.add(createEnvVar("PROXY_HOST",proxyHost));
+		proxyEnvVars.add(createEnvVar("PROXY_PORT",proxyPort));
+		proxyEnvVars.add(createEnvVar("HTTP_PROXY",proxyUrl));
+		proxyEnvVars.add(createEnvVar("HTTPS_PROXY",proxyUrl));
+		proxyEnvVars.add(createEnvVar("http_proxy",proxyUrl));
+		proxyEnvVars.add(createEnvVar("https_proxy",proxyUrl));
 		proxyEnvVars.add(createEnvVar("NO_PROXY",proxyIgnore));
 		proxyEnvVars.add(createEnvVar("no_proxy",proxyIgnore));
 		proxyEnvVars.add(createEnvVar("use_proxy","on"));
