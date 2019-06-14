@@ -80,6 +80,7 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
 		if (proxyEnabled) {
 			envVars.addAll(createProxyEnvVars());
 		}
+		envVars.add(createEnvVar("DEBUG",kubeWorkerDebug.toString()));
 		container.env(envVars);
 		container.args(arguments);
 		if (!getPVCName(componentId, activityId).isEmpty()) {
