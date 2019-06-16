@@ -162,6 +162,9 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 						jobResult = item.object;
 						break;
 					} else if (item.object.getStatus().getConditions().get(0).getType().equals("Failed")) {
+						System.out.println("---------------------");
+						System.out.println("---- Task Failed ----");
+						System.out.println("---------------------");
 						throw new Exception("Task (" + taskId + ") has failed to execute " + kubeWorkerJobBackOffLimit + " times triggering failure.");
 					}
 				}
