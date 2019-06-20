@@ -54,7 +54,7 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
 	protected V1Job createJobBody(String componentName, String componentId, String activityId, String taskName, String taskId, List<String> arguments, Map<String, String> taskInputProperties) {
 
 		// Set Variables
-		final String volMountPath = "/data";
+		final String volMountPath = "/cache";
 		final String cfgMapMountPath = "/props";
 
 		// Initialize Job Body
@@ -85,7 +85,7 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
 		envVars.add(createEnvVar("DEBUG",kubeWorkerDebug.toString()));
 		container.env(envVars);
 		container.args(arguments);
-		if (!getPVCName(componentId, activityId).isEmpty()) {
+		if (checkPVCExists(componentId, null, null)) {
 			V1VolumeMount volMount = new V1VolumeMount();
 			volMount.name(PREFIX_VOL_DATA);
 			volMount.mountPath(volMountPath);
@@ -93,7 +93,7 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
 			V1Volume workerVolume = new V1Volume();
 			workerVolume.name(PREFIX_VOL_DATA);
 			V1PersistentVolumeClaimVolumeSource workerVolumePVCSource = new V1PersistentVolumeClaimVolumeSource();
-			workerVolume.persistentVolumeClaim(workerVolumePVCSource.claimName(getPVCName(componentId, activityId)));
+			workerVolume.persistentVolumeClaim(workerVolumePVCSource.claimName(getPVCName(componentId, null)));
 			podSpec.addVolumesItem(workerVolume);
 		}
 		//Container ConfigMap Mount
