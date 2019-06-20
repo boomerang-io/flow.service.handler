@@ -38,6 +38,8 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
 	
 	final static String PREFIX = ORG + "-cicd";
 	
+	final static String PREFIX_JOB = PREFIX + "-worker";
+	
 	final static String PREFIX_CFGMAP = PREFIX + "-cfg";
 	
 	final static String PREFIX_PVC = PREFIX + "-pvc";
@@ -62,7 +64,7 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
 		V1ObjectMeta jobMetadata = new V1ObjectMeta();
 		jobMetadata.annotations(createAnnotations(componentName, componentId, activityId, taskId));
 		jobMetadata.labels(createLabels(componentName, componentId, activityId, taskId));
-		jobMetadata.generateName(PREFIX + "-");
+		jobMetadata.generateName(PREFIX_JOB + "-");
 		body.metadata(jobMetadata);
 
 		// Create Spec

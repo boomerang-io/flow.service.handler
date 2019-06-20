@@ -319,6 +319,26 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 		return "";
 	}
 	
+	public boolean checkPVCExists(String workflowId, String workflowActivityId) {
+		CoreV1Api api = new CoreV1Api();
+		String labelSelector = getLabelSelector(workflowId, workflowActivityId, null);
+		
+		try {
+			V1PersistentVolumeClaimList persistentVolumeClaimList = api.listNamespacedPersistentVolumeClaim(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null, null, labelSelector, null, null, 60, false);
+			persistentVolumeClaimList.getItems().forEach(pvc -> {
+				System.out.println(pvc.toString());
+				System.out.println(" PVC Name: " + pvc.getMetadata().getName());
+			});
+			if (!persistentVolumeClaimList.getItems().isEmpty()) {
+				return true;
+			}
+		} catch (ApiException e) {
+			System.out.println("No PVC found matching Id: " + workflowId + " and ActivityId: " + workflowActivityId);
+			e.printStackTrace();
+		}
+		return false;
+	}
+	
 	@Override
 	public V1Status deletePVC(String workflowId, String workflowActivityId) {
 		CoreV1Api api = new CoreV1Api();

@@ -31,8 +31,8 @@ public class CICDControllerServiceImpl implements ControllerService {
 				kubeService.createPVC(workflow.getWorkflowName(), workflow.getWorkflowId(), workflow.getWorkflowActivityId(), workflow.getWorkflowStorage().getSize());
 				kubeService.watchPVC(workflow.getWorkflowId(), workflow.getWorkflowActivityId()).getPhase();
 			}
-			kubeService.createWorkflowConfigMap(workflow.getWorkflowName(), workflow.getWorkflowId(), workflow.getWorkflowActivityId(), workflow.getInputs());
-			kubeService.watchConfigMap(workflow.getWorkflowId(), workflow.getWorkflowActivityId(), null);
+//			kubeService.createWorkflowConfigMap(workflow.getWorkflowName(), workflow.getWorkflowId(), workflow.getWorkflowActivityId(), workflow.getInputs());
+//			kubeService.watchConfigMap(workflow.getWorkflowId(), workflow.getWorkflowActivityId(), null);
 		} catch (Exception e) {
 			e.printStackTrace();
 			response.setCode("1");
@@ -59,6 +59,10 @@ public class CICDControllerServiceImpl implements ControllerService {
 	public TaskResponse executeTask(Task task) {
 		TaskResponse response = new TaskResponse("0","Task (" + task.getTaskId() + ") has been executed successfully.", null);
 		try {
+			if (!kubeService.checkPVCExists(task.getWorkflowName(), task.getWorkflowId())) {
+				kubeService.createPVC(task.getWorkflowName(), task.getWorkflowId(), task.getWorkflowActivityId(), null);
+				kubeService.watchPVC(task.getWorkflowId(), task.getWorkflowActivityId()).getPhase();
+			}
 			kubeService.createTaskConfigMap(task.getWorkflowName(), task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(), task.getInputs().getProperties());
 			kubeService.watchConfigMap(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
 			kubeService.createJob(task.getWorkflowName(), task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(), task.getArguments(), task.getInputs().getProperties());
