@@ -59,7 +59,7 @@ public class CICDControllerServiceImpl implements ControllerService {
 	public TaskResponse executeTask(Task task) {
 		TaskResponse response = new TaskResponse("0","Task (" + task.getTaskId() + ") has been executed successfully.", null);
 		try {
-			if (!kubeService.checkPVCExists(task.getWorkflowName(), task.getWorkflowId())) {
+			if (!kubeService.checkPVCExists(task.getWorkflowId(), null, null)) {
 				kubeService.createPVC(task.getWorkflowName(), task.getWorkflowId(), task.getWorkflowActivityId(), null);
 				kubeService.watchPVC(task.getWorkflowId(), task.getWorkflowActivityId()).getPhase();
 			}

@@ -319,9 +319,9 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 		return "";
 	}
 	
-	public boolean checkPVCExists(String workflowId, String workflowActivityId) {
+	public boolean checkPVCExists(String workflowId, String workflowActivityId, String taskId) {
 		CoreV1Api api = new CoreV1Api();
-		String labelSelector = getLabelSelector(workflowId, workflowActivityId, null);
+		String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
 		
 		try {
 			V1PersistentVolumeClaimList persistentVolumeClaimList = api.listNamespacedPersistentVolumeClaim(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null, null, labelSelector, null, null, 60, false);

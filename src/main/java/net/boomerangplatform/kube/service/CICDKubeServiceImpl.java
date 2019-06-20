@@ -214,10 +214,10 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
   protected String getLabelSelector(String componentId, String activityId, String taskId) {
     String labelSelector =
         "org=" + ORG + ",app=" + PREFIX + ",component-id="
-            + componentId
-            + ",activity-id="
-            + activityId;
-    return Optional.ofNullable(taskId).isPresent() ? labelSelector.concat(",task-id=" + taskId) : labelSelector;
+            + componentId;
+    labelSelector = Optional.ofNullable(activityId).isPresent() ? labelSelector.concat(",activity-id=" + activityId) : labelSelector;
+    labelSelector = Optional.ofNullable(taskId).isPresent() ? labelSelector.concat(",task-id=" + taskId) : labelSelector;
+    return labelSelector;
   }
   
 	protected Map<String, String> createAnnotations(String componentName, String componentId, String activityId, String taskId) {
