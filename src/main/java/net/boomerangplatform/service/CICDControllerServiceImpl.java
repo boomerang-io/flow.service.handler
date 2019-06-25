@@ -31,8 +31,6 @@ public class CICDControllerServiceImpl implements ControllerService {
 				kubeService.createPVC(workflow.getWorkflowName(), workflow.getWorkflowId(), workflow.getWorkflowActivityId(), workflow.getWorkflowStorage().getSize());
 				kubeService.watchPVC(workflow.getWorkflowId(), workflow.getWorkflowActivityId()).getPhase();
 			}
-//			kubeService.createWorkflowConfigMap(workflow.getWorkflowName(), workflow.getWorkflowId(), workflow.getWorkflowActivityId(), workflow.getInputs());
-//			kubeService.watchConfigMap(workflow.getWorkflowId(), workflow.getWorkflowActivityId(), null);
 		} catch (Exception e) {
 			e.printStackTrace();
 			response.setCode("1");
@@ -43,10 +41,9 @@ public class CICDControllerServiceImpl implements ControllerService {
 	
 	@Override
 	public Response terminateWorkflow(Workflow workflow) {
-		Response response = new Response("0","Component Activity (" + workflow.getWorkflowActivityId() + ") has been terminated successfully.");
+		Response response = new Response("0","Component Storage (" + workflow.getWorkflowId() + ") has been removed successfully.");
 		try {
-			kubeService.deletePVC(workflow.getWorkflowId(), workflow.getWorkflowActivityId());
-			kubeService.deleteConfigMap(workflow.getWorkflowId(), workflow.getWorkflowActivityId(), null);
+			kubeService.deletePVC(workflow.getWorkflowId(), null);
 		} catch (Exception e) {
 			e.printStackTrace();
 			response.setCode("1");
@@ -59,9 +56,14 @@ public class CICDControllerServiceImpl implements ControllerService {
 	public TaskResponse executeTask(Task task) {
 		TaskResponse response = new TaskResponse("0","Task (" + task.getTaskId() + ") has been executed successfully.", null);
 		try {
-			if (!kubeService.checkPVCExists(task.getWorkflowId(), null, null)) {
+			//TODO separate out cache handling to separate try catch to handle failure and continue.
+			boolean cacheEnable = task.getInputs().getProperties().get("component/cache.enable").equals("true");
+			boolean cacheExists = kubeService.checkPVCExists(task.getWorkflowId(), null, null);
+			if (cacheEnable && !cacheExists) {
 				kubeService.createPVC(task.getWorkflowName(), task.getWorkflowId(), task.getWorkflowActivityId(), null);
 				kubeService.watchPVC(task.getWorkflowId(), task.getWorkflowActivityId()).getPhase();
+			} else if (!cacheEnable && cacheExists) {
+				kubeService.deletePVC(task.getWorkflowId(), null);
 			}
 			kubeService.createTaskConfigMap(task.getWorkflowName(), task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(), task.getInputs().getProperties());
 			kubeService.watchConfigMap(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
