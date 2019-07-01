@@ -86,6 +86,9 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	@Value("${kube.worker.job.restartPolicy}")
 	protected String kubeWorkerJobRestartPolicy;
 	
+	@Value("${kube.worker.job.ttlDays}")
+	protected Integer kubeWorkerJobTTLDays;
+	
 	@Value("${kube.worker.debug}")
 	protected Boolean kubeWorkerDebug;
 	
@@ -361,7 +364,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
                 if (ise.getMessage() != null && ise.getMessage().contains("Expected a string but was BEGIN_OBJECT")) {
                 	System.out.println("Catching exception because of issue https://github.com/kubernetes-client/java/issues/86");
             	} else {
-	                System.err.println("Exception when running deletePV()");
+	                System.err.println("Exception when running deletePVC()");
 	    		    e.printStackTrace();
             	}
             }

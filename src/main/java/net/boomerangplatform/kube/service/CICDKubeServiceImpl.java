@@ -151,6 +151,7 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
 		
 		jobSpec.backoffLimit(kubeWorkerJobBackOffLimit);
 		jobSpec.template(templateSpec);
+		jobSpec.ttlSecondsAfterFinished(60*60*24*kubeWorkerJobTTLDays);
 		body.spec(jobSpec);
 		
 		return body;
