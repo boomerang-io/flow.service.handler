@@ -28,7 +28,7 @@ public class CICDControllerServiceImpl implements ControllerService {
 		Response response = new Response("0","Component Activity (" + workflow.getWorkflowActivityId() + ") has been created successfully.");
 		try {
 			if (workflow.getWorkflowStorage().getEnable()) {
-				kubeService.createPVC(workflow.getWorkflowName(), workflow.getWorkflowId(), workflow.getWorkflowActivityId(), workflow.getWorkflowStorage().getSize());
+				kubeService.createPVC(workflow.getWorkflowName(), workflow.getWorkflowId(), workflow.getWorkflowActivityId(), null);
 				kubeService.watchPVC(workflow.getWorkflowId(), workflow.getWorkflowActivityId()).getPhase();
 			}
 		} catch (Exception e) {
