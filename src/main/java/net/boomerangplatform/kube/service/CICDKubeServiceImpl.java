@@ -151,7 +151,9 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
 		
 		jobSpec.backoffLimit(kubeWorkerJobBackOffLimit);
 		jobSpec.template(templateSpec);
-		jobSpec.ttlSecondsAfterFinished(60*60*24*kubeWorkerJobTTLDays);
+		Integer ttl = 60*60*24*kubeWorkerJobTTLDays;
+		System.out.println("Setting Job TTL at " + ttl + " seconds");
+		jobSpec.setTtlSecondsAfterFinished(ttl);
 		body.spec(jobSpec);
 		
 		return body;
