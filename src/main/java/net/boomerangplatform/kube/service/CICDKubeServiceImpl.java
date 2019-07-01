@@ -85,7 +85,7 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
 		envVars.add(createEnvVar("DEBUG",kubeWorkerDebug.toString()));
 		container.env(envVars);
 		container.args(arguments);
-		if (checkPVCExists(componentId, null, null)) {
+		if (checkPVCExists(componentId, null, null, true)) {
 			V1VolumeMount volMount = new V1VolumeMount();
 			volMount.name(PREFIX_VOL_DATA);
 			volMount.mountPath(volMountPath);

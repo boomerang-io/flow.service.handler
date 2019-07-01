@@ -58,10 +58,10 @@ public class CICDControllerServiceImpl implements ControllerService {
 		try {
 			//TODO separate out cache handling to separate try catch to handle failure and continue.
 			boolean cacheEnable = task.getInputs().getProperties().get("component/cache.enabled").equals("true");
-			boolean cacheExists = kubeService.checkPVCExists(task.getWorkflowId(), null, null);
+			boolean cacheExists = kubeService.checkPVCExists(task.getWorkflowId(), null, null, true);
 			if (cacheEnable && !cacheExists) {
 				kubeService.createPVC(task.getWorkflowName(), task.getWorkflowId(), task.getWorkflowActivityId(), null);
-				kubeService.watchPVC(task.getWorkflowId(), task.getWorkflowActivityId()).getPhase();
+				kubeService.watchPVC(task.getWorkflowId(), task.getWorkflowActivityId());
 			} else if (!cacheEnable && cacheExists) {
 				kubeService.deletePVC(task.getWorkflowId(), null);
 			}

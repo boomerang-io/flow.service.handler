@@ -279,7 +279,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 		String labelSelector = getLabelSelector(workflowId, workflowActivityId, null);
 		
 		Watch<V1PersistentVolumeClaim> watch = Watch.createWatch(
-				createWatcherApiClient(), api.listNamespacedPersistentVolumeClaimCall(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null, null, labelSelector, null, null, null, true, null, null),
+				createWatcherApiClient(), api.listNamespacedPersistentVolumeClaimCall(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null, null, labelSelector, null, null, 600, true, null, null),
 				new TypeToken<Watch.Response<V1PersistentVolumeClaim>>() {
 				}.getType());
 		V1PersistentVolumeClaimStatus result = null;
@@ -292,7 +292,10 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 					break;
 				}
 			}
-		} finally {
+		} catch (Exception e) {
+			System.out.println("PVC did not enter bound status in 600 seconds for: " + workflowId);
+			e.printStackTrace();
+		}finally {
 			watch.close();
 		}
 		return result;
@@ -319,18 +322,23 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 		return "";
 	}
 	
-	public boolean checkPVCExists(String workflowId, String workflowActivityId, String taskId) {
+	public boolean checkPVCExists(String workflowId, String workflowActivityId, String taskId, boolean failIfNotBound) {
 		CoreV1Api api = new CoreV1Api();
 		String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
 		
 		try {
 			V1PersistentVolumeClaimList persistentVolumeClaimList = api.listNamespacedPersistentVolumeClaim(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null, null, labelSelector, null, null, 60, false);
-			persistentVolumeClaimList.getItems().forEach(pvc -> {
-				System.out.println(pvc.toString());
-				System.out.println(" PVC Name: " + pvc.getMetadata().getName());
-			});
 			if (!persistentVolumeClaimList.getItems().isEmpty()) {
-				return true;
+				persistentVolumeClaimList.getItems().forEach(pvc -> {
+					System.out.println("PVC: " + pvc.getMetadata().getName() + " (" + pvc.getStatus().getPhase() + ")");
+				});
+				if (failIfNotBound) {
+					if (persistentVolumeClaimList.getItems().stream().filter(pvc -> pvc.getStatus().getPhase().equalsIgnoreCase("Bound")).count() > 0) {
+						return true;
+					}
+				} else {
+					return true;
+				}
 			}
 		} catch (ApiException e) {
 			System.out.println("No PVC found matching Id: " + workflowId + " and ActivityId: " + workflowActivityId);
