@@ -22,6 +22,7 @@ import io.kubernetes.client.models.V1PersistentVolumeClaimVolumeSource;
 import io.kubernetes.client.models.V1PodSpec;
 import io.kubernetes.client.models.V1PodTemplateSpec;
 import io.kubernetes.client.models.V1ProjectedVolumeSource;
+import io.kubernetes.client.models.V1SecurityContext;
 import io.kubernetes.client.models.V1Volume;
 import io.kubernetes.client.models.V1VolumeMount;
 import io.kubernetes.client.models.V1VolumeProjection;
@@ -36,6 +37,8 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
 	final static String ORG = "bmrg";
 	
 	final static String PREFIX = ORG + "-flow";
+	
+	final static String PREFIX_JOB = PREFIX + "-worker";
 	
 	final static String PREFIX_CFGMAP = PREFIX + "-cfg";
 	
@@ -61,9 +64,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
 		V1ObjectMeta jobMetadata = new V1ObjectMeta();
 		jobMetadata.annotations(createAnnotations(workflowName, workflowId, activityId, taskId));
 		jobMetadata.labels(createLabels(workflowName, workflowId, activityId, taskId));
-		jobMetadata.generateName(PREFIX + "-");
-//		Uncomment if you want to hard code the name and watch on name rather than labels
-//		metadata.name("bmrg-flow-"+taskId); 
+		jobMetadata.generateName(PREFIX_JOB + "-");
 		body.metadata(jobMetadata);
 
 		// Create Spec
@@ -74,6 +75,9 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
 		container.image(kubeImage);
 		container.name("worker-cntr");
 		container.imagePullPolicy(kubeImagePullPolicy);
+		V1SecurityContext securityContext = new V1SecurityContext();
+		securityContext.setPrivileged(true);
+		container.setSecurityContext(securityContext);
 		List<V1EnvVar> envVars = new ArrayList<V1EnvVar>();
 		//inputProperties.forEach((key, value) -> {
 		//	envVars.add(createEnvVar("TASK_PROPS_"+key.replace("-", "_").replace(".", "_").toUpperCase(), value));
@@ -82,6 +86,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
 		if (proxyEnabled) {
 			envVars.addAll(createProxyEnvVars());
 		}
+		envVars.add(createEnvVar("DEBUG",kubeWorkerDebug.toString()));
 		container.env(envVars);
 		container.args(arguments);
 		if (!getPVCName(workflowId, activityId).isEmpty()) {
@@ -151,6 +156,9 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
 		
 		jobSpec.backoffLimit(kubeWorkerJobBackOffLimit);
 		jobSpec.template(templateSpec);
+		Integer ttl = 60*60*24*kubeWorkerJobTTLDays;
+		System.out.println("Setting Job TTL at " + ttl + " seconds");
+		jobSpec.setTtlSecondsAfterFinished(ttl);
 		body.spec(jobSpec);
 		
 		return body;
@@ -170,7 +178,6 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
 		    metadata.annotations(createAnnotations(workflowName, workflowId, workflowActivityId, taskId));
 		    metadata.labels(createLabels(workflowName, workflowId, workflowActivityId, taskId));
 		    metadata.generateName(PREFIX_CFGMAP);
-//				metadata.name(PREFIX_CFGMAP + workflowActivityId + "-" + taskId); //We are using a fixed name to make it easier to find for subsequent calls as not all the configmap API's search on labels. Some take name as the parameter.
 		    body.metadata(metadata);
 		    
 		    //Create Data
@@ -215,7 +222,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
 
 	  protected String getLabelSelector(String workflowId, String activityId, String taskId) {
 	    String labelSelector =
-	        "org=" + ORG + ",app=" + PREFIX + ",workflow-id="
+	        "platform=" + ORG + ",app=" + PREFIX + ",workflow-id="
 	            + workflowId
 	            + ",activity-id="
 	            + activityId;
@@ -224,7 +231,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
 	  
 		protected Map<String, String> createAnnotations(String workflowName, String workflowId, String activityId, String taskId) {
 			Map<String, String> annotations = new HashMap<String, String>();
-			annotations.put("boomerangplatform.net/org", ORG);
+			annotations.put("boomerangplatform.net/platform", ORG);
 			annotations.put("boomerangplatform.net/app", PREFIX);
 			annotations.put("boomerangplatform.net/workflow-name", workflowName);
 			annotations.put("boomerangplatform.net/workflow-id", workflowId);
@@ -236,7 +243,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
 		
 		protected Map<String, String> createLabels(String workflowName, String workflowId, String activityId, String taskId) {
 			Map<String, String> labels = new HashMap<String, String>();
-			labels.put("org", ORG);
+			labels.put("platform", ORG);
 			labels.put("app", PREFIX);
 			Optional.ofNullable(workflowName).ifPresent(str -> labels.put("workflow-name", str.replace(" ", "")));
 			Optional.ofNullable(workflowId).ifPresent(str -> labels.put("workflow-id", str));

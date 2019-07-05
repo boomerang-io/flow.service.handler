@@ -216,7 +216,7 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
 
   protected String getLabelSelector(String componentId, String activityId, String taskId) {
     String labelSelector =
-        "org=" + ORG + ",app=" + PREFIX + ",component-id="
+        "platform=" + ORG + ",app=" + PREFIX + ",component-id="
             + componentId;
     labelSelector = Optional.ofNullable(activityId).isPresent() ? labelSelector.concat(",activity-id=" + activityId) : labelSelector;
     labelSelector = Optional.ofNullable(taskId).isPresent() ? labelSelector.concat(",task-id=" + taskId) : labelSelector;
@@ -225,7 +225,7 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
   
 	protected Map<String, String> createAnnotations(String componentName, String componentId, String activityId, String taskId) {
 		Map<String, String> annotations = new HashMap<String, String>();
-		annotations.put("boomerangplatform.net/org", ORG);
+		annotations.put("boomerangplatform.net/platform", ORG);
 		annotations.put("boomerangplatform.net/app", PREFIX);
 		annotations.put("boomerangplatform.net/component-name", componentName);
 		annotations.put("boomerangplatform.net/component-id", componentId);
@@ -237,7 +237,7 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
 	
 	protected Map<String, String> createLabels(String componentName, String componentId, String activityId, String taskId) {
 		Map<String, String> labels = new HashMap<String, String>();
-		labels.put("org", ORG);
+		labels.put("platform", ORG);
 		labels.put("app", PREFIX);
 		Optional.ofNullable(componentName).ifPresent(str -> labels.put("component-name", str.replace(" ", "")));
 		Optional.ofNullable(componentId).ifPresent(str -> labels.put("component-id", str));
