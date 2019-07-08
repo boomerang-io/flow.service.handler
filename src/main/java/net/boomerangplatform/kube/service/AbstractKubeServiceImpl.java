@@ -388,6 +388,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	
 	@Override
 	public V1ConfigMap createTaskConfigMap(String workflowName, String workflowId, String workflowActivityId, String taskName, String taskId, Map<String, String> inputProps) throws ApiException, IOException {
+		System.out.println("ConfigMapBody: " + inputProps);
 		return createConfigMap(createTaskConfigMapBody(
 	            workflowName, workflowId, workflowActivityId, taskName, taskId, inputProps));
 	}
@@ -592,10 +593,12 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	
 	protected String createConfigMapProp(Map<String, String> properties) {
 		StringBuilder propsString = new StringBuilder();
-		
+
+		System.out.println("Building ConfigMap Body");
 		//TODO fix up null check and handling
 		if (properties != null && !properties.isEmpty()) {
 			properties.forEach((key, value) -> {
+				System.out.println("  " + key + "=" + value);
 				//propsString.append(key.replace("-", "_").replace(".", "_").toUpperCase());
 				propsString.append(key);
 				propsString.append("=");
