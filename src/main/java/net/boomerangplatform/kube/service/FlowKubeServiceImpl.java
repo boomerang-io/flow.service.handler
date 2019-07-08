@@ -28,7 +28,7 @@ import io.kubernetes.client.models.V1VolumeMount;
 import io.kubernetes.client.models.V1VolumeProjection;
 
 @Service
-@Profile("flow")
+@Profile("live")
 public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
 	
 	@Value("${kube.image}")

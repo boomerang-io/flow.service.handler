@@ -17,7 +17,7 @@ import net.boomerangplatform.model.TaskResponse;
 import net.boomerangplatform.model.Workflow;
 
 @Service
-@Profile("flow")
+@Profile("live")
 public class FlowControllerServiceImpl implements ControllerService {
 	
 	@Autowired
