@@ -230,7 +230,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 		
 		Watch<V1Pod> watch = Watch.createWatch(
 				createWatcherApiClient(), api.listNamespacedPodCall(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null, null, labelSelector, null, null, null, true, null, null),
-				new TypeToken<Watch.Response<V1Job>>() {
+				new TypeToken<Watch.Response<V1Pod>>() {
 				}.getType());
 		
 		try {
