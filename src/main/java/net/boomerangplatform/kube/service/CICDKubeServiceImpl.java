@@ -177,11 +177,7 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
 		    
 		    //Create Data
 		    Map<String, String> inputsWithFixedKeys = new HashMap<String, String>();
-		    Map<String, String> sysProps = new HashMap<String, String>();
-		    sysProps.put("task.id", taskId);
-		    sysProps.put("task.name", taskName);
 		    inputsWithFixedKeys.put("task.input.properties", createConfigMapProp(inputProps));
-		    inputsWithFixedKeys.put("task.system.properties", createConfigMapProp(sysProps));
 		    body.data(inputsWithFixedKeys);
 		    return body;
 		  }

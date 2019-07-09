@@ -593,27 +593,6 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	
 	protected abstract Map<String, String> createLabels(String workflowName, String workflowId, String workflowActivityId, String taskId);
 	
-//	protected String createConfigMapProp(Map<String, String> properties) {
-//		StringBuilder propsString = new StringBuilder();
-//
-//		System.out.println("Building ConfigMap Body");
-//		//TODO fix up null check and handling
-//		if (properties != null && !properties.isEmpty()) {
-//			properties.forEach((key, value) -> {
-//				System.out.println("  " + key + "=" + value);
-//				//propsString.append(key.replace("-", "_").replace(".", "_").toUpperCase());
-//				propsString.append(key);
-//				propsString.append("=");
-//				propsString.append(value);
-//				propsString.append("\n");
-//			});
-//		} else {
-//			propsString.append("\n");
-//		}
-//		
-//		return propsString.toString();
-//	}
-	
 	protected String createConfigMapProp(Map<String, String> properties) {
 		System.out.println("Building ConfigMap Body");
 		Properties props = new Properties();
@@ -635,16 +614,24 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 		return propsSW.toString();
 	}
 	
-	protected String createConfigMapPropWithPrefix(Map<String, String> properties, String prefix) {
-		StringBuilder propsString = new StringBuilder();
+	protected String createConfigMapPropWithPrefix(Map<String, String> properties, String prefix) {	
+		Properties props = new Properties();
+		StringWriter propsSW = new StringWriter();
+		if (properties != null && !properties.isEmpty()) {
+			properties.forEach((key, value) -> {
+				String prefixedKey = prefix.toUpperCase() + key.replace("-", "_").replace(".", "_").toUpperCase();
+				props.setProperty(prefixedKey, value);
+				System.out.println("  " + prefixedKey + "=" + value);
+			});
+		}
 		
-		properties.forEach((key, value) -> {
-			propsString.append(prefix + key.replace("-", "_").replace(".", "_").toUpperCase());
-			propsString.append("=");
-			propsString.append(value);
-			propsString.append("\n");
-		});
+		try {
+			props.store(propsSW, "");
+	        System.out.println("" + propsSW.toString());
+	      } catch (IOException ex) {
+	         ex.printStackTrace();
+	      }
 		
-		return propsString.toString();
+		return propsSW.toString();
 	}
 }
