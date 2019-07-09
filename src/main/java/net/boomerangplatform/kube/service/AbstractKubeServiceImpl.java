@@ -35,6 +35,7 @@ import io.kubernetes.client.auth.ApiKeyAuth;
 import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.models.V1ConfigMap;
 import io.kubernetes.client.models.V1ConfigMapList;
+import io.kubernetes.client.models.V1ContainerStatus;
 import io.kubernetes.client.models.V1DeleteOptions;
 import io.kubernetes.client.models.V1EnvVar;
 import io.kubernetes.client.models.V1Job;
@@ -224,56 +225,49 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	@Override
 	public StreamingResponseBody streamPodLog(HttpServletResponse response, String workflowId, String workflowActivityId, String taskId) throws ApiException, IOException {		
 		
-		String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
-	    
-//	    Start - Wait for job to start
-	    
-		System.out.println("GLENDA: Start");
-		
-	    BatchV1Api batchApi = new BatchV1Api();
-		Watch<V1Job> watch = Watch.createWatch(
-				createWatcherApiClient(), batchApi.listNamespacedJobCall(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null, null, labelSelector, null, null, null, true, null, null),
-				new TypeToken<Watch.Response<V1Job>>() {
-				}.getType());
-		
-		System.out.println("GLENDA: Watch");
-		
-		try {
-			for (Watch.Response<V1Job> item : watch) {
-				System.out.println("GLENDA: Watch Loop");
-				System.out.println("GLENDA: " + item.type + " : " + item.object.getMetadata().getName());
-				System.out.println("GLENDA: " + item.object.getStatus().getStartTime());
-				
-				if (item.object.getStatus().getStartTime() != null) {
-					System.out.println("GLENDA: Watch Break - Job has started");
-					break;
-				}
-				
-				try {
-					System.out.println("GLENDA: Watch Sleep");
-					Thread.sleep(1000);
-				} catch (InterruptedException e) {
-				}
-			}
-		} finally {
-			watch.close();
-		}
-		
-		System.out.println("GLENDA: End");
-		
-//	    End - Wait for job to start
-		
+		String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);		
 		CoreV1Api api = new CoreV1Api();
-		
-	    PodLogs logs = new PodLogs();
+			    
 	    V1Pod pod = 
 	    		api
 	            .listNamespacedPod(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null, null, labelSelector, null, null, 60, false)
 	            .getItems()
 	            .get(0);
+	    	 
+	    while (true) {    	
+	    	if (pod.getStatus().getStartTime() != null) {
+	    		System.out.println("GLENDA: Pod has started...");
+	    		break;
+	    	}	    	
+			try {
+				System.out.println("GLENDA: Wait then recheck pod has started...");
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+			}
+	    }
 	    
+	    while (true) {
+	    	boolean allContainersStartedOrFinished = true;
+	    	for (V1ContainerStatus containerStatus : pod.getStatus().getContainerStatuses()) {
+	    		if (!(containerStatus.getState().getRunning().getStartedAt() != null || containerStatus.getState().getTerminated().getFinishedAt() != null)) {
+	    			allContainersStartedOrFinished = false;
+	    			break;
+	    		}
+	    	}
+	    	if (allContainersStartedOrFinished) {
+	    		System.out.println("GLENDA: All containers have started (or finished)...");
+	    		break;
+	    	}	    	
+			try {
+				System.out.println("GLENDA: Wait then recheck all containers haved started (or finished)...");
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+			}
+	    }	    	    
+	    
+	    PodLogs logs = new PodLogs();
 	    InputStream is = logs.streamNamespacedPodLog(pod);
-		
+	    
 		return outputStream -> {
 		  
 		    int nRead;
