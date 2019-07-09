@@ -235,7 +235,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	            .get(0);
 	    	 
 	    while (true) {    	
-	    	if (pod.getStatus().getStartTime() != null) {
+	    	if (pod.getStatus() != null && pod.getStatus().getStartTime() != null) {
 	    		System.out.println("GLENDA: Pod has started...");
 	    		break;
 	    	}	    	
@@ -248,10 +248,20 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	    
 	    while (true) {
 	    	boolean allContainersStartedOrFinished = true;
-	    	for (V1ContainerStatus containerStatus : pod.getStatus().getContainerStatuses()) {
-	    		if (!(containerStatus.getState().getRunning().getStartedAt() != null || containerStatus.getState().getTerminated().getFinishedAt() != null)) {
+	    	for (V1ContainerStatus containerStatus : pod.getStatus().getContainerStatuses()) {	    		
+	    		if (containerStatus.getState() != null) {
+	    			if (containerStatus.getState().getRunning() != null && containerStatus.getState().getRunning().getStartedAt() != null) {
+	    				continue;
+	    			}
+	    			else if (containerStatus.getState().getTerminated() != null && containerStatus.getState().getTerminated().getFinishedAt() != null) {
+	    				continue;
+	    			}
+	    			else {
+	    				allContainersStartedOrFinished = false;
+	    			}
+	    		}
+	    		else {
 	    			allContainersStartedOrFinished = false;
-	    			break;
 	    		}
 	    	}
 	    	if (allContainersStartedOrFinished) {
