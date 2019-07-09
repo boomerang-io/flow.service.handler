@@ -226,7 +226,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 		
 		String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
 	    
-//	    Wait for job to start
+//	    Start - Wait for job to start
 	    
 		System.out.println("GLENDA: Start");
 		
@@ -242,13 +242,10 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 			for (Watch.Response<V1Job> item : watch) {
 				System.out.println("GLENDA: Watch Loop");
 				System.out.println("GLENDA: " + item.type + " : " + item.object.getMetadata().getName());
-				System.out.println("GLENDA: " + item.object.getStatus());
 				System.out.println("GLENDA: " + item.object.getStatus().getStartTime());
-				System.out.println("GLENDA: " + item.object.getStatus().getActive());
-				System.out.println("GLENDA: " + item.object.getStatus().getCompletionTime());
 				
-				if (item.object.getStatus().getCompletionTime() != null) {
-					System.out.println("GLENDA: Watch Break");
+				if (item.object.getStatus().getStartTime() != null) {
+					System.out.println("GLENDA: Watch Break - Job has started");
 					break;
 				}
 				
@@ -263,6 +260,8 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 		}
 		
 		System.out.println("GLENDA: End");
+		
+//	    End - Wait for job to start
 		
 		CoreV1Api api = new CoreV1Api();
 		
