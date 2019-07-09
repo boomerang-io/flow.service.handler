@@ -3,11 +3,13 @@ package net.boomerangplatform.kube.service;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringWriter;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -591,25 +593,46 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	
 	protected abstract Map<String, String> createLabels(String workflowName, String workflowId, String workflowActivityId, String taskId);
 	
+//	protected String createConfigMapProp(Map<String, String> properties) {
+//		StringBuilder propsString = new StringBuilder();
+//
+//		System.out.println("Building ConfigMap Body");
+//		//TODO fix up null check and handling
+//		if (properties != null && !properties.isEmpty()) {
+//			properties.forEach((key, value) -> {
+//				System.out.println("  " + key + "=" + value);
+//				//propsString.append(key.replace("-", "_").replace(".", "_").toUpperCase());
+//				propsString.append(key);
+//				propsString.append("=");
+//				propsString.append(value);
+//				propsString.append("\n");
+//			});
+//		} else {
+//			propsString.append("\n");
+//		}
+//		
+//		return propsString.toString();
+//	}
+	
 	protected String createConfigMapProp(Map<String, String> properties) {
-		StringBuilder propsString = new StringBuilder();
-
 		System.out.println("Building ConfigMap Body");
-		//TODO fix up null check and handling
+		Properties props = new Properties();
+		StringWriter propsSW = new StringWriter();
 		if (properties != null && !properties.isEmpty()) {
 			properties.forEach((key, value) -> {
+				props.setProperty(key, value);
 				System.out.println("  " + key + "=" + value);
-				//propsString.append(key.replace("-", "_").replace(".", "_").toUpperCase());
-				propsString.append(key);
-				propsString.append("=");
-				propsString.append("\"" + value + "\"");
-				propsString.append("\n");
 			});
-		} else {
-			propsString.append("\n");
 		}
 		
-		return propsString.toString();
+		try {
+			props.store(propsSW, "");
+	        System.out.println("" + propsSW.toString());
+	      } catch (IOException ex) {
+	         ex.printStackTrace();
+	      }
+		
+		return propsSW.toString();
 	}
 	
 	protected String createConfigMapPropWithPrefix(Map<String, String> properties, String prefix) {
