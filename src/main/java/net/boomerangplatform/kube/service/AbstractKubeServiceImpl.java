@@ -227,61 +227,46 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 		
 		String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);		
 		CoreV1Api api = new CoreV1Api();
-			    
+		
+		Watch<V1Pod> watch = Watch.createWatch(
+				createWatcherApiClient(), api.listNamespacedPodCall(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null, null, labelSelector, null, null, null, true, null, null),
+				new TypeToken<Watch.Response<V1Job>>() {
+				}.getType());
+		
+		try {
+			for (Watch.Response<V1Pod> item : watch) {
+		    	if (item.object.getStatus() != null && item.object.getStatus().getStartTime() != null) {
+		    		System.out.println("Pod has started (or finished)...");		    		
+		    		boolean allContainersStartedOrFinished = true;
+			    	for (V1ContainerStatus containerStatus : item.object.getStatus().getContainerStatuses()) {	    		
+			    		if (containerStatus.getState() != null) {
+			    			if (containerStatus.getState().getRunning() != null && containerStatus.getState().getRunning().getStartedAt() != null) {
+			    				continue;
+			    			}
+			    			else if (containerStatus.getState().getTerminated() != null && containerStatus.getState().getTerminated().getFinishedAt() != null) {
+			    				continue;
+			    			}
+			    			else {
+			    				allContainersStartedOrFinished = false;
+			    				break;
+			    			}
+			    		}
+			    	}
+			    	if (allContainersStartedOrFinished) {
+			    		System.out.println("All containers have started (or finished)...");
+			    		break;
+			    	}
+		    	}
+			}
+		} finally {
+			watch.close();
+		}
+				
 	    V1Pod pod = 
 	    		api
 	            .listNamespacedPod(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null, null, labelSelector, null, null, 60, false)
 	            .getItems()
-	            .get(0);
-	    	 
-	    while (true) {    	
-	    	if (pod.getStatus() != null && pod.getStatus().getStartTime() != null) {
-	    		System.out.println("Pod has started...");
-	    		break;
-	    	}	    	
-			try {
-				System.out.println("Wait then recheck pod has started...");
-				Thread.sleep(1000);				
-				pod = api
-			            .listNamespacedPod(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null, null, labelSelector, null, null, 60, false)
-			            .getItems()
-			            .get(0);
-			} catch (InterruptedException e) {
-			}
-	    }
-	    
-	    while (true) {
-	    	boolean allContainersStartedOrFinished = true;
-	    	for (V1ContainerStatus containerStatus : pod.getStatus().getContainerStatuses()) {	    		
-	    		if (containerStatus.getState() != null) {
-	    			if (containerStatus.getState().getRunning() != null && containerStatus.getState().getRunning().getStartedAt() != null) {
-	    				continue;
-	    			}
-	    			else if (containerStatus.getState().getTerminated() != null && containerStatus.getState().getTerminated().getFinishedAt() != null) {
-	    				continue;
-	    			}
-	    			else {
-	    				allContainersStartedOrFinished = false;
-	    			}
-	    		}
-	    		else {
-	    			allContainersStartedOrFinished = false;
-	    		}
-	    	}
-	    	if (allContainersStartedOrFinished) {
-	    		System.out.println("All containers have started (or finished)...");
-	    		break;
-	    	}	    	
-			try {
-				System.out.println("Wait then recheck all containers haved started (or finished)...");
-				Thread.sleep(1000);
-				pod = api
-			            .listNamespacedPod(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null, null, labelSelector, null, null, 60, false)
-			            .getItems()
-			            .get(0);
-			} catch (InterruptedException e) {
-			}
-	    }	    	    
+	            .get(0);	    
 	    
 	    PodLogs logs = new PodLogs();
 	    InputStream is = logs.streamNamespacedPodLog(pod);
