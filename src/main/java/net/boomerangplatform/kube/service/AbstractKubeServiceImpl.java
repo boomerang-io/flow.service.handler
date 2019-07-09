@@ -236,26 +236,27 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 		try {
 			for (Watch.Response<V1Pod> item : watch) {
 		    	if (item.object.getStatus() != null && item.object.getStatus().getStartTime() != null) {
-		    		System.out.println("Pod has started (or finished)...");		    		
-		    		boolean allContainersStartedOrFinished = true;
-			    	for (V1ContainerStatus containerStatus : item.object.getStatus().getContainerStatuses()) {	    		
-			    		if (containerStatus.getState() != null) {
-			    			if (containerStatus.getState().getRunning() != null && containerStatus.getState().getRunning().getStartedAt() != null) {
-			    				continue;
-			    			}
-			    			else if (containerStatus.getState().getTerminated() != null && containerStatus.getState().getTerminated().getFinishedAt() != null) {
-			    				continue;
-			    			}
-			    			else {
-			    				allContainersStartedOrFinished = false;
-			    				break;
-			    			}
-			    		}
-			    	}
-			    	if (allContainersStartedOrFinished) {
-			    		System.out.println("All containers have started (or finished)...");
-			    		break;
-			    	}
+		    		System.out.println("Pod has started (or finished)...");
+		    		break;
+//		    		boolean allContainersStartedOrFinished = true;
+//			    	for (V1ContainerStatus containerStatus : item.object.getStatus().getContainerStatuses()) {	    		
+//			    		if (containerStatus.getState() != null) {
+//			    			if (containerStatus.getState().getRunning() != null && containerStatus.getState().getRunning().getStartedAt() != null) {
+//			    				continue;
+//			    			}
+//			    			else if (containerStatus.getState().getTerminated() != null && containerStatus.getState().getTerminated().getFinishedAt() != null) {
+//			    				continue;
+//			    			}
+//			    			else {
+//			    				allContainersStartedOrFinished = false;
+//			    				break;
+//			    			}
+//			    		}
+//			    	}
+//			    	if (allContainersStartedOrFinished) {
+//			    		System.out.println("All containers have started (or finished)...");
+//			    		break;
+//			    	}
 		    	}
 			}
 		} finally {
