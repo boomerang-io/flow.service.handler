@@ -241,7 +241,11 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	    	}	    	
 			try {
 				System.out.println("GLENDA: Wait then recheck pod has started...");
-				Thread.sleep(1000);
+				Thread.sleep(1000);				
+				pod = api
+			            .listNamespacedPod(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null, null, labelSelector, null, null, 60, false)
+			            .getItems()
+			            .get(0);
 			} catch (InterruptedException e) {
 			}
 	    }
@@ -271,6 +275,10 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 			try {
 				System.out.println("GLENDA: Wait then recheck all containers haved started (or finished)...");
 				Thread.sleep(1000);
+				pod = api
+			            .listNamespacedPod(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null, null, labelSelector, null, null, 60, false)
+			            .getItems()
+			            .get(0);
 			} catch (InterruptedException e) {
 			}
 	    }	    	    
