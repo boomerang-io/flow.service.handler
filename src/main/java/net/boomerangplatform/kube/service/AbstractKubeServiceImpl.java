@@ -236,11 +236,11 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	    	 
 	    while (true) {    	
 	    	if (pod.getStatus() != null && pod.getStatus().getStartTime() != null) {
-	    		System.out.println("GLENDA: Pod has started...");
+	    		System.out.println("Pod has started...");
 	    		break;
 	    	}	    	
 			try {
-				System.out.println("GLENDA: Wait then recheck pod has started...");
+				System.out.println("Wait then recheck pod has started...");
 				Thread.sleep(1000);				
 				pod = api
 			            .listNamespacedPod(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null, null, labelSelector, null, null, 60, false)
@@ -269,11 +269,11 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	    		}
 	    	}
 	    	if (allContainersStartedOrFinished) {
-	    		System.out.println("GLENDA: All containers have started (or finished)...");
+	    		System.out.println("All containers have started (or finished)...");
 	    		break;
 	    	}	    	
 			try {
-				System.out.println("GLENDA: Wait then recheck all containers haved started (or finished)...");
+				System.out.println("Wait then recheck all containers haved started (or finished)...");
 				Thread.sleep(1000);
 				pod = api
 			            .listNamespacedPod(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null, null, labelSelector, null, null, 60, false)
