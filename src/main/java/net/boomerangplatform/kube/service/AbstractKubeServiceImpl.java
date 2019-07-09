@@ -602,7 +602,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 				//propsString.append(key.replace("-", "_").replace(".", "_").toUpperCase());
 				propsString.append(key);
 				propsString.append("=");
-				propsString.append(value);
+				propsString.append("\"" + value + "\"");
 				propsString.append("\n");
 			});
 		} else {
