@@ -223,15 +223,47 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	
 	@Override
 	public StreamingResponseBody streamPodLog(HttpServletResponse response, String workflowId, String workflowActivityId, String taskId) throws ApiException, IOException {		
-		CoreV1Api api = new CoreV1Api();
+		
 		String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
-
+	    
+//	    Wait for job to start
+	    
+	    BatchV1Api batchApi = new BatchV1Api();
+		Watch<V1Job> watch = Watch.createWatch(
+				createWatcherApiClient(), batchApi.listNamespacedJobCall(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null, null, labelSelector, null, null, null, true, null, null),
+				new TypeToken<Watch.Response<V1Job>>() {
+				}.getType());
+		
+		try {
+			for (Watch.Response<V1Job> item : watch) {
+				System.out.println(item.type + " : " + item.object.getMetadata().getName());
+				System.out.println(item.object.getStatus());
+				System.out.println(item.object.getStatus().getStartTime());
+				System.out.println(item.object.getStatus().getActive());
+				System.out.println(item.object.getStatus().getCompletionTime());
+				
+				if (item.object.getStatus().getCompletionTime() != null) {
+					break;
+				}
+				
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {
+				}
+			}
+		} finally {
+			watch.close();
+		}
+		
+		CoreV1Api api = new CoreV1Api();
+		
 	    PodLogs logs = new PodLogs();
 	    V1Pod pod = 
 	    		api
 	            .listNamespacedPod(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null, null, labelSelector, null, null, 60, false)
 	            .getItems()
 	            .get(0);
+	    
 	    InputStream is = logs.streamNamespacedPodLog(pod);
 		
 		return outputStream -> {
