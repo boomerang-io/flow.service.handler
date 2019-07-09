@@ -228,25 +228,32 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	    
 //	    Wait for job to start
 	    
+		System.out.println("GLENDA: Start");
+		
 	    BatchV1Api batchApi = new BatchV1Api();
 		Watch<V1Job> watch = Watch.createWatch(
 				createWatcherApiClient(), batchApi.listNamespacedJobCall(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null, null, labelSelector, null, null, null, true, null, null),
 				new TypeToken<Watch.Response<V1Job>>() {
 				}.getType());
 		
+		System.out.println("GLENDA: Watch");
+		
 		try {
 			for (Watch.Response<V1Job> item : watch) {
-				System.out.println(item.type + " : " + item.object.getMetadata().getName());
-				System.out.println(item.object.getStatus());
-				System.out.println(item.object.getStatus().getStartTime());
-				System.out.println(item.object.getStatus().getActive());
-				System.out.println(item.object.getStatus().getCompletionTime());
+				System.out.println("GLENDA: Watch Loop");
+				System.out.println("GLENDA: " + item.type + " : " + item.object.getMetadata().getName());
+				System.out.println("GLENDA: " + item.object.getStatus());
+				System.out.println("GLENDA: " + item.object.getStatus().getStartTime());
+				System.out.println("GLENDA: " + item.object.getStatus().getActive());
+				System.out.println("GLENDA: " + item.object.getStatus().getCompletionTime());
 				
 				if (item.object.getStatus().getCompletionTime() != null) {
+					System.out.println("GLENDA: Watch Break");
 					break;
 				}
 				
 				try {
+					System.out.println("GLENDA: Watch Sleep");
 					Thread.sleep(1000);
 				} catch (InterruptedException e) {
 				}
@@ -254,6 +261,8 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 		} finally {
 			watch.close();
 		}
+		
+		System.out.println("GLENDA: End");
 		
 		CoreV1Api api = new CoreV1Api();
 		
