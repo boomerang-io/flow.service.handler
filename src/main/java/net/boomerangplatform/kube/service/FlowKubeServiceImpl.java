@@ -113,7 +113,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
 		List<V1VolumeProjection> projectPropsVolumeList = new ArrayList<V1VolumeProjection>();
 		
 		//Add Worfklow Configmap Projected Volume
-		V1ConfigMap wfConfigMap = getConfigMap(workflowId, activityId, taskId);
+		V1ConfigMap wfConfigMap = getConfigMap(workflowId, activityId, null);
 		if (wfConfigMap != null && !getConfigMapName(wfConfigMap).isEmpty()) {
 			V1ConfigMapProjection projectedConfigMapWorkflow = new V1ConfigMapProjection();
 			projectedConfigMapWorkflow.name(getConfigMapName(wfConfigMap));
@@ -226,7 +226,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
 	            + workflowId
 	            + ",activity-id="
 	            + activityId;
-	    Optional.ofNullable(taskId).ifPresent(str -> labelSelector.concat(",task-id=" + taskId));
+	    Optional.ofNullable(taskId).ifPresent(str -> labelSelector.concat(",task-id=" + str));
 	    return labelSelector;
 	  }
 	  
