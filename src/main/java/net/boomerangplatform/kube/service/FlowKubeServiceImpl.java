@@ -221,13 +221,12 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
 	  }
 
 	  protected String getLabelSelector(String workflowId, String activityId, String taskId) {
-	    String labelSelector =
-	        "platform=" + ORG + ",app=" + PREFIX + ",workflow-id="
+		  StringBuilder labelSelector = new StringBuilder("platform=" + ORG + ",app=" + PREFIX + ",workflow-id="
 	            + workflowId
 	            + ",activity-id="
-	            + activityId;
-	    Optional.ofNullable(taskId).ifPresent(str -> labelSelector.concat(",task-id=" + str));
-	    return labelSelector;
+	            + activityId);
+	    Optional.ofNullable(taskId).ifPresent(str -> labelSelector.append(",task-id=" + str));
+	    return labelSelector.toString();
 	  }
 	  
 		protected Map<String, String> createAnnotations(String workflowName, String workflowId, String activityId, String taskId) {
