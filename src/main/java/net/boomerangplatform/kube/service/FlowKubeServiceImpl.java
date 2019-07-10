@@ -63,7 +63,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
 		// Create Metadata
 		V1ObjectMeta jobMetadata = new V1ObjectMeta();
 		jobMetadata.annotations(createAnnotations(workflowName, workflowId, activityId, taskId));
-		jobMetadata.labels(createLabels(workflowName, workflowId, activityId, taskId));
+		jobMetadata.labels(createLabels(workflowId, activityId, taskId));
 		jobMetadata.generateName(PREFIX_JOB + "-");
 		body.metadata(jobMetadata);
 
@@ -113,7 +113,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
 		List<V1VolumeProjection> projectPropsVolumeList = new ArrayList<V1VolumeProjection>();
 		
 		//Add Worfklow Configmap Projected Volume
-		V1ConfigMap wfConfigMap = getConfigMap(workflowId, activityId, taskId);
+		V1ConfigMap wfConfigMap = getConfigMap(workflowId, activityId, null);
 		if (wfConfigMap != null && !getConfigMapName(wfConfigMap).isEmpty()) {
 			V1ConfigMapProjection projectedConfigMapWorkflow = new V1ConfigMapProjection();
 			projectedConfigMapWorkflow.name(getConfigMapName(wfConfigMap));
@@ -123,7 +123,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
 		}
 
 		//Add Task Configmap Projected Volume
-		V1ConfigMap taskConfigMap = getConfigMap(workflowId, activityId, taskId);
+		V1ConfigMap taskConfigMap = getConfigMap(null, activityId, taskId);
 		if (taskConfigMap != null && !getConfigMapName(taskConfigMap).isEmpty()) {
 			V1ConfigMapProjection projectedConfigMapTask = new V1ConfigMapProjection();
 			projectedConfigMapTask.name(getConfigMapName(taskConfigMap));
@@ -151,7 +151,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
 		//Pod metadata. Different to the job metadata
 		V1ObjectMeta podMetadata = new V1ObjectMeta();
 		podMetadata.annotations(createAnnotations(workflowName, workflowId, activityId, taskId));
-		podMetadata.labels(createLabels(workflowName, workflowId, activityId, taskId));
+		podMetadata.labels(createLabels(workflowId, activityId, taskId));
 		templateSpec.metadata(podMetadata);
 		
 		jobSpec.backoffLimit(kubeWorkerJobBackOffLimit);
@@ -176,7 +176,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
 		    // Create Metadata
 		    V1ObjectMeta metadata = new V1ObjectMeta();
 		    metadata.annotations(createAnnotations(workflowName, workflowId, workflowActivityId, taskId));
-		    metadata.labels(createLabels(workflowName, workflowId, workflowActivityId, taskId));
+		    metadata.labels(createLabels(null, workflowActivityId, taskId));
 		    metadata.generateName(PREFIX_CFGMAP);
 		    body.metadata(metadata);
 		    
@@ -201,7 +201,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
 	    // Create Metadata
 	    V1ObjectMeta metadata = new V1ObjectMeta();
 	    metadata.annotations(createAnnotations(workflowName, workflowId, workflowActivityId, null));
-	    metadata.labels(createLabels(workflowName, workflowId, workflowActivityId, null));
+	    metadata.labels(createLabels(workflowId, workflowActivityId, null));
 	    metadata.generateName(PREFIX_CFGMAP);
 //			metadata.name(PREFIX_CFGMAP + workflowActivityId); //We are using a fixed name to make it easier to find for subsequent calls as not all the configmap API's search on labels. Some take name as the parameter.
 	    body.metadata(metadata);
@@ -221,12 +221,13 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
 	  }
 
 	  protected String getLabelSelector(String workflowId, String activityId, String taskId) {
-	    String labelSelector =
-	        "platform=" + ORG + ",app=" + PREFIX + ",workflow-id="
-	            + workflowId
-	            + ",activity-id="
-	            + activityId;
-	    return Optional.ofNullable(taskId).isPresent() ? labelSelector.concat(",task-id=" + taskId) : labelSelector;
+		  StringBuilder labelSelector = new StringBuilder("platform=" + ORG + ",app=" + PREFIX);
+		  Optional.ofNullable(workflowId).ifPresent(str -> labelSelector.append(",workflow-id=" + str));
+		  Optional.ofNullable(activityId).ifPresent(str -> labelSelector.append(",activity-id=" + str));  
+	    Optional.ofNullable(taskId).ifPresent(str -> labelSelector.append(",task-id=" + str));
+
+		System.out.println("  labelSelector: " + labelSelector.toString());
+	    return labelSelector.toString();
 	  }
 	  
 		protected Map<String, String> createAnnotations(String workflowName, String workflowId, String activityId, String taskId) {
@@ -241,11 +242,10 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
 			return annotations;
 		}
 		
-		protected Map<String, String> createLabels(String workflowName, String workflowId, String activityId, String taskId) {
+		protected Map<String, String> createLabels(String workflowId, String activityId, String taskId) {
 			Map<String, String> labels = new HashMap<String, String>();
 			labels.put("platform", ORG);
 			labels.put("app", PREFIX);
-			Optional.ofNullable(workflowName).ifPresent(str -> labels.put("workflow-name", str.replace(" ", "")));
 			Optional.ofNullable(workflowId).ifPresent(str -> labels.put("workflow-id", str));
 			Optional.ofNullable(activityId).ifPresent(str -> labels.put("activity-id", str));
 			Optional.ofNullable(taskId).ifPresent(str -> labels.put("task-id", str));

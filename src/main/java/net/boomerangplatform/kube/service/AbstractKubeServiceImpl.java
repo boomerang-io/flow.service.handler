@@ -297,7 +297,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 		// Create Metadata
 		V1ObjectMeta metadata = new V1ObjectMeta();
 		metadata.annotations(createAnnotations(workflowName, workflowId, workflowActivityId, null));
-		metadata.labels(createLabels(workflowName, workflowId, workflowActivityId, null));
+		metadata.labels(createLabels(workflowId, workflowActivityId, null));
 		metadata.generateName(PREFIX_PVC);
 		body.metadata(metadata);
 
@@ -464,8 +464,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	@Override
 	public V1ConfigMap watchConfigMap(String workflowId, String workflowActivityId, String taskId) throws ApiException, IOException {
 		CoreV1Api api = new CoreV1Api();
-		String taskIdSelect = taskId.isEmpty() ? null : taskId;
-		String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskIdSelect);
+		String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
 		
 		Watch<V1ConfigMap> watch = Watch.createWatch(
 				createWatcherApiClient(), api.listNamespacedConfigMapCall(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null, null, labelSelector, null, null, null, true, null, null),
@@ -489,7 +488,6 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 		
 		CoreV1Api api = new CoreV1Api();
 		String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
-		System.out.println("  labelSelector: " + labelSelector);
 		try {
 			V1ConfigMapList configMapList = api.listNamespacedConfigMap(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null, null, labelSelector, null, null, 60, false);
 			configMapList.getItems().forEach(cfgmap -> {
@@ -635,7 +633,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	
 	protected abstract Map<String, String> createAnnotations(String workflowName, String workflowId, String workflowActivityId, String taskId);
 	
-	protected abstract Map<String, String> createLabels(String workflowName, String workflowId, String workflowActivityId, String taskId);
+	protected abstract Map<String, String> createLabels(String workflowId, String workflowActivityId, String taskId);
 	
 	protected String createConfigMapProp(Map<String, String> properties) {
 		System.out.println("Building ConfigMap Body");
@@ -649,7 +647,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 		}
 		
 		try {
-			props.store(propsSW, "");
+			props.store(propsSW, null);
 	        System.out.println("" + propsSW.toString());
 	      } catch (IOException ex) {
 	         ex.printStackTrace();

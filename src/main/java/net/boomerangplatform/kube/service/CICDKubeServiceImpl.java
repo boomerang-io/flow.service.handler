@@ -63,7 +63,7 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
 		// Create Metadata
 		V1ObjectMeta jobMetadata = new V1ObjectMeta();
 		jobMetadata.annotations(createAnnotations(componentName, componentId, activityId, taskId));
-		jobMetadata.labels(createLabels(componentName, componentId, activityId, taskId));
+		jobMetadata.labels(createLabels(componentId, activityId, taskId));
 		jobMetadata.generateName(PREFIX_JOB + "-");
 		body.metadata(jobMetadata);
 
@@ -146,7 +146,7 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
 		//Pod metadata. Different to the job metadata
 		V1ObjectMeta podMetadata = new V1ObjectMeta();
 		podMetadata.annotations(createAnnotations(componentName, componentId, activityId, taskId));
-		podMetadata.labels(createLabels(componentName, componentId, activityId, taskId));
+		podMetadata.labels(createLabels(componentId, activityId, taskId));
 		templateSpec.metadata(podMetadata);
 		
 		jobSpec.backoffLimit(kubeWorkerJobBackOffLimit);
@@ -171,7 +171,7 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
 		    // Create Metadata
 		    V1ObjectMeta metadata = new V1ObjectMeta();
 		    metadata.annotations(createAnnotations(componentName, componentId, activityId, taskId));
-		    metadata.labels(createLabels(componentName, componentId, activityId, taskId));
+		    metadata.labels(createLabels(componentId, activityId, taskId));
 		    metadata.generateName(PREFIX_CFGMAP);
 		    body.metadata(metadata);
 		    
@@ -192,7 +192,7 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
 			    // Create Metadata
 			    V1ObjectMeta metadata = new V1ObjectMeta();
 			    metadata.annotations(createAnnotations(componentName, componentId, activityId, null));
-			    metadata.labels(createLabels(componentName, componentId, activityId, null));
+			    metadata.labels(createLabels(componentId, activityId, null));
 			    metadata.generateName(PREFIX_CFGMAP);
 			    body.metadata(metadata);
 			    
@@ -211,12 +211,13 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
 			  }
 
   protected String getLabelSelector(String componentId, String activityId, String taskId) {
-    String labelSelector =
-        "platform=" + ORG + ",app=" + PREFIX + ",component-id="
-            + componentId;
-    labelSelector = Optional.ofNullable(activityId).isPresent() ? labelSelector.concat(",activity-id=" + activityId) : labelSelector;
-    labelSelector = Optional.ofNullable(taskId).isPresent() ? labelSelector.concat(",task-id=" + taskId) : labelSelector;
-    return labelSelector;
+	  StringBuilder labelSelector = new StringBuilder("platform=" + ORG + ",app=" + PREFIX);
+	  Optional.ofNullable(componentId).ifPresent(str -> labelSelector.append(",component-id=" + str));
+	  Optional.ofNullable(activityId).ifPresent(str -> labelSelector.append(",activity-id=" + str));  
+    Optional.ofNullable(taskId).ifPresent(str -> labelSelector.append(",task-id=" + str));
+
+	System.out.println("  labelSelector: " + labelSelector.toString());
+    return labelSelector.toString();
   }
   
 	protected Map<String, String> createAnnotations(String componentName, String componentId, String activityId, String taskId) {
@@ -231,11 +232,10 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
 		return annotations;
 	}
 	
-	protected Map<String, String> createLabels(String componentName, String componentId, String activityId, String taskId) {
+	protected Map<String, String> createLabels(String componentId, String activityId, String taskId) {
 		Map<String, String> labels = new HashMap<String, String>();
 		labels.put("platform", ORG);
 		labels.put("app", PREFIX);
-		Optional.ofNullable(componentName).ifPresent(str -> labels.put("component-name", str.replace(" ", "")));
 		Optional.ofNullable(componentId).ifPresent(str -> labels.put("component-id", str));
 		Optional.ofNullable(activityId).ifPresent(str -> labels.put("activity-id", str));
 		Optional.ofNullable(taskId).ifPresent(str -> labels.put("task-id", str));
