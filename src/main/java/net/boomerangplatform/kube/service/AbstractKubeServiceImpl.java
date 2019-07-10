@@ -271,14 +271,21 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	    PodLogs logs = new PodLogs();
 	    InputStream is = logs.streamNamespacedPodLog(pod);
 	    
-		return outputStream -> {
-		  
-		    int nRead;
-		    byte[] data = new byte[1024];
-		    while ((nRead = is.read(data, 0, data.length)) != -1) {
-		        System.out.println("Writing some bytes of file...");
-		        outputStream.write(data, 0, nRead);
-		    }
+		return outputStream -> {		
+			while (is.available() > 0) {
+				System.out.println("Writing " + is.available() + " bytes of a file...");
+				ByteStreams.copy(is, outputStream);
+				try {
+					Thread.sleep(500);
+				} catch (InterruptedException e) {
+				}
+			}		  
+//		    int nRead;
+//		    byte[] data = new byte[1024];
+//		    while ((nRead = is.read(data, 0, data.length)) != -1) {
+//		        System.out.println("Writing some bytes of file...");
+//		        outputStream.write(data, 0, nRead);
+//		    }
 		};
 	}
 	
