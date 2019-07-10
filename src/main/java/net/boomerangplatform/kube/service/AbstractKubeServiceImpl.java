@@ -640,7 +640,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 		}
 		
 		try {
-			props.store(propsSW, "");
+			props.store(propsSW, null);
 	        System.out.println("" + propsSW.toString());
 	      } catch (IOException ex) {
 	         ex.printStackTrace();

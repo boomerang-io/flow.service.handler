@@ -69,7 +69,7 @@ public class FlowControllerServiceImpl implements ControllerService {
 			response.setMessage(e.toString());
 		} finally {
 			response.setOutput(kubeService.getTaskOutPutConfigMapData(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId(), task.getTaskName()));
-			kubeService.deleteConfigMap(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
+			kubeService.deleteConfigMap(null, task.getWorkflowActivityId(), task.getTaskId());
 		}
 		return response;
 	}
