@@ -481,7 +481,6 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 		
 		CoreV1Api api = new CoreV1Api();
 		String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
-		System.out.println("  labelSelector: " + labelSelector);
 		try {
 			V1ConfigMapList configMapList = api.listNamespacedConfigMap(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null, null, labelSelector, null, null, 60, false);
 			configMapList.getItems().forEach(cfgmap -> {

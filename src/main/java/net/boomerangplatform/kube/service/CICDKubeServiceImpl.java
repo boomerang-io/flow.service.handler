@@ -215,6 +215,8 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
 	  Optional.ofNullable(componentId).ifPresent(str -> labelSelector.append(",component-id=" + str));
 	  Optional.ofNullable(activityId).ifPresent(str -> labelSelector.append(",activity-id=" + str));  
     Optional.ofNullable(taskId).ifPresent(str -> labelSelector.append(",task-id=" + str));
+
+	System.out.println("  labelSelector: " + labelSelector.toString());
     return labelSelector.toString();
   }
   

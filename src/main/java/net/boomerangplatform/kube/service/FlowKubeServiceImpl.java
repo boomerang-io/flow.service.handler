@@ -225,6 +225,8 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
 		  Optional.ofNullable(workflowId).ifPresent(str -> labelSelector.append(",workflow-id=" + str));
 		  Optional.ofNullable(activityId).ifPresent(str -> labelSelector.append(",activity-id=" + str));  
 	    Optional.ofNullable(taskId).ifPresent(str -> labelSelector.append(",task-id=" + str));
+
+		System.out.println("  labelSelector: " + labelSelector.toString());
 	    return labelSelector.toString();
 	  }
 	  
