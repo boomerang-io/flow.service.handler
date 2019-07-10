@@ -226,7 +226,8 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
 	            + workflowId
 	            + ",activity-id="
 	            + activityId;
-	    return Optional.ofNullable(taskId).isPresent() ? labelSelector.concat(",task-id=" + taskId) : labelSelector;
+	    Optional.ofNullable(taskId).ifPresent(str -> labelSelector.concat(",task-id=" + taskId));
+	    return labelSelector;
 	  }
 	  
 		protected Map<String, String> createAnnotations(String workflowName, String workflowId, String activityId, String taskId) {

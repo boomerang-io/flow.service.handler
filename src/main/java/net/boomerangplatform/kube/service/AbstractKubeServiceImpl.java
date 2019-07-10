@@ -457,8 +457,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	@Override
 	public V1ConfigMap watchConfigMap(String workflowId, String workflowActivityId, String taskId) throws ApiException, IOException {
 		CoreV1Api api = new CoreV1Api();
-		String taskIdSelect = taskId.isEmpty() ? null : taskId;
-		String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskIdSelect);
+		String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
 		
 		Watch<V1ConfigMap> watch = Watch.createWatch(
 				createWatcherApiClient(), api.listNamespacedConfigMapCall(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null, null, labelSelector, null, null, null, true, null, null),
