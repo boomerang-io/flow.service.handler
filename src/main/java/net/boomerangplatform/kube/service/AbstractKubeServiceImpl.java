@@ -290,7 +290,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 		// Create Metadata
 		V1ObjectMeta metadata = new V1ObjectMeta();
 		metadata.annotations(createAnnotations(workflowName, workflowId, workflowActivityId, null));
-		metadata.labels(createLabels(workflowName, workflowId, workflowActivityId, null));
+		metadata.labels(createLabels(workflowId, workflowActivityId, null));
 		metadata.generateName(PREFIX_PVC);
 		body.metadata(metadata);
 
@@ -627,7 +627,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	
 	protected abstract Map<String, String> createAnnotations(String workflowName, String workflowId, String workflowActivityId, String taskId);
 	
-	protected abstract Map<String, String> createLabels(String workflowName, String workflowId, String workflowActivityId, String taskId);
+	protected abstract Map<String, String> createLabels(String workflowId, String workflowActivityId, String taskId);
 	
 	protected String createConfigMapProp(Map<String, String> properties) {
 		System.out.println("Building ConfigMap Body");
