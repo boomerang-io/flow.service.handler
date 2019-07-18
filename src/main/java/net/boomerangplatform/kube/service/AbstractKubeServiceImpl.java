@@ -634,8 +634,9 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 		StringWriter propsSW = new StringWriter();
 		if (properties != null && !properties.isEmpty()) {
 			properties.forEach((key, value) -> {
-				props.setProperty(key, value);
-				System.out.println("  " + key + "=" + value);
+				String valueStr = value != null ? value : "";
+				System.out.println("  " + key + "=" + valueStr);
+				props.setProperty(key, valueStr);
 			});
 		}
 		
