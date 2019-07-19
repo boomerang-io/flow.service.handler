@@ -274,21 +274,20 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 		return outputStream -> {			  		    		
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();			
 			int nRead;
-			int totalRead = 0;
+			int nFlush = 0;
 		    byte[] data = new byte[1024];		    
 		    while ((nRead = is.read(data, 0, data.length)) != -1) {
 		    	baos.write(data, 0, nRead);		    	
 		    	if (baos.size() > 1024) {
-		    		System.out.println("Streaming " + baos.size() + " bytes...");
+		    		nFlush += baos.size();
+		    		System.out.println("Flushing " + baos.size() + " bytes from buffer...");
 		    		outputStream.write(baos.toByteArray());
 		    		baos = new ByteArrayOutputStream();
 		    	}	    	
-		    	totalRead += nRead;
 		    }	    
-		    outputStream.write(baos.toByteArray());
+//		    outputStream.write(baos.toByteArray());
 		    
-		    System.out.println("totalRead=" + totalRead + "...");
-		    
+		    System.out.println("nFlush=" + nFlush + "...");		    
 		    try {
 				InputStream refetch = logs.streamNamespacedPodLog(pod);
 				baos = new ByteArrayOutputStream();
@@ -296,9 +295,9 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 			    	baos.write(data, 0, nRead);		    	    	
 			    }
 				System.out.println("baos.size()=" + baos.size() + "...");
-				if (baos.size() > totalRead) {
-					System.out.println("Streaming last " + (baos.size()-totalRead) + " bytes...");
-					outputStream.write(baos.toByteArray(), totalRead, baos.size()-totalRead);	
+				if (baos.size() > nFlush) {
+					System.out.println("Flushing last " + (baos.size()-nFlush) + " bytes...");
+					outputStream.write(baos.toByteArray(), nFlush, baos.size()-nFlush);	
 				}				
 			} catch (ApiException e) {
 			}		    
