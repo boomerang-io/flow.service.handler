@@ -276,7 +276,11 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 			int nRead;
 		    byte[] data = new byte[1024];		    
 		    while ((nRead = is.read(data, 0, data.length)) != -1) {
-		    	baos.write(data, 0, nRead);
+		    	baos.write(data, 0, nRead);		    	
+		    	if (baos.size() > 4096) {
+		    		outputStream.write(baos.toByteArray());
+		    		baos = new ByteArrayOutputStream();
+		    	}		    	
 //		        outputStream.write(data, 0, nRead);
 		    }		    
 		    outputStream.write(baos.toByteArray());
