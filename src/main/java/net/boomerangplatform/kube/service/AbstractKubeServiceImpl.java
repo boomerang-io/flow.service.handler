@@ -3,6 +3,7 @@ package net.boomerangplatform.kube.service;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.StringWriter;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
@@ -271,24 +272,38 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	    PodLogs logs = new PodLogs();
 	    InputStream is = logs.streamNamespacedPodLog(pod);
 	    
-		return outputStream -> {			  		    		
-			ByteArrayOutputStream baos = new ByteArrayOutputStream();			
-			int nRead;
-		    byte[] data = new byte[1024];
-		    while ((nRead = is.read(data, 0, data.length)) != -1) {
-		    	baos.write(data, 0, nRead);		    	
-		    	if (baos.size() > 1024) {
-		    		System.out.println("Flushing " + baos.size() + " bytes from buffer...");
-		    		outputStream.write(baos.toByteArray());
-		    		outputStream.flush();
-		    		baos = new ByteArrayOutputStream();
-		    	}	    	
-		    }	    
-		    System.out.println("Flushing last " + baos.size() + " bytes from buffer...");
-		    outputStream.write(baos.toByteArray());
-		    outputStream.flush();
-		    System.out.println("Exiting...");
-		};
+//		return outputStream -> {			  		    		
+//			ByteArrayOutputStream baos = new ByteArrayOutputStream();			
+//			int nRead;
+//		    byte[] data = new byte[1024];
+//		    while ((nRead = is.read(data, 0, data.length)) != -1) {
+//		    	baos.write(data, 0, nRead);		    	
+//		    	if (baos.size() > 1024) {
+//		    		System.out.println("Flushing " + baos.size() + " bytes from buffer...");
+//		    		outputStream.write(baos.toByteArray());
+//		    		outputStream.flush();
+//		    		baos = new ByteArrayOutputStream();
+//		    	}	    	
+//		    }	    
+//		    System.out.println("Flushing last " + baos.size() + " bytes from buffer...");
+//		    outputStream.write(baos.toByteArray());
+//		    outputStream.flush();
+//		    System.out.println("Exiting...");
+//		};
+		
+        return new StreamingResponseBody() {
+            @Override
+            public void writeTo (OutputStream outputStream) throws IOException {	
+    			int nRead;
+    		    byte[] data = new byte[1024];
+    		    System.out.println("Start streaming bytes...");
+    		    while ((nRead = is.read(data, 0, data.length)) != -1) {
+    		    	outputStream.write(data, 0, nRead);  	
+    		    }	    
+    		    System.out.println("Flushing last bytes from buffer...");
+    		    outputStream.flush();
+            }
+        };
 	}
 	
 	public V1PersistentVolumeClaim createPVC(String workflowName, String workflowId, String workflowActivityId, String pvcSize) throws ApiException {
