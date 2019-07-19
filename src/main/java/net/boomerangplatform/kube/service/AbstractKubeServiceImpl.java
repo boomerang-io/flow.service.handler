@@ -274,16 +274,34 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 		return outputStream -> {			  		    		
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();			
 			int nRead;
+			int totalRead = 0;
 		    byte[] data = new byte[1024];		    
 		    while ((nRead = is.read(data, 0, data.length)) != -1) {
 		    	baos.write(data, 0, nRead);		    	
 		    	if (baos.size() > 1024) {
+		    		System.out.println("Streaming " + baos.size() + " bytes...");
 		    		outputStream.write(baos.toByteArray());
 		    		baos = new ByteArrayOutputStream();
 		    	}	    	
-//		        outputStream.write(data, 0, nRead);
-		    }		    
+		    	totalRead += nRead;
+		    }	    
 		    outputStream.write(baos.toByteArray());
+		    
+		    System.out.println("totalRead=" + totalRead + "...");
+		    
+		    try {
+				InputStream refetch = logs.streamNamespacedPodLog(pod);
+				baos = new ByteArrayOutputStream();
+				while ((nRead = refetch.read(data, 0, data.length)) != -1) {
+			    	baos.write(data, 0, nRead);		    	    	
+			    }
+				System.out.println("baos.size()=" + baos.size() + "...");
+				if (baos.size() > totalRead) {
+					System.out.println("Streaming last " + (baos.size()-totalRead) + " bytes...");
+					outputStream.write(baos.toByteArray(), totalRead, baos.size()-totalRead);	
+				}				
+			} catch (ApiException e) {
+			}		    
 		};
 	}
 	
