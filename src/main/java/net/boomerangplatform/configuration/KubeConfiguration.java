@@ -19,16 +19,19 @@ import io.kubernetes.client.util.Config;
 public class KubeConfiguration extends WebMvcConfigurerAdapter {
 
 	@Value("${kube.api.base.path}")
-	public String kubeApiBasePath;
+	private String kubeApiBasePath;
 
 	@Value("${kube.api.token}")
-	public String kubeApiToken;
+	private String kubeApiToken;
 	
 	@Value("${kube.api.debug}")
-	public String kubeApiDebug;
+	private String kubeApiDebug;
 	
 	@Value("${kube.api.type}")
-	public String kubeApiType;
+	private String kubeApiType;
+	
+	@Value("${spring.mvc.async.request-timeout}")
+	private String asyncRequestTimeout;
 
 	@Bean
 	public ApiClient connectToKube() {
@@ -58,7 +61,7 @@ public class KubeConfiguration extends WebMvcConfigurerAdapter {
 	
 	@Override
 	public void configureAsyncSupport(AsyncSupportConfigurer configurer) {
-		configurer.setDefaultTimeout(-1);
+		configurer.setDefaultTimeout(Integer.valueOf(asyncRequestTimeout));
 		configurer.setTaskExecutor(asyncTaskExecutor());
 	}
 	
