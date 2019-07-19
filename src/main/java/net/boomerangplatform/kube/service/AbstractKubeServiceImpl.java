@@ -275,23 +275,18 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();			
 			int nRead;
 		    byte[] data = new byte[1024];
-		    boolean firstFlush = true;
 		    while ((nRead = is.read(data, 0, data.length)) != -1) {
 		    	baos.write(data, 0, nRead);		    	
-		    	if (firstFlush && baos.size() > 16384) {
+		    	if (baos.size() > 1024) {
 		    		System.out.println("Flushing " + baos.size() + " bytes from buffer...");
 		    		outputStream.write(baos.toByteArray());
+		    		outputStream.flush();
 		    		baos = new ByteArrayOutputStream();
-		    		firstFlush = false;
 		    	}	    	
 		    }	    
 		    System.out.println("Flushing last " + baos.size() + " bytes from buffer...");
 		    outputStream.write(baos.toByteArray());
-		    
-		    try {
-				Thread.sleep(5000);
-			} catch (InterruptedException e) {
-			}
+		    outputStream.flush();
 		    System.out.println("Exiting...");
 		};
 	}
