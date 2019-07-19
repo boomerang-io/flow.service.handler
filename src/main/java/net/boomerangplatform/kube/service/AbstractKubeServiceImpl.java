@@ -270,23 +270,16 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	            .get(0);	    
 	    
 	    PodLogs logs = new PodLogs();
-	    InputStream is = logs.streamNamespacedPodLog(pod);
+	    InputStream inputStream = logs.streamNamespacedPodLog(pod);
 	    
-		return outputStream -> {			  		    		
-			ByteArrayOutputStream baos = new ByteArrayOutputStream();			
-			int nRead;
-		    byte[] data = new byte[1024];
-		    while ((nRead = is.read(data, 0, data.length)) != -1) {
-		    	baos.write(data, 0, nRead);		    	
-		    	if (baos.size() > 64) {
-		    		System.out.println("Flushing " + baos.size() + " bytes from buffer...");
-		    		outputStream.write(baos.toByteArray());
-		    		baos = new ByteArrayOutputStream();
-		    	}	    	
+		return outputStream -> {			  		    				
+			byte[] data = new byte[2048];
+			int nRead = 0;
+		    while ((nRead = inputStream.read(data)) > 0) {
+	    		outputStream.write(data, 0, nRead);
 		    }	    
-		    System.out.println("Flushing last " + baos.size() + " bytes from buffer...");
-		    outputStream.write(baos.toByteArray());
 		    outputStream.flush();
+		    inputStream.close();
 		};
 	}
 	
