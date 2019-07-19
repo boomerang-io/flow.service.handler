@@ -296,16 +296,19 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
             public void writeTo (OutputStream outputStream) throws IOException {	
     			int nRead;
     		    byte[] data = new byte[1024];
+    		    StringBuffer sb = new StringBuffer();
     		    System.out.println("Start streaming bytes...");
     		    while ((nRead = is.read(data, 0, data.length)) != -1) {
-    		    	System.out.println(new String(data));
+    		    	sb.append(new String(data));
     		    	outputStream.write(data, 0, nRead);  	
-    		    }
-    		    System.out.println(new String(data));
+    		    }    		    
     		    System.out.println("Flushing last bytes from buffer...");
     		    outputStream.flush();
     		    System.out.println("Closing stream...");
     		    is.close();
+    		    System.out.println("----START----");
+    		    System.out.println(sb.toString());
+    		    System.out.println("----END----");
             }
         };
 	}
