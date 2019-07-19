@@ -298,10 +298,14 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
     		    byte[] data = new byte[1024];
     		    System.out.println("Start streaming bytes...");
     		    while ((nRead = is.read(data, 0, data.length)) != -1) {
+    		    	System.out.println(new String(data));
     		    	outputStream.write(data, 0, nRead);  	
-    		    }	    
+    		    }
+    		    System.out.println(new String(data));
     		    System.out.println("Flushing last bytes from buffer...");
     		    outputStream.flush();
+    		    System.out.println("Closing stream...");
+    		    is.close();
             }
         };
 	}
