@@ -273,7 +273,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	    InputStream inputStream = logs.streamNamespacedPodLog(pod);
 	    
 		return outputStream -> {			  		    				
-			byte[] data = new byte[2048];
+			byte[] data = new byte[64];
 			int nRead = 0;
 		    while ((nRead = inputStream.read(data)) > 0) {
 	    		outputStream.write(data, 0, nRead);
