@@ -272,45 +272,22 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	    PodLogs logs = new PodLogs();
 	    InputStream is = logs.streamNamespacedPodLog(pod);
 	    
-//		return outputStream -> {			  		    		
-//			ByteArrayOutputStream baos = new ByteArrayOutputStream();			
-//			int nRead;
-//		    byte[] data = new byte[1024];
-//		    while ((nRead = is.read(data, 0, data.length)) != -1) {
-//		    	baos.write(data, 0, nRead);		    	
-//		    	if (baos.size() > 1024) {
-//		    		System.out.println("Flushing " + baos.size() + " bytes from buffer...");
-//		    		outputStream.write(baos.toByteArray());
-//		    		outputStream.flush();
-//		    		baos = new ByteArrayOutputStream();
-//		    	}	    	
-//		    }	    
-//		    System.out.println("Flushing last " + baos.size() + " bytes from buffer...");
-//		    outputStream.write(baos.toByteArray());
-//		    outputStream.flush();
-//		    System.out.println("Exiting...");
-//		};
-		
-        return new StreamingResponseBody() {
-            @Override
-            public void writeTo (OutputStream outputStream) throws IOException {	
-    			int nRead;
-    		    byte[] data = new byte[1024];
-    		    StringBuffer sb = new StringBuffer();
-    		    System.out.println("Start streaming bytes...");
-    		    while ((nRead = is.read(data, 0, data.length)) != -1) {
-    		    	sb.append(new String(data));
-    		    	outputStream.write(data, 0, nRead);  	
-    		    }    		    
-    		    System.out.println("Flushing last bytes from buffer...");
-    		    outputStream.flush();
-    		    System.out.println("Closing stream...");
-    		    is.close();
-    		    System.out.println("----START----");
-    		    System.out.println(sb.toString());
-    		    System.out.println("----END----");
-            }
-        };
+		return outputStream -> {			  		    		
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();			
+			int nRead;
+		    byte[] data = new byte[1024];
+		    while ((nRead = is.read(data, 0, data.length)) != -1) {
+		    	baos.write(data, 0, nRead);		    	
+		    	if (baos.size() > 64) {
+		    		System.out.println("Flushing " + baos.size() + " bytes from buffer...");
+		    		outputStream.write(baos.toByteArray());
+		    		baos = new ByteArrayOutputStream();
+		    	}	    	
+		    }	    
+		    System.out.println("Flushing last " + baos.size() + " bytes from buffer...");
+		    outputStream.write(baos.toByteArray());
+		    outputStream.flush();
+		};
 	}
 	
 	public V1PersistentVolumeClaim createPVC(String workflowName, String workflowId, String workflowActivityId, String pvcSize) throws ApiException {
