@@ -17,7 +17,6 @@ import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import com.google.common.io.ByteStreams;
@@ -223,7 +222,6 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 		return baos.toString();
 	}
 	
-	@Async
 	@Override
 	public StreamingResponseBody streamPodLog(HttpServletResponse response, String workflowId, String workflowActivityId, String taskId) throws ApiException, IOException {		
 		
@@ -276,11 +274,16 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 		return outputStream -> {			  		    				
 			byte[] data = new byte[1024];
 			int nRead = 0;
+			int nReadSum = 0;
+			System.out.println("Log stream started for pod " + pod.getMetadata().getName() + "...");
 		    while ((nRead = inputStream.read(data)) > 0) {
 	    		outputStream.write(data, 0, nRead);
+	    		nReadSum += nRead;
 		    }	    
 		    outputStream.flush();
+		    System.out.println("Log stream completed for pod " + pod.getMetadata().getName() + ", total bytes streamed=" + nReadSum + "...");
 		    inputStream.close();
+		    System.out.println("Log stream closed for pod " + pod.getMetadata().getName() + "...");
 		};
 	}
 	
