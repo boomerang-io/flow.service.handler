@@ -2,9 +2,7 @@ package net.boomerangplatform.kube.service;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -14,9 +12,6 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 
 import io.kubernetes.client.models.V1ConfigMap;
@@ -146,21 +141,8 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
 		containerList.add(container);
 		podSpec.containers(containerList);
 		
-//		List<V1HostAlias> hostAliasList = new ArrayList<V1HostAlias>();
 		Type listHostAliasType = new TypeToken<List<V1HostAlias>>() {}.getType();
 		List<V1HostAlias> hostAliasList = new Gson().fromJson(kubeWorkerHostAliases, listHostAliasType);
-//        JsonArray jsonHostAliases = new Gson().fromJson(kubeWorkerHostAliases, JsonArray.class);
-//        JsonObject jsonHostAliasesEntry;
-//        Iterator<JsonElement> jsonHostAliasesItr = jsonHostAliases.iterator();
-//         while (jsonHostAliasesItr.hasNext()) {
-//        	 jsonHostAliasesEntry = jsonHostAliasesItr.next().getAsJsonObject();
-//            V1HostAlias hostAlias = new V1HostAlias();
-//            hostAlias.ip(jsonHostAliasesEntry.get("ip").getAsString());
-//            System.out.println("  IP: " + jsonHostAliasesEntry.get("ip").getAsString());
-//            String[] hostnames = new Gson().fromJson(jsonHostAliasesEntry.getAsJsonArray("hostnames"), String[].class);
-//            System.out.println("  Hostnames: " + hostnames.toString());
-//            hostAlias.hostnames(Arrays.asList(hostnames));           
-//        }
         podSpec.hostAliases(hostAliasList);
 		
 		V1LocalObjectReference imagePullSecret = new V1LocalObjectReference();

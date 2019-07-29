@@ -122,11 +122,8 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	final static String PREFIX_VOL = PREFIX + "vol-";
 	
 	@Override
-	public V1Job createJob(String workflowName, String workflowId, String workflowActivityId,String taskName, String taskId, List<String> arguments, Map<String, String> taskInputProperties) {
-		// Initialize Job Body
-		System.out.println(" Host Aliases String:" + kubeWorkerHostAliases.toString());
-		
-		V1Job body = createJobBody(workflowName, workflowId, workflowActivityId, taskName, taskId, arguments, taskInputProperties); // V1Job |
+	public V1Job createJob(String workflowName, String workflowId, String workflowActivityId,String taskName, String taskId, List<String> arguments, Map<String, String> taskInputProperties) {	
+		V1Job body = createJobBody(workflowName, workflowId, workflowActivityId, taskName, taskId, arguments, taskInputProperties);
 		
 		V1Job jobResult = new V1Job();
 		try {
