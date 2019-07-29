@@ -16,12 +16,12 @@ import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletResponse;
 
+import org.json.JSONArray;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import com.google.common.io.ByteStreams;
 import com.google.gson.Gson;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
@@ -97,7 +97,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	protected Boolean kubeWorkerDebug;
 	
 	@Value("${kube.worker.hostaliases}")
-	protected JsonArray kubeWorkerHostAliases;
+	protected JSONArray kubeWorkerHostAliases;
 	
 	@Value("${proxy.enable}")
 	protected Boolean proxyEnabled;
