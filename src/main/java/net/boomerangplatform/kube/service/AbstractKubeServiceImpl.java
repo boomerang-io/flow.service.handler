@@ -96,7 +96,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	protected Boolean kubeWorkerDebug;
 	
 	@Value("${kube.worker.hostaliases}")
-	protected Boolean kubeWorkerHostAliases;
+	protected String kubeWorkerHostAliases;
 	
 	@Value("${proxy.enable}")
 	protected Boolean proxyEnabled;
