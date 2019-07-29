@@ -95,6 +95,9 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	@Value("${kube.worker.debug}")
 	protected Boolean kubeWorkerDebug;
 	
+	@Value("${kube.worker.hostaliases}")
+	protected Boolean kubeWorkerHostAliases;
+	
 	@Value("${proxy.enable}")
 	protected Boolean proxyEnabled;
 	
@@ -121,6 +124,8 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	@Override
 	public V1Job createJob(String workflowName, String workflowId, String workflowActivityId,String taskName, String taskId, List<String> arguments, Map<String, String> taskInputProperties) {
 		// Initialize Job Body
+		System.out.println(" Host Aliases String:" + kubeWorkerHostAliases.toString());
+		
 		V1Job body = createJobBody(workflowName, workflowId, workflowActivityId, taskName, taskId, arguments, taskInputProperties); // V1Job |
 		
 		V1Job jobResult = new V1Job();
