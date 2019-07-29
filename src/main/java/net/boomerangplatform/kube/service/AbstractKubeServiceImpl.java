@@ -16,7 +16,6 @@ import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletResponse;
 
-import org.json.JSONArray;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
@@ -97,7 +96,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	protected Boolean kubeWorkerDebug;
 	
 	@Value("${kube.worker.hostaliases}")
-	protected JSONArray kubeWorkerHostAliases;
+	protected String kubeWorkerHostAliases;
 	
 	@Value("${proxy.enable}")
 	protected Boolean proxyEnabled;

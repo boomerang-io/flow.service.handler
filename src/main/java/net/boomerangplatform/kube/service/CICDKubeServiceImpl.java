@@ -11,6 +11,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
@@ -141,22 +143,20 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
 		containerList.add(container);
 		podSpec.containers(containerList);
 		
-//		List<V1HostAlias> hostAliasList = new ArrayList<V1HostAlias>();
-//		JsonArray jsonHosts = new Gson().fromJson(kubeWorkerHostAliases, JsonArray.class);
-//		JsonObject jsonHostEntry;
-//		Iterator<JsonElement> jsonHostEntryItr = jsonHosts.iterator();
-		JsonObject jsonHostEntry;
-		Iterator<JsonElement> jsonHostEntryItr = kubeWorkerHostAliases.iterator();
-		 while (jsonHostEntryItr.hasNext()) {
-			 jsonHostEntry = jsonHostEntryItr.next().getAsJsonObject();
-			V1HostAlias hostAlias = new V1HostAlias();
-			System.out.println("   IP: " + jsonHostEntry.get("ip").getAsString());
-			hostAlias.ip(jsonHostEntry.get("ip").getAsString());
-			System.out.println("   Hostname: " + jsonHostEntry.get("hostnames").getAsString());
-//			List<String> hostnames = new Gson().fromJson(jsonHostEntry.get("hostnames").getAsString(), ArrayList<String>.class);
-//			hostAlias.hostnames(hostnames);
-		}
-//		podSpec.hostAliases(hostAliasList);
+		List<V1HostAlias> hostAliasList = new ArrayList<V1HostAlias>();
+        JsonArray jsonHostAliases = new Gson().fromJson(kubeWorkerHostAliases, JsonArray.class);
+        JsonObject jsonHostAliasesEntry;
+        Iterator<JsonElement> jsonHostAliasesItr = jsonHostAliases.iterator();
+         while (jsonHostAliasesItr.hasNext()) {
+        	 jsonHostAliasesEntry = jsonHostAliasesItr.next().getAsJsonObject();
+            V1HostAlias hostAlias = new V1HostAlias();
+            hostAlias.ip(jsonHostAliasesEntry.get("ip").getAsString());
+            System.out.println("  IP: " + jsonHostAliasesEntry.get("ip").getAsString());
+            System.out.println("  Hostnames: " + jsonHostAliasesEntry.get("hostnames").getAsString());
+//            List<String> hostnames = new Gson().fromJson(jsonHostEntry.get("hostnames").getAsString(), ArrayList<String>.class);
+//            hostAlias.hostnames(hostnames);
+        }
+        podSpec.hostAliases(hostAliasList);
 		
 		V1LocalObjectReference imagePullSecret = new V1LocalObjectReference();
 		imagePullSecret.name(kubeImagePullSecret);
