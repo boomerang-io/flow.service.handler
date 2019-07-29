@@ -1,6 +1,7 @@
 package net.boomerangplatform.kube.service;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -152,9 +153,9 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
             V1HostAlias hostAlias = new V1HostAlias();
             hostAlias.ip(jsonHostAliasesEntry.get("ip").getAsString());
             System.out.println("  IP: " + jsonHostAliasesEntry.get("ip").getAsString());
-            System.out.println("  Hostnames: " + jsonHostAliasesEntry.get("hostnames").getAsString());
-//            List<String> hostnames = new Gson().fromJson(jsonHostEntry.get("hostnames").getAsString(), ArrayList<String>.class);
-//            hostAlias.hostnames(hostnames);
+            String[] hostnames = new Gson().fromJson(jsonHostAliasesEntry.getAsJsonArray("hostnames"), String[].class);
+            System.out.println("  Hostnames: " + hostnames.toString());
+            hostAlias.hostnames(Arrays.asList(hostnames));           
         }
         podSpec.hostAliases(hostAliasList);
 		
