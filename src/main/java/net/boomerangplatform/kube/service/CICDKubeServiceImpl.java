@@ -2,6 +2,7 @@ package net.boomerangplatform.kube.service;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -10,10 +11,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+
 import io.kubernetes.client.models.V1ConfigMap;
 import io.kubernetes.client.models.V1ConfigMapProjection;
 import io.kubernetes.client.models.V1Container;
 import io.kubernetes.client.models.V1EnvVar;
+import io.kubernetes.client.models.V1HostAlias;
 import io.kubernetes.client.models.V1Job;
 import io.kubernetes.client.models.V1JobSpec;
 import io.kubernetes.client.models.V1LocalObjectReference;
@@ -135,6 +140,24 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
 		List<V1Container> containerList = new ArrayList<V1Container>();
 		containerList.add(container);
 		podSpec.containers(containerList);
+		
+//		List<V1HostAlias> hostAliasList = new ArrayList<V1HostAlias>();
+//		JsonArray jsonHosts = new Gson().fromJson(kubeWorkerHostAliases, JsonArray.class);
+//		JsonObject jsonHostEntry;
+//		Iterator<JsonElement> jsonHostEntryItr = jsonHosts.iterator();
+		JsonObject jsonHostEntry;
+		Iterator<JsonElement> jsonHostEntryItr = kubeWorkerHostAliases.iterator();
+		 while (jsonHostEntryItr.hasNext()) {
+			 jsonHostEntry = jsonHostEntryItr.next().getAsJsonObject();
+			V1HostAlias hostAlias = new V1HostAlias();
+			System.out.println("   IP: " + jsonHostEntry.get("ip").getAsString());
+			hostAlias.ip(jsonHostEntry.get("ip").getAsString());
+			System.out.println("   Hostname: " + jsonHostEntry.get("hostnames").getAsString());
+//			List<String> hostnames = new Gson().fromJson(jsonHostEntry.get("hostnames").getAsString(), ArrayList<String>.class);
+//			hostAlias.hostnames(hostnames);
+		}
+//		podSpec.hostAliases(hostAliasList);
+		
 		V1LocalObjectReference imagePullSecret = new V1LocalObjectReference();
 		imagePullSecret.name(kubeImagePullSecret);
 		List<V1LocalObjectReference> imagePullSecretList = new ArrayList<V1LocalObjectReference>();
