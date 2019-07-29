@@ -129,6 +129,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 		try {
 			BatchV1Api api = new BatchV1Api();
 			jobResult = api.createNamespacedJob(kubeNamespace, body, kubeApiIncludeuninitialized, kubeApiPretty, null);
+		    System.out.println(jobResult);
 		} catch (ApiException e) {
 			if (e.getCause() instanceof SocketTimeoutException) {
 				SocketTimeoutException ste = (SocketTimeoutException) e.getCause();
