@@ -141,9 +141,11 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
 		containerList.add(container);
 		podSpec.containers(containerList);
 		
-		Type listHostAliasType = new TypeToken<List<V1HostAlias>>() {}.getType();
-		List<V1HostAlias> hostAliasList = new Gson().fromJson(kubeWorkerHostAliases, listHostAliasType);
-        podSpec.hostAliases(hostAliasList);
+		if (!kubeWorkerHostAliases.isEmpty()) {
+			Type listHostAliasType = new TypeToken<List<V1HostAlias>>() {}.getType();
+			List<V1HostAlias> hostAliasList = new Gson().fromJson(kubeWorkerHostAliases, listHostAliasType);
+	        podSpec.hostAliases(hostAliasList);
+		}
 		
 		V1LocalObjectReference imagePullSecret = new V1LocalObjectReference();
 		imagePullSecret.name(kubeImagePullSecret);
