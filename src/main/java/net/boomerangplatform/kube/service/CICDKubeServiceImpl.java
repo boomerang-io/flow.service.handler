@@ -81,8 +81,9 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
 		container.name("worker-cntr");
 		container.imagePullPolicy(kubeImagePullPolicy);
 		V1SecurityContext securityContext = new V1SecurityContext();
-//		securityContext.setPrivileged(true);
-		securityContext.setProcMount("Unmasked");
+		securityContext.setPrivileged(true);
+//		Only works with Kube 1.12. ICP 3.1.1 is Kube 1.11.5
+//		securityContext.setProcMount("Unmasked");
 		container.setSecurityContext(securityContext);
 		List<V1EnvVar> envVars = new ArrayList<V1EnvVar>();
 		if (proxyEnabled) {
