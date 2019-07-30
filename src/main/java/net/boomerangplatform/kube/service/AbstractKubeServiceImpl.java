@@ -70,6 +70,9 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 
 	@Value("${kube.api.includeunitialized}")
 	protected Boolean kubeApiIncludeuninitialized;
+	
+	@Value("${kube.api.timeout}")
+	private Integer kubeApiTimeOut;
 
 	@Value("${kube.namespace}")
 	protected String kubeNamespace;
@@ -604,7 +607,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 			watcherApiKeyAuth.setApiKey(kubeApiToken);
 			watcherApiKeyAuth.setApiKeyPrefix("Bearer");
 		}
-		watcherClient.getHttpClient().setReadTimeout(300, TimeUnit.SECONDS);
+		watcherClient.getHttpClient().setReadTimeout(kubeApiTimeOut, TimeUnit.SECONDS);
 		return watcherClient;
 	}
 	
