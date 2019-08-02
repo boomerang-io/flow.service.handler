@@ -149,6 +149,10 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
 	        podSpec.hostAliases(hostAliasList);
 		}
 		
+		if (!kubeWorkerServiceAccount.isEmpty()) {
+	        podSpec.serviceAccountName(kubeWorkerServiceAccount);
+		}
+		
 		V1LocalObjectReference imagePullSecret = new V1LocalObjectReference();
 		imagePullSecret.name(kubeImagePullSecret);
 		List<V1LocalObjectReference> imagePullSecretList = new ArrayList<V1LocalObjectReference>();

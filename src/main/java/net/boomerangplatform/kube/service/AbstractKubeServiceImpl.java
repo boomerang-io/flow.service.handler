@@ -101,6 +101,9 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	@Value("${kube.worker.hostaliases}")
 	protected String kubeWorkerHostAliases;
 	
+	@Value("${kube.worker.serviceaccount}")
+	protected String kubeWorkerServiceAccount;
+	
 	@Value("${proxy.enable}")
 	protected Boolean proxyEnabled;
 	
@@ -387,6 +390,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 				});
 				if (failIfNotBound) {
 					if (persistentVolumeClaimList.getItems().stream().filter(pvc -> pvc.getStatus().getPhase().equalsIgnoreCase("Bound")).count() > 0) {
+						//TODO update to check if they are terminating (even though they are still bound)
 						return true;
 					}
 				} else {
