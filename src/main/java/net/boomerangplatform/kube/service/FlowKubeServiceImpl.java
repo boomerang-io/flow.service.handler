@@ -137,6 +137,10 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
 		volumeProps.projected(projectedVolPropsSource);
 		podSpec.addVolumesItem(volumeProps);
 		
+		if (!kubeWorkerServiceAccount.isEmpty()) {
+	        podSpec.serviceAccountName(kubeWorkerServiceAccount);
+		}
+		
 		List<V1Container> containerList = new ArrayList<V1Container>();
 		containerList.add(container);
 		podSpec.containers(containerList);
