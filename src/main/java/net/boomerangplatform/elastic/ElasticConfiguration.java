@@ -20,6 +20,15 @@ import org.elasticsearch.client.RestHighLevelClient;
 @Configuration
 public class ElasticConfiguration {
   
+  
+  
+  @Value("${kube.worker.logging.truststore.name}")
+  protected String truststorePath;
+  
+  @Value("${kube.worker.logging.truststore.password}")
+  protected String truststorePassword;
+
+  
   @Value("${kube.worker.logging.keystore.name}")
   protected String keystorePath;
   
