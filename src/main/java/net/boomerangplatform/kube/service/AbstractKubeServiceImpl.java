@@ -15,17 +15,26 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletResponse;
-
+import org.elasticsearch.action.search.ClearScrollRequest;
+import org.elasticsearch.action.search.ClearScrollResponse;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.search.SearchScrollRequest;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.Scroll;
+import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
-
 import com.google.common.io.ByteStreams;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
-
 import io.kubernetes.client.ApiClient;
 import io.kubernetes.client.ApiException;
 import io.kubernetes.client.PodLogs;
@@ -127,6 +136,12 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	final static String PREFIX_PVC = PREFIX + "pvc-";
 	
 	final static String PREFIX_VOL = PREFIX + "vol-";
+	
+	@Autowired
+    private RestHighLevelClient elasticRestClient;
+	    
+	@Value("${kube.worker.logging.type}")
+    protected String loggingType;
 	
 	@Override
 	public V1Job createJob(String workflowName, String workflowId, String workflowActivityId,String taskName, String taskId, List<String> arguments, Map<String, String> taskInputProperties) {	
@@ -237,11 +252,28 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 		return baos.toString();
 	}
 	
+	private StreamingResponseBody getDefaultErrorMessage() {
+	  return outputStream -> { 
+	    outputStream.write("Unable to retrieve logs.".getBytes()); 
+	    outputStream.flush();
+        outputStream.close();
+	  };
+	}
+
 	@Override
 	public StreamingResponseBody streamPodLog(HttpServletResponse response, String workflowId, String workflowActivityId, String taskId) throws ApiException, IOException {		
 		
 		String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);		
 		CoreV1Api api = new CoreV1Api();
+	
+		List<V1Pod> allPods = 
+          api
+          .listNamespacedPod(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null, null, labelSelector, null, null, 60, false)
+          .getItems();
+		
+		if (allPods.isEmpty()) {
+		  return getExternalLogs(workflowActivityId);
+		}
 		
 		Watch<V1Pod> watch = Watch.createWatch(
 				createWatcherApiClient(), api.listNamespacedPodCall(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null, null, labelSelector, null, null, null, true, null, null),
@@ -272,13 +304,16 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 		} finally {
 			watch.close();
 		}
-				
-//	    V1Pod pod = 
-//	    		api
-//	            .listNamespacedPod(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null, null, labelSelector, null, null, 60, false)
-//	            .getItems()
-//	            .get(0);
-	    
+		
+		if (pod == null) {
+		  return getExternalLogs(workflowActivityId);
+		}
+		else {
+		  if (pod.getStatus().getPhase().equalsIgnoreCase("succeeded") || pod.getStatus().getPhase().equalsIgnoreCase("failed")) {
+	        return getExternalLogs(workflowActivityId);
+		  }
+		}
+		
 	    PodLogs logs = new PodLogs();
 	    InputStream inputStream = logs.streamNamespacedPodLog(pod);
 	    
@@ -298,6 +333,60 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 		    inputStream.close();
 		    System.out.println("Log stream closed for pod " + podName + "...");
 		};
+	}
+	
+	private StreamingResponseBody streamLogsFromElastic(String activityId) {
+	  
+      return outputStream -> {    
+	    final Scroll scroll = new Scroll(TimeValue.timeValueMinutes(1L));
+	 
+	    SearchRequest searchRequest = new SearchRequest("logstash-*");
+	    
+	    searchRequest.scroll(scroll);
+	    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+	    searchSourceBuilder.from(0);
+	    searchSourceBuilder.size(1000);    
+	    searchSourceBuilder.sort("offset");
+	    searchSourceBuilder.query(QueryBuilders.matchPhraseQuery("kubernetes.pod", getJobPrefix() + "-" + activityId + "-*"));
+	    searchRequest.source(searchSourceBuilder);
+	    
+	    SearchResponse searchResponse = elasticRestClient.search(searchRequest); 
+	    String scrollId = searchResponse.getScrollId();
+	    SearchHit[] searchHits = searchResponse.getHits().getHits();
+	    for (SearchHit hits : searchHits) {
+          String logMessage = (String) hits.getSource().get("log");
+          outputStream.write(logMessage.getBytes());
+	    }
+	
+	   
+	    while (searchHits != null && searchHits.length > 0) { 
+	        SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId); 
+	        scrollRequest.scroll(scroll);
+	        searchResponse = elasticRestClient.searchScroll(scrollRequest);
+	        scrollId = searchResponse.getScrollId();
+	        searchHits = searchResponse.getHits().getHits();
+	  
+	        for (SearchHit hits : searchHits) {
+	          String logMessage = (String) hits.getSource().get("log");
+	          outputStream.write(logMessage.getBytes()); 
+	        }
+	    }
+
+	    ClearScrollRequest clearScrollRequest = new ClearScrollRequest(); 
+	    clearScrollRequest.addScrollId(scrollId);
+	    elasticRestClient.clearScroll(clearScrollRequest);
+	    
+	    outputStream.flush();
+	    outputStream.close();
+      };
+	}
+	
+	private StreamingResponseBody getExternalLogs(String activityId) {
+	  if ("elastic".equals(loggingType)) {
+	    return streamLogsFromElastic(activityId);
+	  } else {
+	    return getDefaultErrorMessage();
+	  }
 	}
 	
 	public V1PersistentVolumeClaim createPVC(String workflowName, String workflowId, String workflowActivityId, String pvcSize) throws ApiException {
@@ -689,4 +778,6 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 		
 		return propsSW.toString();
 	}
+	
+	public abstract String getJobPrefix();
 }

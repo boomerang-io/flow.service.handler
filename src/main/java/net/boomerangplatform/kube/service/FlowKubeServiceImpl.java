@@ -64,7 +64,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
 		V1ObjectMeta jobMetadata = new V1ObjectMeta();
 		jobMetadata.annotations(createAnnotations(workflowName, workflowId, activityId, taskId));
 		jobMetadata.labels(createLabels(workflowId, activityId, taskId));
-		jobMetadata.generateName(PREFIX_JOB + "-");
+		jobMetadata.generateName(getJobPrefix() + "-");
 		body.metadata(jobMetadata);
 
 		// Create Spec
@@ -255,4 +255,9 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
 			Optional.ofNullable(taskId).ifPresent(str -> labels.put("task-id", str));
 			return labels;
 		}
+
+    @Override
+    public String getJobPrefix() {
+      return PREFIX_JOB;
+    }
 }

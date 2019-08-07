@@ -142,9 +142,9 @@
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
-		    <groupId>com.github.fge</groupId>
-		    <artifactId>json-patch</artifactId>
-		    <version>1.9</version>
+			<groupId>com.github.fge</groupId>
+			<artifactId>json-patch</artifactId>
+			<version>1.9</version>
 		</dependency>
 		<dependency>
 			<groupId>net.boomerangplatform</groupId>
@@ -156,6 +156,20 @@
 			<artifactId>lib-audit</artifactId>
 			<version>0.1.31</version>
 		</dependency>
+        <dependency>
+            <groupId>org.elasticsearch.client</groupId>
+            <artifactId>elasticsearch-rest-high-level-client</artifactId>
+            <version>5.6.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.elasticsearch</groupId>
+            <artifactId>elasticsearch</artifactId>
+            <version>5.6.1</version>
+        </dependency>
+
+
+		
 	</dependencies>
 
 	<build>
