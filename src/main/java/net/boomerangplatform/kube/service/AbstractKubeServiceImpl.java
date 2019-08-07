@@ -253,6 +253,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	}
 	
 	private StreamingResponseBody getDefaultErrorMessage() {
+	  System.out.println("Returning back default message.");
 	  return outputStream -> { 
 	    outputStream.write("Unable to retrieve logs.".getBytes()); 
 	    outputStream.flush();
@@ -337,6 +338,8 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	
 	private StreamingResponseBody streamLogsFromElastic(String activityId) {
 	  
+	  System.out.println("Streaming logs from elastic.");
+	  
       return outputStream -> {    
 	    final Scroll scroll = new Scroll(TimeValue.timeValueMinutes(1L));
 	 
@@ -353,6 +356,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	    SearchResponse searchResponse = elasticRestClient.search(searchRequest); 
 	    String scrollId = searchResponse.getScrollId();
 	    SearchHit[] searchHits = searchResponse.getHits().getHits();
+	    System.out.println("Search returned back: " + searchHits.length);
 	    for (SearchHit hits : searchHits) {
           String logMessage = (String) hits.getSource().get("log");
           outputStream.write(logMessage.getBytes());
@@ -365,6 +369,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	        searchResponse = elasticRestClient.searchScroll(scrollRequest);
 	        scrollId = searchResponse.getScrollId();
 	        searchHits = searchResponse.getHits().getHits();
+	        System.out.println("Search returned back: " + searchHits.length);
 	  
 	        for (SearchHit hits : searchHits) {
 	          String logMessage = (String) hits.getSource().get("log");

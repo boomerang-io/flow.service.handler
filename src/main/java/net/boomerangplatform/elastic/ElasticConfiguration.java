@@ -53,7 +53,8 @@ public class ElasticConfiguration {
           });
       return new RestHighLevelClient(builder.build());      
     } catch (Exception e) {
-      throw new RuntimeException(e);
+      e.printStackTrace();
     }
+    return null;
   }
 }
