@@ -253,13 +253,13 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 				
 				System.out.println("Pod: " + item.object.getMetadata().getName() + "...");
 				System.out.println("Pod Start Time: " + item.object.getStatus().getStartTime() + "...");				
+				System.out.println("Pod Phase: " + item.object.getStatus().getPhase() + "...");				
 				for (V1PodCondition condition : item.object.getStatus().getConditions()) {
-					System.out.println("Pod Condition: " + condition.getStatus() + "...");
+					System.out.println("Pod Condition: " + condition.toString() + "...");
 				}
 				for (V1ContainerStatus containerStatus : item.object.getStatus().getContainerStatuses()) {
-					System.out.println("Container Status: " + containerStatus.getState().toString() + "...");
-				}	
-				
+					System.out.println("Container Status: " + containerStatus.toString() + "...");
+				}				
 				
 //		    	if (item.object.getStatus() != null && item.object.getStatus().getStartTime() != null) {
 //		    		System.out.println("Pod has started (or finished)...");
