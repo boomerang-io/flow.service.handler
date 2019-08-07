@@ -69,7 +69,8 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
 		V1ObjectMeta jobMetadata = new V1ObjectMeta();
 		jobMetadata.annotations(createAnnotations(componentName, componentId, activityId, taskId));
 		jobMetadata.labels(createLabels(componentId, activityId, taskId));
-		jobMetadata.generateName(PREFIX_JOB + "-");
+//		jobMetadata.generateName(PREFIX_JOB + "-");
+		jobMetadata.name(PREFIX_JOB + "-" + activityId);
 		body.metadata(jobMetadata);
 
 		// Create Spec
