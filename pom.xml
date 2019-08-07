@@ -10,7 +10,7 @@
 		<version>2.1.7.RELEASE</version>
 		<relativePath /> <!-- lookup parent from repository -->
 	</parent>
-	
+
 	<groupId>net.boomerangplatform</groupId>
 	<artifactId>service-controller</artifactId>
 	<version>${version.name}</version>
@@ -30,7 +30,7 @@
 		<sonar.jacoco.reportPath>${jacoco.out.path}/jacoco.exec</sonar.jacoco.reportPath>
 		<jacoco.version>0.8.2</jacoco.version>
 	</properties>
-	
+
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -50,7 +50,7 @@
 				</exclusion>
 			</exclusions>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>com.fasterxml.jackson.datatype</groupId>
 			<artifactId>jackson-datatype-json-org</artifactId>
@@ -103,7 +103,7 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>io.kubernetes</groupId>
 			<artifactId>client-java</artifactId>
@@ -124,19 +124,19 @@
 					<groupId>com.google.guava</groupId>
 					<artifactId>guava</artifactId>
 				</exclusion>
-			</exclusions>	
+			</exclusions>
 		</dependency>
 		<dependency>
-		    <groupId>com.google.guava</groupId>
-		    <artifactId>guava</artifactId>
-		    <version>28.0-jre</version>
+			<groupId>com.google.guava</groupId>
+			<artifactId>guava</artifactId>
+			<version>28.0-jre</version>
 		</dependency>
 		<dependency>
-		    <groupId>com.github.fge</groupId>
-		    <artifactId>json-patch</artifactId>
-		    <version>1.9</version>
+			<groupId>com.github.fge</groupId>
+			<artifactId>json-patch</artifactId>
+			<version>1.9</version>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>net.boomerangplatform</groupId>
 			<artifactId>lib-security</artifactId>
@@ -157,7 +157,7 @@
 			<artifactId>lib-opentracing</artifactId>
 			<version>1.0.0</version>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>net.boomerangplatform</groupId>
 			<artifactId>lib-testing</artifactId>
@@ -168,6 +168,22 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.elasticsearch.client</groupId>
+			<artifactId>elasticsearch-rest-high-level-client</artifactId>
+			<version>5.6.1</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.elasticsearch</groupId>
+			<artifactId>elasticsearch</artifactId>
+			<version>5.6.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.elasticsearch.client</groupId>
+			<artifactId>elasticsearch-rest-client</artifactId>
+			<version>5.6.1</version>
 		</dependency>
 	</dependencies>
 
@@ -193,11 +209,11 @@
 				<artifactId>maven-surefire-plugin</artifactId>
 				<configuration>
 					<systemPropertyVariables>
-				   		<http.proxyHost>${http.proxyHost}</http.proxyHost>
-				   		<http.proxyPort>${http.proxyPort}</http.proxyPort>
+						<http.proxyHost>${http.proxyHost}</http.proxyHost>
+						<http.proxyPort>${http.proxyPort}</http.proxyPort>
 					</systemPropertyVariables>
 					<argLine>${surefireArgLine}</argLine>
-      			</configuration>
+				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
@@ -209,14 +225,14 @@
 				<version>${jacoco.version}</version>
 				<executions>
 					<execution>
-						 <id>pre-unit-test</id>
+						<id>pre-unit-test</id>
 						<goals>
 							<goal>prepare-agent</goal>
 						</goals>
 						<configuration>
-						    <destFile>${sonar.jacoco.reportPaths}</destFile>
-			                <propertyName>surefireArgLine</propertyName>
-			              </configuration>
+							<destFile>${sonar.jacoco.reportPaths}</destFile>
+							<propertyName>surefireArgLine</propertyName>
+						</configuration>
 					</execution>
 					<execution>
 						<id>jacoco-report</id>

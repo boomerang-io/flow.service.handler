@@ -70,7 +70,7 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
 		jobMetadata.annotations(createAnnotations(componentName, componentId, activityId, taskId));
 		jobMetadata.labels(createLabels(componentId, activityId, taskId));
 //		jobMetadata.generateName(PREFIX_JOB + "-");
-		jobMetadata.name(PREFIX_JOB + "-" + activityId);
+		jobMetadata.name(this.getJobPrefix() + "-" + activityId);
 		body.metadata(jobMetadata);
 
 		// Create Spec
@@ -261,4 +261,9 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
 		Optional.ofNullable(taskId).ifPresent(str -> labels.put("task-id", str));
 		return labels;
 	}
+
+  @Override
+  public String getJobPrefix() {
+    return PREFIX_JOB;
+  }
 }
