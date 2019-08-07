@@ -248,6 +248,8 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 				new TypeToken<Watch.Response<V1Pod>>() {
 				}.getType());
 		
+	    V1Pod pod = null;
+		
 		try {
 			for (Watch.Response<V1Pod> item : watch) {
 				
@@ -259,57 +261,42 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 				}
 				for (V1ContainerStatus containerStatus : item.object.getStatus().getContainerStatuses()) {
 					System.out.println("Container Status: " + containerStatus.toString() + "...");
-				}				
+				}	
 				
-//		    	if (item.object.getStatus() != null && item.object.getStatus().getStartTime() != null) {
-//		    		System.out.println("Pod has started (or finished)...");
-//		    		boolean allContainersStartedOrFinished = true;
-//			    	for (V1ContainerStatus containerStatus : item.object.getStatus().getContainerStatuses()) {	    		
-//			    		if (containerStatus.getState() != null) {
-//			    			if (containerStatus.getState().getRunning() != null && containerStatus.getState().getRunning().getStartedAt() != null) {
-//			    				continue;
-//			    			}
-//			    			else if (containerStatus.getState().getTerminated() != null && containerStatus.getState().getTerminated().getFinishedAt() != null) {
-//			    				continue;
-//			    			}
-//			    			else {
-//			    				allContainersStartedOrFinished = false;
-//			    				break;
-//			    			}
-//			    		}
-//			    	}
-//			    	if (allContainersStartedOrFinished) {
-//			    		System.out.println("All containers have started (or finished)...");
-//			    		break;
-//			    	}
-//		    	}
+				if (!(item.object.getStatus().getPhase().equalsIgnoreCase("pending") || item.object.getStatus().getPhase().equalsIgnoreCase("unknown"))) {
+					System.out.println("Pod " + item.object.getMetadata().getName() + " ready to stream logs...");
+					pod = item.object;
+					break;
+				}
 			}
 		} finally {
 			watch.close();
 		}
 				
-	    V1Pod pod = 
-	    		api
-	            .listNamespacedPod(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null, null, labelSelector, null, null, 60, false)
-	            .getItems()
-	            .get(0);	    
+//	    V1Pod pod = 
+//	    		api
+//	            .listNamespacedPod(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null, null, labelSelector, null, null, 60, false)
+//	            .getItems()
+//	            .get(0);
 	    
 	    PodLogs logs = new PodLogs();
 	    InputStream inputStream = logs.streamNamespacedPodLog(pod);
+	    
+	    String podName = pod.getMetadata().getName();
 	    
 		return outputStream -> {			  		    				
 			byte[] data = new byte[1024];
 			int nRead = 0;
 			int nReadSum = 0;
-			System.out.println("Log stream started for pod " + pod.getMetadata().getName() + "...");
+			System.out.println("Log stream started for pod " + podName + "...");
 		    while ((nRead = inputStream.read(data)) > 0) {
 	    		outputStream.write(data, 0, nRead);
 	    		nReadSum += nRead;
 		    }	    
 		    outputStream.flush();
-		    System.out.println("Log stream completed for pod " + pod.getMetadata().getName() + ", total bytes streamed=" + nReadSum + "...");
+		    System.out.println("Log stream completed for pod " + podName + ", total bytes streamed=" + nReadSum + "...");
 		    inputStream.close();
-		    System.out.println("Log stream closed for pod " + pod.getMetadata().getName() + "...");
+		    System.out.println("Log stream closed for pod " + podName + "...");
 		};
 	}
 	
