@@ -311,6 +311,11 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 		}
 		else {
 		  if (pod.getStatus().getPhase().equalsIgnoreCase("succeeded") || pod.getStatus().getPhase().equalsIgnoreCase("failed")) {
+		    
+		    if (canStreamLogsFromElastic()) {
+		      return this.streamLogsFromElastic(workflowActivityId);
+		    }
+		    
 	        return getExternalLogs(workflowActivityId);
 		  }
 		}
@@ -384,6 +389,14 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	    outputStream.flush();
 	    outputStream.close();
       };
+	}
+	
+	private boolean canStreamLogsFromElastic() {
+	  if ("elastic".equals(loggingType)) {
+	    return true;
+	  }
+	  
+	  return false;
 	}
 	
 	private StreamingResponseBody getExternalLogs(String activityId) {
