@@ -365,6 +365,14 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	    SearchResponse searchResponse = elasticRestClient.search(searchRequest); 
 	    String scrollId = searchResponse.getScrollId();
 	    SearchHit[] searchHits = searchResponse.getHits().getHits();
+	    
+	    if (searchHits.length == 0) {
+	      printWriter.println("Unable to retrieve logs.");
+	      printWriter.flush();
+	      printWriter.close();
+	      return;
+	    }
+	    
 	    System.out.println("Search returned back: " + searchHits.length);
 	    for (SearchHit hits : searchHits) {
           String logMessage = (String) hits.getSource().get("log");
