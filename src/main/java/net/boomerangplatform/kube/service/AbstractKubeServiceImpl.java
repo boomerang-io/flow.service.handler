@@ -816,7 +816,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	}
 	
 	private String getErrorMessage() {
-	  MessageSourceAccessor accessor = new MessageSourceAccessor(messageSource, Locale.ENGLISH);
+	  MessageSourceAccessor accessor = new MessageSourceAccessor(messageSource);
 	  return accessor.getMessage("logs.error"); 
 	}
 	
