@@ -9,6 +9,7 @@ import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
@@ -29,6 +30,8 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.MessageSource;
+import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import com.google.common.io.ByteStreams;
 import com.google.gson.Gson;
@@ -144,6 +147,9 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	@Value("${kube.worker.logging.type}")
     protected String loggingType;
 	
+    @Autowired
+	private MessageSource messageSource;
+	
 	@Override
 	public V1Job createJob(String workflowName, String workflowId, String workflowActivityId,String taskName, String taskId, List<String> arguments, Map<String, String> taskInputProperties) {	
 		V1Job body = createJobBody(workflowName, workflowId, workflowActivityId, taskName, taskId, arguments, taskInputProperties);
@@ -256,7 +262,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	private StreamingResponseBody getDefaultErrorMessage() {
 	  System.out.println("Returning back default message.");
 	  return outputStream -> { 
-	    outputStream.write("Unable to retrieve logs.".getBytes()); 
+	    outputStream.write(getErrorMessage().getBytes()); 
 	    outputStream.flush();
         outputStream.close();
 	  };
@@ -367,7 +373,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	    SearchHit[] searchHits = searchResponse.getHits().getHits();
 	    
 	    if (searchHits.length == 0) {
-	      printWriter.println("Unable to retrieve logs.");
+	      printWriter.println(getErrorMessage());
 	      printWriter.flush();
 	      printWriter.close();
 	      return;
@@ -807,6 +813,11 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	      }
 		
 		return propsSW.toString();
+	}
+	
+	private String getErrorMessage() {
+	  MessageSourceAccessor accessor = new MessageSourceAccessor(messageSource, Locale.ENGLISH);
+	  return accessor.getMessage("logs.error"); 
 	}
 	
 	public abstract String getJobPrefix();
