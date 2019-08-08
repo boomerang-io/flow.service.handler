@@ -3,6 +3,7 @@ package net.boomerangplatform.kube.service;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
@@ -345,7 +346,10 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	  
 	  System.out.println("Streaming logs from elastic.");
 	  
-      return outputStream -> {    
+      return outputStream -> {  
+        
+        PrintWriter printWriter = new PrintWriter(outputStream);
+        
 	    final Scroll scroll = new Scroll(TimeValue.timeValueMinutes(1L));
 	 
 	    SearchRequest searchRequest = new SearchRequest("logstash-*");
@@ -364,7 +368,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	    System.out.println("Search returned back: " + searchHits.length);
 	    for (SearchHit hits : searchHits) {
           String logMessage = (String) hits.getSource().get("log");
-          outputStream.write(logMessage.getBytes());
+          printWriter.println(logMessage);
 	    }
 	
 	   
@@ -378,16 +382,16 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	  
 	        for (SearchHit hits : searchHits) {
 	          String logMessage = (String) hits.getSource().get("log");
-	          outputStream.write(logMessage.getBytes()); 
+	          printWriter.println(logMessage);
 	        }
 	    }
 
 	    ClearScrollRequest clearScrollRequest = new ClearScrollRequest(); 
 	    clearScrollRequest.addScrollId(scrollId);
 	    elasticRestClient.clearScroll(clearScrollRequest);
-	    
-	    outputStream.flush();
-	    outputStream.close();
+
+	    printWriter.flush();
+	    printWriter.close();
       };
 	}
 	
