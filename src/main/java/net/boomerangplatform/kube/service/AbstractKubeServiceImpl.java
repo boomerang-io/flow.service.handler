@@ -373,7 +373,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	    SearchResponse searchResponse = elasticRestClient.search(searchRequest); 
 	    String scrollId = searchResponse.getScrollId();
 	    SearchHit[] searchHits = searchResponse.getHits().getHits();
-	    
+	    System.out.println("Search returned back: " + searchHits.length);
 	    if (searchHits.length == 0) {
 	      printWriter.println(getErrorMessage());
 	      printWriter.flush();
@@ -381,7 +381,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	      return;
 	    }
 	    
-	    System.out.println("Search returned back: " + searchHits.length);
+	  
 	    for (SearchHit hits : searchHits) {
           String logMessage = (String) hits.getSource().get("log");
           printWriter.println(logMessage);
