@@ -15,17 +15,17 @@ import io.kubernetes.client.util.Config;
 public class KubeConfiguration {
 
 	@Value("${kube.api.base.path}")
-	public String kubeApiBasePath;
+	private String kubeApiBasePath;
 
 	@Value("${kube.api.token}")
-	public String kubeApiToken;
+	private String kubeApiToken;
 	
 	@Value("${kube.api.debug}")
-	public String kubeApiDebug;
+	private String kubeApiDebug;
 	
 	@Value("${kube.api.type}")
-	public String kubeApiType;
-
+	private String kubeApiType;
+	
 	@Bean
 	public ApiClient connectToKube() {
 		ApiClient defaultClient = null;

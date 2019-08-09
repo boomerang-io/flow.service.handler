@@ -1,4 +1,4 @@
-package net.boomerangplatform.service;
+package net.boomerangplatform.kube.service;
 
 import java.io.IOException;
 import java.util.List;
@@ -11,17 +11,12 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 import io.kubernetes.client.ApiException;
 import io.kubernetes.client.models.V1ConfigMap;
 import io.kubernetes.client.models.V1Job;
-import io.kubernetes.client.models.V1JobList;
-import io.kubernetes.client.models.V1NamespaceList;
 import io.kubernetes.client.models.V1PersistentVolumeClaim;
 import io.kubernetes.client.models.V1PersistentVolumeClaimStatus;
 import io.kubernetes.client.models.V1Status;
 
-public interface KubeService {
+public interface AbstractKubeService {
 
-	V1NamespaceList getAllNamespaces();
-	V1JobList getAllJobs();
-	void watchNamespace() throws ApiException, IOException;
 	V1Job watchJob(String workflowId, String workflowActivityId, String taskId) throws Exception;
 	V1PersistentVolumeClaim createPVC(String workflowName, String workflowId, String workflowActivityId, String pvcSize) throws ApiException, IOException;
 	V1Status deletePVC(String workflowId, String workflowActivityId);
@@ -41,4 +36,5 @@ public interface KubeService {
 			String taskId) throws ApiException, IOException;
 	void patchTaskConfigMap(String workflowId, String workflowActivityId, String taskId, String taskName,
 			Map<String, String> properties);
+
 }

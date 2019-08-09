@@ -6,19 +6,22 @@ import java.util.Map;
 import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
+import net.boomerangplatform.kube.service.FlowKubeServiceImpl;
 import net.boomerangplatform.model.Response;
 import net.boomerangplatform.model.Task;
 import net.boomerangplatform.model.TaskResponse;
 import net.boomerangplatform.model.Workflow;
 
 @Service
-public class ControllerServiceImpl implements ControllerService {
+@Profile("live")
+public class FlowControllerServiceImpl implements ControllerService {
 	
 	@Autowired
-    private KubeService kubeService;
+    private FlowKubeServiceImpl kubeService;
 	
 	@Override
 	public Response createWorkflow(Workflow workflow) {
@@ -57,7 +60,7 @@ public class ControllerServiceImpl implements ControllerService {
 		TaskResponse response = new TaskResponse("0","Task (" + task.getTaskId() + ") has been executed successfully.", null);
 		try {
 			kubeService.createTaskConfigMap(task.getWorkflowName(), task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(), task.getInputs().getProperties());
-			kubeService.watchConfigMap(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
+			kubeService.watchConfigMap(null, task.getWorkflowActivityId(), task.getTaskId());
 			kubeService.createJob(task.getWorkflowName(), task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(), task.getArguments(), task.getInputs().getProperties());
 			kubeService.watchJob(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
 		} catch (Exception e) {
@@ -66,7 +69,7 @@ public class ControllerServiceImpl implements ControllerService {
 			response.setMessage(e.toString());
 		} finally {
 			response.setOutput(kubeService.getTaskOutPutConfigMapData(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId(), task.getTaskName()));
-			kubeService.deleteConfigMap(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
+			kubeService.deleteConfigMap(null, task.getWorkflowActivityId(), task.getTaskId());
 		}
 		return response;
 	}
