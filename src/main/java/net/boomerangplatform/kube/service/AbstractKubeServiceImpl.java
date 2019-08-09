@@ -352,6 +352,8 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	  
 	  System.out.println("Streaming logs from elastic.");
 	  
+	  System.out.println(getJobPrefix() + "-" + activityId + "-*");
+	  
       return outputStream -> {  
         
         PrintWriter printWriter = new PrintWriter(outputStream);
