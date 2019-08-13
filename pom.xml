@@ -24,6 +24,8 @@
 		<java.version>11</java.version>
 		<maven.compiler.source>${java.version}</maven.compiler.source>
 		<maven.compiler.target>${java.version}</maven.compiler.target>
+		<http.proxyHost></http.proxyHost><!-- set from env: proxy.boomerangplatform.net -->
+		<http.proxyPort></http.proxyPort><!-- set from env: 1080 -->
 		<jackson.databind.version>2.9.9.3</jackson.databind.version>
 	</properties>
 	<repositories>
@@ -164,6 +166,23 @@
 			<artifactId>lib-mongo</artifactId>
 			<version>4.0.0</version>
 		</dependency>
+		<dependency>
+			<groupId>net.boomerangplatform</groupId>
+			<artifactId>lib-opentracing</artifactId>
+			<version>1.0.0</version>
+		</dependency>
+		
+		<dependency>
+			<groupId>net.boomerangplatform</groupId>
+			<artifactId>lib-testing</artifactId>
+			<version>1.0.0</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -175,6 +194,16 @@
 					<forceJavacCompilerUse>true</forceJavacCompilerUse>
 					<release>${java.version}</release>
 				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<systemPropertyVariables>
+				   		<http.proxyHost>${http.proxyHost}</http.proxyHost>
+				   		<http.proxyPort>${http.proxyPort}</http.proxyPort>
+					</systemPropertyVariables>
+      			</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
