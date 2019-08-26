@@ -27,6 +27,9 @@
 		<http.proxyHost></http.proxyHost><!-- set from env: proxy.boomerangplatform.net -->
 		<http.proxyPort></http.proxyPort><!-- set from env: 1080 -->
 		<jackson.databind.version>2.9.9.3</jackson.databind.version>
+		<jacoco.out.path>${project.build.directory}</jacoco.out.path>
+		<sonar.jacoco.reportPath>${jacoco.out.path}/jacoco.exec</sonar.jacoco.reportPath>
+		<jacoco.version>0.8.2</jacoco.version>
 	</properties>
 	<repositories>
 		<repository>
@@ -150,7 +153,7 @@
 		<dependency>
 			<groupId>net.boomerangplatform</groupId>
 			<artifactId>lib-security</artifactId>
-			<version>1.0.0</version>
+			<version>1.0.1</version>
 		</dependency>
 		<dependency>
 			<groupId>net.boomerangplatform</groupId>
@@ -204,6 +207,30 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>${jacoco.version}</version>
+				<executions>
+					<execution>
+						 <id>pre-unit-test</id>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+						<configuration>
+						    <destFile>${sonar.jacoco.reportPath}</destFile>
+			                <propertyName>surefireArgLine</propertyName>
+			              </configuration>
+					</execution>
+					<execution>
+						<id>jacoco-report</id>
+						<phase>test</phase>
+						<goals>
+							<goal>report</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 		<resources>
