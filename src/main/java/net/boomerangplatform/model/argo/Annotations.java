@@ -1,44 +1,30 @@
 
 package net.boomerangplatform.model.argo;
 
-import java.util.HashMap;
-import java.util.Map;
-import com.fasterxml.jackson.annotation.JsonAnyGetter;
-import com.fasterxml.jackson.annotation.JsonAnySetter;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.google.gson.annotations.SerializedName;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({
-    "kubectl.kubernetes.io/last-applied-configuration"
-})
-public class Annotations {
+@JsonPropertyOrder({"kubectl.kubernetes.io/last-applied-configuration"})
+public class Annotations extends GeneralProperties {
 
-    @JsonProperty("kubectl.kubernetes.io/last-applied-configuration")
-    private String kubectlKubernetesIoLastAppliedConfiguration;
-    @JsonIgnore
-    private Map<String, Object> additionalProperties = new HashMap<String, Object>();
+  @JsonProperty("kubectl.kubernetes.io/last-applied-configuration")
+  @SerializedName("kubectl.kubernetes.io/last-applied-configuration")
+  private String kubectlKubernetesIoLastAppliedConfiguration;
 
-    @JsonProperty("kubectl.kubernetes.io/last-applied-configuration")
-    public String getKubectlKubernetesIoLastAppliedConfiguration() {
-        return kubectlKubernetesIoLastAppliedConfiguration;
-    }
+  public Annotations() {
+    // Do nothing
+  }
 
-    @JsonProperty("kubectl.kubernetes.io/last-applied-configuration")
-    public void setKubectlKubernetesIoLastAppliedConfiguration(String kubectlKubernetesIoLastAppliedConfiguration) {
-        this.kubectlKubernetesIoLastAppliedConfiguration = kubectlKubernetesIoLastAppliedConfiguration;
-    }
+  public String getKubectlKubernetesIoLastAppliedConfiguration() {
+    return kubectlKubernetesIoLastAppliedConfiguration;
+  }
 
-    @JsonAnyGetter
-    public Map<String, Object> getAdditionalProperties() {
-        return this.additionalProperties;
-    }
-
-    @JsonAnySetter
-    public void setAdditionalProperty(String name, Object value) {
-        this.additionalProperties.put(name, value);
-    }
+  public void setKubectlKubernetesIoLastAppliedConfiguration(
+      String kubectlKubernetesIoLastAppliedConfiguration) {
+    this.kubectlKubernetesIoLastAppliedConfiguration = kubectlKubernetesIoLastAppliedConfiguration;
+  }
 
 }

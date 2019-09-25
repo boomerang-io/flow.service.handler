@@ -1,161 +1,107 @@
 
 package net.boomerangplatform.model.argo;
 
-import java.util.HashMap;
-import java.util.Map;
-import com.fasterxml.jackson.annotation.JsonAnyGetter;
-import com.fasterxml.jackson.annotation.JsonAnySetter;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({
-    "annotations",
-    "clusterName",
-    "creationTimestamp",
-    "generation",
-    "labels",
-    "name",
-    "namespace",
-    "resourceVersion",
-    "selfLink",
-    "uid"
-})
-public class Metadata {
+@JsonPropertyOrder({"annotations", "clusterName", "creationTimestamp", "generation", "labels",
+    "name", "namespace", "resourceVersion", "selfLink", "uid"})
+public class Metadata extends GeneralProperties {
 
-    @JsonProperty("annotations")
-    private Annotations annotations;
-    @JsonProperty("clusterName")
-    private String clusterName;
-    @JsonProperty("creationTimestamp")
-    private String creationTimestamp;
-    @JsonProperty("generation")
-    private Integer generation;
-    @JsonProperty("labels")
-    private Labels labels;
-    @JsonProperty("name")
-    private String name;
-    @JsonProperty("namespace")
-    private String namespace;
-    @JsonProperty("resourceVersion")
-    private String resourceVersion;
-    @JsonProperty("selfLink")
-    private String selfLink;
-    @JsonProperty("uid")
-    private String uid;
-    @JsonIgnore
-    private Map<String, Object> additionalProperties = new HashMap<String, Object>();
+  private Annotations annotations;
+  private String clusterName;
+  private String creationTimestamp;
+  private Integer generation;
+  private Labels labels;
+  private String name;
+  private String namespace;
+  private String resourceVersion;
+  private String selfLink;
+  private String uid;
 
-    @JsonProperty("annotations")
-    public Annotations getAnnotations() {
-        return annotations;
-    }
+  public Metadata() {
+    // Do nothing
+  }
 
-    @JsonProperty("annotations")
-    public void setAnnotations(Annotations annotations) {
-        this.annotations = annotations;
-    }
+  public Annotations getAnnotations() {
+    return annotations;
+  }
 
-    @JsonProperty("clusterName")
-    public String getClusterName() {
-        return clusterName;
-    }
+  public void setAnnotations(Annotations annotations) {
+    this.annotations = annotations;
+  }
 
-    @JsonProperty("clusterName")
-    public void setClusterName(String clusterName) {
-        this.clusterName = clusterName;
-    }
+  public String getClusterName() {
+    return clusterName;
+  }
 
-    @JsonProperty("creationTimestamp")
-    public String getCreationTimestamp() {
-        return creationTimestamp;
-    }
+  public void setClusterName(String clusterName) {
+    this.clusterName = clusterName;
+  }
 
-    @JsonProperty("creationTimestamp")
-    public void setCreationTimestamp(String creationTimestamp) {
-        this.creationTimestamp = creationTimestamp;
-    }
+  public String getCreationTimestamp() {
+    return creationTimestamp;
+  }
 
-    @JsonProperty("generation")
-    public Integer getGeneration() {
-        return generation;
-    }
+  public void setCreationTimestamp(String creationTimestamp) {
+    this.creationTimestamp = creationTimestamp;
+  }
 
-    @JsonProperty("generation")
-    public void setGeneration(Integer generation) {
-        this.generation = generation;
-    }
+  public Integer getGeneration() {
+    return generation;
+  }
 
-    @JsonProperty("labels")
-    public Labels getLabels() {
-        return labels;
-    }
+  public void setGeneration(Integer generation) {
+    this.generation = generation;
+  }
 
-    @JsonProperty("labels")
-    public void setLabels(Labels labels) {
-        this.labels = labels;
-    }
+  public Labels getLabels() {
+    return labels;
+  }
 
-    @JsonProperty("name")
-    public String getName() {
-        return name;
-    }
+  public void setLabels(Labels labels) {
+    this.labels = labels;
+  }
 
-    @JsonProperty("name")
-    public void setName(String name) {
-        this.name = name;
-    }
+  public String getName() {
+    return name;
+  }
 
-    @JsonProperty("namespace")
-    public String getNamespace() {
-        return namespace;
-    }
+  public void setName(String name) {
+    this.name = name;
+  }
 
-    @JsonProperty("namespace")
-    public void setNamespace(String namespace) {
-        this.namespace = namespace;
-    }
+  public String getNamespace() {
+    return namespace;
+  }
 
-    @JsonProperty("resourceVersion")
-    public String getResourceVersion() {
-        return resourceVersion;
-    }
+  public void setNamespace(String namespace) {
+    this.namespace = namespace;
+  }
 
-    @JsonProperty("resourceVersion")
-    public void setResourceVersion(String resourceVersion) {
-        this.resourceVersion = resourceVersion;
-    }
+  public String getResourceVersion() {
+    return resourceVersion;
+  }
 
-    @JsonProperty("selfLink")
-    public String getSelfLink() {
-        return selfLink;
-    }
+  public void setResourceVersion(String resourceVersion) {
+    this.resourceVersion = resourceVersion;
+  }
 
-    @JsonProperty("selfLink")
-    public void setSelfLink(String selfLink) {
-        this.selfLink = selfLink;
-    }
+  public String getSelfLink() {
+    return selfLink;
+  }
 
-    @JsonProperty("uid")
-    public String getUid() {
-        return uid;
-    }
+  public void setSelfLink(String selfLink) {
+    this.selfLink = selfLink;
+  }
 
-    @JsonProperty("uid")
-    public void setUid(String uid) {
-        this.uid = uid;
-    }
+  public String getUid() {
+    return uid;
+  }
 
-    @JsonAnyGetter
-    public Map<String, Object> getAdditionalProperties() {
-        return this.additionalProperties;
-    }
-
-    @JsonAnySetter
-    public void setAdditionalProperty(String name, Object value) {
-        this.additionalProperties.put(name, value);
-    }
+  public void setUid(String uid) {
+    this.uid = uid;
+  }
 
 }

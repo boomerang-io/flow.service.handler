@@ -67,6 +67,10 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-log4j2</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>org.springframework.data</groupId>
+			<artifactId>spring-data-commons</artifactId>
+		</dependency>
 
 		<dependency>
 			<groupId>org.springframework</groupId>
@@ -104,6 +108,7 @@
 			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
 		
+		
 		<dependency>
 			<groupId>io.kubernetes</groupId>
 			<artifactId>client-java</artifactId>
@@ -137,22 +142,12 @@
 		    <artifactId>json-patch</artifactId>
 		    <version>1.9</version>
 		</dependency>
-		
 		<dependency>
 			<groupId>net.boomerangplatform</groupId>
-			<artifactId>lib-security</artifactId>
-			<version>1.0.1</version>
-		</dependency>
-		<dependency>
-			<groupId>net.boomerangplatform</groupId>
-			<artifactId>lib-audit</artifactId>
+			<artifactId>lib-util</artifactId>
 			<version>1.0.0</version>
 		</dependency>
-		<dependency>
-			<groupId>net.boomerangplatform</groupId>
-			<artifactId>lib-mongo</artifactId>
-			<version>4.0.0</version>
-		</dependency>
+
 		<dependency>
 			<groupId>net.boomerangplatform</groupId>
 			<artifactId>lib-opentracing</artifactId>
@@ -160,15 +155,20 @@
 		</dependency>
 		
 		<dependency>
-			<groupId>net.boomerangplatform</groupId>
-			<artifactId>lib-testing</artifactId>
-			<version>1.0.0</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
+		</dependency>
+		<dependency>
+            <groupId>com.github.tomakehurst</groupId>
+            <artifactId>wiremock</artifactId>
+            <version>2.19.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+			<groupId>net.boomerangplatform</groupId>
+			<artifactId>lib-testing</artifactId>
+			<version>1.0.4</version>
 		</dependency>
 	</dependencies>
 
