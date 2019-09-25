@@ -502,9 +502,10 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 		String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
 		try {
 			V1ConfigMapList configMapList = api.listNamespacedConfigMap(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null, null, labelSelector, null, null, 60, false);
-			configMapList.getItems().forEach(cfgmap -> {
-				System.out.println(cfgmap.toString());
-			});
+			// Need to implement a logger debug mode
+			//			configMapList.getItems().forEach(cfgmap -> {
+//				System.out.println(cfgmap.toString());
+//			});
 			if (!configMapList.getItems().isEmpty()) {
 				configMap = configMapList.getItems().get(0);
 			}
