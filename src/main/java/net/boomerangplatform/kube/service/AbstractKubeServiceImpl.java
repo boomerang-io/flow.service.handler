@@ -165,16 +165,16 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 		String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
 
 		Watch<V1Job> watch = Watch.createWatch(
-				createWatcherApiClient(), api.listNamespacedJobCall(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null, null, labelSelector, null, null, 0, true, null, null),
+				createWatcherApiClient(), api.listNamespacedJobCall(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null, null, labelSelector, null, null, null, true, null, null),
 				new TypeToken<Watch.Response<V1Job>>() {
 				}.getType());
 		
 		V1Job jobResult = new V1Job();
 		try {
-			boolean wasModified = false;
+//			boolean wasModified = false;
 			for (Watch.Response<V1Job> item : watch) {
 				System.out.println(item.type + " : " + item.object.getMetadata().getName());
-				wasModified = !item.type.equalsIgnoreCase("ADDED") ? Boolean.TRUE : wasModified;
+//				wasModified = !item.type.equalsIgnoreCase("ADDED") ? Boolean.TRUE : wasModified;
 				System.out.println(item.object.getStatus());
 				if (item.object.getStatus().getConditions() != null && !item.object.getStatus().getConditions().isEmpty()) {
 					if (item.object.getStatus().getConditions().get(0).getType().equals("Complete")) {
@@ -189,9 +189,9 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 			}
 //			Handle watcher stops listening for events (irrespective of timeout) and does not throw exception.
 //			Our logic is that any job that does not get an event, other than ADDED, is in error.
-			if (!wasModified) {
-				throw new Exception("Task (" + taskId + ") has exceeded the maximum duration of idle time and we can no longer listen for events");
-			}
+//			if (!wasModified) {
+//				throw new Exception("Task (" + taskId + ") has exceeded the maximum duration of idle time and we can no longer listen for events");
+//			}
 		} finally {
 			watch.close();
 		}
@@ -620,7 +620,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 			watcherApiKeyAuth.setApiKey(kubeApiToken);
 			watcherApiKeyAuth.setApiKeyPrefix("Bearer");
 		}
-		watcherClient.getHttpClient().setReadTimeout(kubeApiTimeOut, TimeUnit.SECONDS);
+		watcherClient.getHttpClient().setReadTimeout(0, TimeUnit.SECONDS);
 		return watcherClient;
 	}
 	
