@@ -171,7 +171,6 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 		
 		V1Job jobResult = new V1Job();
 		try {
-			System.out.println("Starting watch loop...");
 			boolean wasModified = false;
 			for (Watch.Response<V1Job> item : watch) {
 				System.out.println(item.type + " : " + item.object.getMetadata().getName());
@@ -182,15 +181,9 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 						jobResult = item.object;
 						break;
 					} else if (item.object.getStatus().getConditions().get(0).getType().equals("Failed")) {
-						System.out.println("---------------------");
-						System.out.println("---- Task Failed ----");
-						System.out.println("---------------------");
 						throw new Exception("Task (" + taskId + ") has failed to execute " + kubeWorkerJobBackOffLimit + " times triggering failure.");
 					}
 				} else if (item.object.getStatus().getFailed() != null && item.object.getStatus().getFailed() >= 1) {
-					System.out.println("---------------------");
-					System.out.println("---- Task Failed ----");
-					System.out.println("---------------------");
 					throw new Exception("Task (" + taskId + ") has failed to execute " + kubeWorkerJobBackOffLimit + " times triggering failure.");
 				}
 			}
@@ -199,7 +192,6 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 			if (!wasModified) {
 				throw new Exception("Task (" + taskId + ") has exceeded the maximum duration of idle time and we can no longer listen for events");
 			}
-			System.out.println("...ending watch loop.");
 		} finally {
 			watch.close();
 		}

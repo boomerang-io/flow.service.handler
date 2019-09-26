@@ -70,10 +70,12 @@ public class CICDControllerServiceImpl implements ControllerService {
 			kubeService.createJob(task.getWorkflowName(), task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(), task.getArguments(), task.getInputs().getProperties());
 			kubeService.watchJob(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
 		} catch (Exception e) {
-			e.printStackTrace();
 			response.setCode("1");
 			response.setMessage(e.toString());
-			System.out.println("DEBUG::Task Is Being Set as Failed");
+			System.out.println("---------------------");
+			System.out.println("---- Task Failed ----");
+			System.out.println("---------------------");
+			e.printStackTrace();
 		} finally {
 //			response.setOutput(kubeService.getTaskOutPutConfigMapData(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId(), task.getTaskName()));
 			kubeService.deleteConfigMap(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
