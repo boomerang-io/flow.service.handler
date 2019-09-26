@@ -161,11 +161,13 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 		String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
 		V1Job jobResult = new V1Job();
 
-		Integer loopCount = 0;
+//		Since upgrade to Java11 the watcher stops listening for events (irrespective of timeout) and does not throw exception.
+//		Loop will restart watcher based on our own timer
+		Integer loopCount = 1;
 		boolean jobComplete = false;
 		long endTime = System.nanoTime() + TimeUnit.NANOSECONDS.convert(kubeApiTimeOut.longValue(), TimeUnit.SECONDS);
 		do {
-			System.out.println("Starting Job Watcher (" + loopCount + ") for Task (" + taskId + ")...");
+			System.out.println("Starting Job Watcher #" + loopCount + " for Task (" + taskId + ")...");
 			Watch<V1Job> watch = Watch.createWatch(
 					createWatcherApiClient(), api.listNamespacedJobCall(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null, null, labelSelector, null, null, null, true, null, null),
 					new TypeToken<Watch.Response<V1Job>>() {
