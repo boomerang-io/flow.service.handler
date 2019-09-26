@@ -73,8 +73,6 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
 
   private static final String EXCEPTION = "Exception: ";
 
-  private static final String DELIMITER = "---------------------";
-
   private static final Logger LOGGER = LogManager.getLogger(AbstractKubeService.class);
 
   private static final String PREFIX_PVC = "bmrg-pvc-";
@@ -95,7 +93,6 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
 
   protected static final String PREFIX_VOL_PROPS = PREFIX_VOL + "-props";
 
-
   @Value("${kube.api.base.path}")
   protected String kubeApiBasePath;
 
@@ -103,7 +100,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   protected String kubeApiToken;
 
   @Value("${kube.api.debug}")
-  protected String kubeApiDebug;
+  protected Boolean kubeApiDebug;
 
   @Value("${kube.api.type}")
   protected String kubeApiType;
@@ -383,10 +380,9 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   public V1Status deletePVC(String workflowId, String workflowActivityId) {
     V1DeleteOptions deleteOptions = new V1DeleteOptions();
     V1Status result = new V1Status();
-
     try {
       result = getCoreApi().deleteNamespacedPersistentVolumeClaim(
-          getPVCName(workflowId, workflowActivityId), kubeNamespace, deleteOptions, kubeApiPretty,
+          getPVCName(workflowId, workflowActivityId), kubeNamespace, kubeApiPretty, deleteOptions,
           null, null, null, null);
     } catch (JsonSyntaxException e) {
       if (e.getCause() instanceof IllegalStateException) {
@@ -481,7 +477,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     try {
       result = getCoreApi().deleteNamespacedConfigMap(
           getConfigMapName(getConfigMap(workflowId, workflowActivityId, taskId)), kubeNamespace,
-          deleteOptions, kubeApiPretty, null, null, null, null);
+          kubeApiPretty, deleteOptions, null, null, null, null);
     } catch (JsonSyntaxException e) {
       if (e.getCause() instanceof IllegalStateException) {
         IllegalStateException ise = (IllegalStateException) e.getCause();
@@ -570,7 +566,6 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
       V1ConfigMapList configMapList =
           getCoreApi().listNamespacedConfigMap(kubeNamespace, kubeApiIncludeuninitialized,
               kubeApiPretty, null, null, labelSelector, null, null, TIMEOUT_ONE_MINUTE, false);
-      configMapList.getItems().forEach(cfgmap -> LOGGER.info(cfgmap.toString()));
       if (!configMapList.getItems().isEmpty()) {
         configMap = configMapList.getItems().get(0);
       }
@@ -668,8 +663,12 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
 
   private ApiClient createWatcherApiClient() {
     // https://github.com/kubernetes-client/java/blob/master/util/src/main/java/io/kubernetes/client/util/Config.java#L57
+    // Watch is (for now) incompatible with debugging mode active. Watches will not return data
+    // until the watch connection terminates io.kubernetes.client.ApiException: Watch is
+    // incompatible with debugging mode active.
     ApiClient watcherClient = io.kubernetes.client.Configuration.getDefaultApiClient()
         .setVerifyingSsl(false).setDebugging(false);
+
     if ("custom".equals(kubeApiType)) {
       watcherClient = Config.fromToken(kubeApiBasePath, kubeApiToken, false);
     }
@@ -679,7 +678,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
       watcherApiKeyAuth.setApiKey(kubeApiToken);
       watcherApiKeyAuth.setApiKeyPrefix("Bearer");
     }
-    watcherClient.getHttpClient().setReadTimeout(kubeApiTimeOut, TimeUnit.SECONDS);
+    watcherClient.getHttpClient().setReadTimeout(0, TimeUnit.SECONDS);
     return watcherClient;
   }
 
@@ -719,21 +718,16 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
           jobResult = item.object;
           break;
         } else if ("Failed".equals(item.object.getStatus().getConditions().get(0).getType())) {
-          LOGGER.info(DELIMITER);
-          LOGGER.info("---- Task Failed ----");
-          LOGGER.info(DELIMITER);
           throw new KubeRuntimeException("Task (" + taskId + ") has failed to execute "
               + kubeWorkerJobBackOffLimit + " times triggering failure.");
         }
       } else if (item.object.getStatus().getFailed() != null
           && item.object.getStatus().getFailed() >= 1) {
-        LOGGER.info(DELIMITER);
-        LOGGER.info("---- Task Failed ----");
-        LOGGER.info(DELIMITER);
         throw new KubeRuntimeException("Task (" + taskId + ") has failed to execute "
             + kubeWorkerJobBackOffLimit + " times triggering failure.");
       }
     }
+
     return jobResult;
   }
 
