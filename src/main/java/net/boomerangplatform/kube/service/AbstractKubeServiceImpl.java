@@ -61,7 +61,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	protected String kubeApiToken;
 	
 	@Value("${kube.api.debug}")
-	protected String kubeApiDebug;
+	protected Boolean kubeApiDebug;
 	
 	@Value("${kube.api.type}")
 	protected String kubeApiType;
@@ -606,7 +606,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	
 	protected ApiClient createWatcherApiClient() {
 //		https://github.com/kubernetes-client/java/blob/master/util/src/main/java/io/kubernetes/client/util/Config.java#L57
-		ApiClient watcherClient = io.kubernetes.client.Configuration.getDefaultApiClient().setVerifyingSsl(false).setDebugging(false);
+		ApiClient watcherClient = io.kubernetes.client.Configuration.getDefaultApiClient().setVerifyingSsl(false).setDebugging(kubeApiDebug);
 		if (kubeApiType.equals("custom")) {
 			watcherClient = Config.fromToken(kubeApiBasePath, kubeApiToken, false);
 		}
