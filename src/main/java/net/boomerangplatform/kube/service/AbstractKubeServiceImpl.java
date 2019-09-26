@@ -160,7 +160,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	@Override
 	public V1Job watchJob(String workflowId, String workflowActivityId, String taskId) throws Exception {		
 		BatchV1Api api = new BatchV1Api();
-
+		
 		String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
 
 		Watch<V1Job> watch = Watch.createWatch(
@@ -417,7 +417,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 		V1Status result = new V1Status();
 		
 		try {
-			result = api.deleteNamespacedPersistentVolumeClaim(getPVCName(workflowId, workflowActivityId), kubeNamespace, deleteOptions, kubeApiPretty, null, null, null, null);
+			result = api.deleteNamespacedPersistentVolumeClaim(getPVCName(workflowId, workflowActivityId), kubeNamespace, kubeApiPretty, deleteOptions, null, null, null, null);
 		} catch (JsonSyntaxException e) {
             if (e.getCause() instanceof IllegalStateException) {
                 IllegalStateException ise = (IllegalStateException) e.getCause();
@@ -588,7 +588,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 		V1Status result = new V1Status();
 		
 		try {
-			result = api.deleteNamespacedConfigMap(getConfigMapName(getConfigMap(workflowId, workflowActivityId, taskId)), kubeNamespace, deleteOptions, kubeApiPretty, null, null, null, null);
+			result = api.deleteNamespacedConfigMap(getConfigMapName(getConfigMap(workflowId, workflowActivityId, taskId)), kubeNamespace, kubeApiPretty, deleteOptions, null, null, null, null);
 		} catch (JsonSyntaxException e) {
             if (e.getCause() instanceof IllegalStateException) {
                 IllegalStateException ise = (IllegalStateException) e.getCause();
