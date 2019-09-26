@@ -49,7 +49,6 @@ import io.kubernetes.client.models.V1Pod;
 import io.kubernetes.client.models.V1PodCondition;
 import io.kubernetes.client.models.V1ResourceRequirements;
 import io.kubernetes.client.models.V1Status;
-import io.kubernetes.client.models.V1WatchEvent;
 import io.kubernetes.client.util.Config;
 import io.kubernetes.client.util.Watch;
 
@@ -607,20 +606,10 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	}
 	
 	protected ApiClient createWatcherApiClient() {
-//		https://github.com/kubernetes-client/java/blob/master/util/src/main/java/io/kubernetes/client/util/Config.java#L57
-//		Watch is (for now) incompatible with debugging mode active. Watches will not return data until the watch connection terminates
-//				io.kubernetes.client.ApiException: Watch is incompatible with debugging mode active.
-		ApiClient watcherClient = io.kubernetes.client.Configuration.getDefaultApiClient().setVerifyingSsl(false).setDebugging(false);
-		if (kubeApiType.equals("custom")) {
-			watcherClient = Config.fromToken(kubeApiBasePath, kubeApiToken, false);
-		}
-		
-		if (!kubeApiToken.isEmpty()) {
-			ApiKeyAuth watcherApiKeyAuth = (ApiKeyAuth) watcherClient.getAuthentication("BearerToken");
-			watcherApiKeyAuth.setApiKey(kubeApiToken);
-			watcherApiKeyAuth.setApiKeyPrefix("Bearer");
-		}
-		watcherClient.getHttpClient().setReadTimeout(0, TimeUnit.SECONDS);
+//		This leverages the work done in the KubeConfiguration.java Class and overrides the debugging to false as Watch is (for now) 
+//		incompatible with debugging mode active. Watches will not return data until the watch connection terminates
+//		io.kubernetes.client.ApiException: Watch is incompatible with debugging mode active.
+		ApiClient watcherClient = io.kubernetes.client.Configuration.getDefaultApiClient().setDebugging(false);
 		return watcherClient;
 	}
 	

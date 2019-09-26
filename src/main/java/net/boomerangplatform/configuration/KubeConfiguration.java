@@ -26,8 +26,13 @@ public class KubeConfiguration {
 	@Value("${kube.api.type}")
 	private String kubeApiType;
 	
+	@Value("${kube.api.timeout}")
+	private Integer kubeApiTimeOut;
+	
 	@Bean
 	public ApiClient connectToKube() {
+//		https://github.com/kubernetes-client/java/blob/master/util/src/main/java/io/kubernetes/client/util/Config.java#L57
+			
 		ApiClient defaultClient = null;
 		if (kubeApiType.equals("cluster")) {
 			try {
@@ -44,8 +49,9 @@ public class KubeConfiguration {
 			apiKeyAuth.setApiKey(kubeApiToken);
 			apiKeyAuth.setApiKeyPrefix("Bearer");
 		}
+
+		defaultClient.getHttpClient().setReadTimeout(kubeApiTimeOut.longValue(), TimeUnit.SECONDS);
 		io.kubernetes.client.Configuration.setDefaultApiClient(defaultClient);
-		defaultClient.getHttpClient().setReadTimeout(300, TimeUnit.SECONDS); //added for watcher to not timeout
 		return defaultClient;
 
 //		ApiClient defaultClient = Config.fromToken(kubeApiBasePath, kubeApiToken, false).setVerifyingSsl(false).setDebugging(kubeApiDebug.isEmpty() ? false : Boolean.valueOf(kubeApiDebug));
