@@ -164,12 +164,13 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 		String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
 
 		Watch<V1Job> watch = Watch.createWatch(
-				createWatcherApiClient(), api.listNamespacedJobCall(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null, null, labelSelector, null, null, null, true, null, null),
+				createWatcherApiClient(), api.listNamespacedJobCall(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null, null, labelSelector, null, null, 0, true, null, null),
 				new TypeToken<Watch.Response<V1Job>>() {
 				}.getType());
 		
 		V1Job jobResult = new V1Job();
 		try {
+			System.out.println("Starting watch loop...");
 			for (Watch.Response<V1Job> item : watch) {
 				System.out.println(item.type + " : " + item.object.getMetadata().getName());
 				System.out.println(item.object.getStatus());
@@ -190,6 +191,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 					throw new Exception("Task (" + taskId + ") has failed to execute " + kubeWorkerJobBackOffLimit + " times triggering failure.");
 				}
 			}
+			System.out.println("...ending watch loop.");
 		} finally {
 			watch.close();
 		}
@@ -606,7 +608,9 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	
 	protected ApiClient createWatcherApiClient() {
 //		https://github.com/kubernetes-client/java/blob/master/util/src/main/java/io/kubernetes/client/util/Config.java#L57
-		ApiClient watcherClient = io.kubernetes.client.Configuration.getDefaultApiClient().setVerifyingSsl(false).setDebugging(kubeApiDebug);
+//		Watch is (for now) incompatible with debugging mode active. Watches will not return data until the watch connection terminates
+//				io.kubernetes.client.ApiException: Watch is incompatible with debugging mode active.
+		ApiClient watcherClient = io.kubernetes.client.Configuration.getDefaultApiClient().setVerifyingSsl(false).setDebugging(false);
 		if (kubeApiType.equals("custom")) {
 			watcherClient = Config.fromToken(kubeApiBasePath, kubeApiToken, false);
 		}
