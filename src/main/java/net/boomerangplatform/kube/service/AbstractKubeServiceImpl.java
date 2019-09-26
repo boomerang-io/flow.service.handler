@@ -158,34 +158,39 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	@Override
 	public V1Job watchJob(String workflowId, String workflowActivityId, String taskId) throws Exception {		
 		BatchV1Api api = new BatchV1Api();
-		
 		String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
-
-		Watch<V1Job> watch = Watch.createWatch(
-				createWatcherApiClient(), api.listNamespacedJobCall(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null, null, labelSelector, null, null, 0, true, null, null),
-				new TypeToken<Watch.Response<V1Job>>() {
-				}.getType());
-		
 		V1Job jobResult = new V1Job();
-		try {
-			for (Watch.Response<V1Job> item : watch) {
-				System.out.println(item.type + " : " + item.object.getMetadata().getName());
-				System.out.println(item.object.getStatus());
-				if (item.object.getStatus().getConditions() != null && !item.object.getStatus().getConditions().isEmpty()) {
-					System.out.println(item.object.getStatus().getConditions().get(0));
-					if (item.object.getStatus().getConditions().get(0).getType().equals("Complete")) {
-						jobResult = item.object;
+
+		Integer loopCount = 0;
+		boolean jobComplete = false;
+		long endTime = System.nanoTime() + TimeUnit.NANOSECONDS.convert(kubeApiTimeOut.longValue(), TimeUnit.SECONDS);
+		do {
+			System.out.println("Starting Job Watcher (" + loopCount + ") for Task (" + taskId + ")...");
+			Watch<V1Job> watch = Watch.createWatch(
+					createWatcherApiClient(), api.listNamespacedJobCall(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null, null, labelSelector, null, null, null, true, null, null),
+					new TypeToken<Watch.Response<V1Job>>() {
+					}.getType());
+			try {
+				for (Watch.Response<V1Job> item : watch) {
+					jobResult = item.object;
+					System.out.println(item.type + " : " + jobResult.getMetadata().getName());
+					System.out.println(jobResult.getStatus());
+					if (item.object.getStatus().getSucceeded() != null && item.object.getStatus().getSucceeded() >= 1) {
+						System.out.println("Task (" + taskId + ") has succeeded.");
+						jobComplete = true;
 						break;
-					} else if (item.object.getStatus().getConditions().get(0).getType().equals("Failed")) {
+					} else if (item.object.getStatus().getFailed() != null && item.object.getStatus().getFailed() >= kubeWorkerJobBackOffLimit) {
 						throw new Exception("Task (" + taskId + ") has failed to execute " + kubeWorkerJobBackOffLimit + " times triggering failure.");
 					}
-				} else if (item.object.getStatus().getFailed() != null && item.object.getStatus().getFailed() >= 1) {
-					throw new Exception("Task (" + taskId + ") has failed to execute " + kubeWorkerJobBackOffLimit + " times triggering failure.");
 				}
+			} finally {
+				watch.close();
 			}
-
-		} finally {
-			watch.close();
+			loopCount++;
+		} while ( System.nanoTime() < endTime && !jobComplete);
+		if (!jobComplete) {
+			//Final catch for a timeout and job still not complete.
+			throw new Exception("Task (" + taskId + ") has exceeded the maximum duration triggering failure.");
 		}
 		return jobResult;
 	}
