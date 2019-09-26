@@ -49,6 +49,7 @@ import io.kubernetes.client.models.V1Pod;
 import io.kubernetes.client.models.V1PodCondition;
 import io.kubernetes.client.models.V1ResourceRequirements;
 import io.kubernetes.client.models.V1Status;
+import io.kubernetes.client.models.V1WatchEvent;
 import io.kubernetes.client.util.Config;
 import io.kubernetes.client.util.Watch;
 
@@ -171,8 +172,10 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 		V1Job jobResult = new V1Job();
 		try {
 			System.out.println("Starting watch loop...");
+			boolean wasModified = false;
 			for (Watch.Response<V1Job> item : watch) {
 				System.out.println(item.type + " : " + item.object.getMetadata().getName());
+				wasModified = !item.type.equalsIgnoreCase("ADDED") ? Boolean.TRUE : wasModified;
 				System.out.println(item.object.getStatus());
 				if (item.object.getStatus().getConditions() != null && !item.object.getStatus().getConditions().isEmpty()) {
 					if (item.object.getStatus().getConditions().get(0).getType().equals("Complete")) {
@@ -190,6 +193,11 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 					System.out.println("---------------------");
 					throw new Exception("Task (" + taskId + ") has failed to execute " + kubeWorkerJobBackOffLimit + " times triggering failure.");
 				}
+			}
+//			Handle watcher stops listening for events (irrespective of timeout) and does not throw exception.
+//			Our logic is that any job that does not get an event, other than ADDED, is in error.
+			if (!wasModified) {
+				throw new Exception("Task (" + taskId + ") has exceeded the maximum duration of idle time and we can no longer listen for events");
 			}
 			System.out.println("...ending watch loop.");
 		} finally {
