@@ -162,7 +162,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 		V1Job jobResult = new V1Job();
 
 //		Since upgrade to Java11 the watcher stops listening for events (irrespective of timeout) and does not throw exception.
-//		Loop will restart watcher based on our own timer
+//		Loop will restart watcher based on our own timer and matches the same time that the ApiClient reader timeout is set to
 		Integer loopCount = 1;
 		boolean jobComplete = false;
 		long endTime = System.nanoTime() + TimeUnit.NANOSECONDS.convert(kubeApiTimeOut.longValue(), TimeUnit.SECONDS);
@@ -593,7 +593,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 //		incompatible with debugging mode active. Watches will not return data until the watch connection terminates
 //		io.kubernetes.client.ApiException: Watch is incompatible with debugging mode active.
 		ApiClient watcherClient = io.kubernetes.client.Configuration.getDefaultApiClient().setDebugging(false);
-		watcherClient.getHttpClient().setReadTimeout(0, TimeUnit.SECONDS);
+		watcherClient.getHttpClient().setReadTimeout(kubeApiTimeOut.longValue(), TimeUnit.SECONDS);
 		return watcherClient;
 	}
 	
