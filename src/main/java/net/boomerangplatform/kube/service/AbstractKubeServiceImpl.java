@@ -199,23 +199,6 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 
   protected abstract String getLabelSelector(String workflowId, String workflowActivityId, String taskId);
 	
-	//Commenting out to determine if it is needed. This was in there as a delay.
-//	private void getJobPod(String workflowId, String workflowActivityId) {		
-//		CoreV1Api api = new CoreV1Api();
-//		String labelSelector = "org=bmrg,app=bmrg-flow,workflow-id="+workflowId+",workflow-activity-id="+workflowActivityId;
-//		
-//		try {
-//			V1PodList podList = api.listNamespacedPod(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null, null, labelSelector, null, null, 60, false);
-//			podList.getItems().forEach(pod -> {
-//				System.out.println(pod.toString());
-//				System.out.println(" pod Name: " + pod.getMetadata().getName());
-//			});
-//		} catch (ApiException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-//	}
-	
 	@Override
 	public String getPodLog(String workflowId, String workflowActivityId, String taskId) throws ApiException, IOException {		
 		CoreV1Api api = new CoreV1Api();
