@@ -31,7 +31,6 @@ import io.kubernetes.client.ApiException;
 import io.kubernetes.client.PodLogs;
 import io.kubernetes.client.apis.BatchV1Api;
 import io.kubernetes.client.apis.CoreV1Api;
-import io.kubernetes.client.auth.ApiKeyAuth;
 import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.models.V1ConfigMap;
 import io.kubernetes.client.models.V1ConfigMapList;
@@ -49,7 +48,6 @@ import io.kubernetes.client.models.V1Pod;
 import io.kubernetes.client.models.V1PodCondition;
 import io.kubernetes.client.models.V1ResourceRequirements;
 import io.kubernetes.client.models.V1Status;
-import io.kubernetes.client.util.Config;
 import io.kubernetes.client.util.Watch;
 
 public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
@@ -164,7 +162,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 		String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
 
 		Watch<V1Job> watch = Watch.createWatch(
-				createWatcherApiClient(), api.listNamespacedJobCall(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null, null, labelSelector, null, null, null, true, null, null),
+				createWatcherApiClient(), api.listNamespacedJobCall(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null, null, labelSelector, null, null, 0, true, null, null),
 				new TypeToken<Watch.Response<V1Job>>() {
 				}.getType());
 		
@@ -606,10 +604,11 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService {
 	}
 	
 	protected ApiClient createWatcherApiClient() {
-//		This leverages the work done in the KubeConfiguration.java Class and overrides the debugging to false as Watch is (for now) 
+//		This leverages the default ApiClient in the KubeConfiguration.java Class and overrides the debugging to false as Watch is (for now) 
 //		incompatible with debugging mode active. Watches will not return data until the watch connection terminates
 //		io.kubernetes.client.ApiException: Watch is incompatible with debugging mode active.
 		ApiClient watcherClient = io.kubernetes.client.Configuration.getDefaultApiClient().setDebugging(false);
+		watcherClient.getHttpClient().setReadTimeout(0, TimeUnit.SECONDS);
 		return watcherClient;
 	}
 	
