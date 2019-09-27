@@ -91,6 +91,7 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
 			envVars.addAll(createProxyEnvVars());
 		}
 		envVars.add(createEnvVar("DEBUG",kubeWorkerDebug.toString()));
+		envVars.add(createEnvVar("CI","true"));
 		container.env(envVars);
 		container.args(arguments);
 		if (checkPVCExists(componentId, null, null, true)) {
