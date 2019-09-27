@@ -31,7 +31,6 @@ import io.kubernetes.client.ApiException;
 import io.kubernetes.client.PodLogs;
 import io.kubernetes.client.apis.BatchV1Api;
 import io.kubernetes.client.apis.CoreV1Api;
-import io.kubernetes.client.auth.ApiKeyAuth;
 import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.models.V1ConfigMap;
 import io.kubernetes.client.models.V1ConfigMapList;
@@ -55,7 +54,6 @@ import io.kubernetes.client.models.V1Status;
 import io.kubernetes.client.models.V1Volume;
 import io.kubernetes.client.models.V1VolumeMount;
 import io.kubernetes.client.models.V1VolumeProjection;
-import io.kubernetes.client.util.Config;
 import io.kubernetes.client.util.Watch;
 import net.boomerangplatform.kube.exception.KubeRuntimeException;
 
@@ -213,18 +211,31 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   @Override
   public V1Job watchJob(String workflowId, String workflowActivityId, String taskId) {
     String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
-
     Watch<V1Job> watch;
-    V1Job jobResult = new V1Job();
-    try {
-      watch = getJobWatch(getBatchApi(), labelSelector);
-      jobResult = getJobResult(taskId, watch);
+    V1Job jobResult = null;
 
-    } catch (ApiException | IOException e) {
-      LOGGER.error("getWatch Exception: ", e);
-      throw new KubeRuntimeException("Error createWatch", e);
+    // Since upgrade to Java11 the watcher stops listening for events (irrespective of timeout) and
+    // does not throw exception.
+    // Loop will restart watcher based on our own timer
+    Integer loopCount = 1;
+    long endTime = System.nanoTime()
+        + TimeUnit.NANOSECONDS.convert(kubeApiTimeOut.longValue(), TimeUnit.SECONDS);
+    do {
+      LOGGER.info("Starting Job Watcher #" + loopCount + " for Task (" + taskId + ")...");
+      try {
+        watch = getJobWatch(getBatchApi(), labelSelector);
+        jobResult = getJobResult(taskId, watch);
+      } catch (ApiException | IOException e) {
+        LOGGER.error("getWatch Exception: ", e);
+        throw new KubeRuntimeException("Error createWatch", e);
+      }
+      loopCount++;
+    } while (System.nanoTime() < endTime && jobResult == null);
+    if (jobResult == null) {
+      // Final catch for a timeout and job still not complete.
+      throw new KubeRuntimeException(
+          "Task (" + taskId + ") has exceeded the maximum duration triggering failure.");
     }
-
     return jobResult;
   }
 
@@ -662,24 +673,15 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   }
 
   private ApiClient createWatcherApiClient() {
-    // https://github.com/kubernetes-client/java/blob/master/util/src/main/java/io/kubernetes/client/util/Config.java#L57
-    // Watch is (for now) incompatible with debugging mode active. Watches will not return data
-    // until the watch connection terminates io.kubernetes.client.ApiException: Watch is
-    // incompatible with debugging mode active.
-    ApiClient watcherClient = io.kubernetes.client.Configuration.getDefaultApiClient()
-        .setVerifyingSsl(false).setDebugging(false);
-
-    if ("custom".equals(kubeApiType)) {
-      watcherClient = Config.fromToken(kubeApiBasePath, kubeApiToken, false);
-    }
-
-    if (!kubeApiToken.isEmpty()) {
-      ApiKeyAuth watcherApiKeyAuth = (ApiKeyAuth) watcherClient.getAuthentication("BearerToken");
-      watcherApiKeyAuth.setApiKey(kubeApiToken);
-      watcherApiKeyAuth.setApiKeyPrefix("Bearer");
-    }
-    watcherClient.getHttpClient().setReadTimeout(0, TimeUnit.SECONDS);
+    // This leverages the default ApiClient in the KubeConfiguration.java Class and overrides the
+    // debugging to false as Watch is (for now) incompatible with debugging mode active.
+    // Watches will not return data until the watch connection terminates
+    // io.kubernetes.client.ApiException: Watch is incompatible with debugging mode active.
+    ApiClient watcherClient =
+        io.kubernetes.client.Configuration.getDefaultApiClient().setDebugging(false);
+    watcherClient.getHttpClient().setReadTimeout(kubeApiTimeOut.longValue(), TimeUnit.SECONDS);
     return watcherClient;
+
   }
 
   private Watch<V1Job> getJobWatch(BatchV1Api api, String labelSelector) throws ApiException {
@@ -698,31 +700,30 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
 
 
   private V1Job getJobResult(String taskId, Watch<V1Job> watch) throws IOException {
-    V1Job jobResult = new V1Job();
+    V1Job jobResult = null;
     try {
       jobResult = getJob(taskId, watch);
     } finally {
-      watch.close();
+      if (watch != null) {
+        watch.close();
+      }
     }
     return jobResult;
   }
 
   private V1Job getJob(String taskId, Watch<V1Job> watch) {
-    V1Job jobResult = new V1Job();
+    V1Job jobResult = null;
     for (Watch.Response<V1Job> item : watch) {
+
       LOGGER.info(item.type + " : " + item.object.getMetadata().getName());
       LOGGER.info(item.object.getStatus());
-      if (item.object.getStatus().getConditions() != null
-          && !item.object.getStatus().getConditions().isEmpty()) {
-        if ("Complete".equals(item.object.getStatus().getConditions().get(0).getType())) {
-          jobResult = item.object;
-          break;
-        } else if ("Failed".equals(item.object.getStatus().getConditions().get(0).getType())) {
-          throw new KubeRuntimeException("Task (" + taskId + ") has failed to execute "
-              + kubeWorkerJobBackOffLimit + " times triggering failure.");
-        }
+      if (item.object.getStatus().getSucceeded() != null
+          && item.object.getStatus().getSucceeded() >= 1) {
+        LOGGER.info(String.format("Task (%s) has succeeded.", taskId));
+        jobResult = item.object;
+        break;
       } else if (item.object.getStatus().getFailed() != null
-          && item.object.getStatus().getFailed() >= 1) {
+          && item.object.getStatus().getFailed() >= kubeWorkerJobBackOffLimit) {
         throw new KubeRuntimeException("Task (" + taskId + ") has failed to execute "
             + kubeWorkerJobBackOffLimit + " times triggering failure.");
       }

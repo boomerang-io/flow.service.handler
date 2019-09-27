@@ -142,20 +142,11 @@ public class FlowKubeServiceTest {
   public void testWatchJob() {
     stubFor(get(urlPathMatching("/apis/batch/v1/namespaces/default/jobs"))
         .willReturn(okForContentType(MediaType.APPLICATION_JSON_VALUE,
-            "{\"object\": {\"apiVersion\": \"1.0\", \"metadata\": {\"name\": \"configMapMetadataName\"}, \"items\": [{\"metadata\": {\"name\": \"metadataName\"}}], \"status\": { \"conditions\" :[{\"type\": \"Complete\"}]}}}")));
+            "{\"object\": {\"apiVersion\": \"1.0\", \"metadata\": {\"name\": \"configMapMetadataName\"}, \"items\": [{\"metadata\": {\"name\": \"metadataName\"}}], \"status\": { \"succeeded\" : 1}}}")));
 
     V1Job job = flowKubeService.watchJob("workflowId", "workflowActivityId", "taskId");
 
     assertNotNull(job);
-  }
-
-  @Test(expected = KubeRuntimeException.class)
-  public void testWatchJobWithFailed() {
-    stubFor(get(urlPathMatching("/apis/batch/v1/namespaces/default/jobs"))
-        .willReturn(okForContentType(MediaType.APPLICATION_JSON_VALUE,
-            "{\"object\": {\"apiVersion\": \"1.0\", \"metadata\": {\"name\": \"configMapMetadataName\"}, \"items\": [{\"metadata\": {\"name\": \"metadataName\"}}], \"status\": { \"conditions\" :[{\"type\": \"Failed\"}]}}}")));
-
-    flowKubeService.watchJob("workflowId", "workflowActivityId", "taskId");
   }
 
   @Test(expected = KubeRuntimeException.class)

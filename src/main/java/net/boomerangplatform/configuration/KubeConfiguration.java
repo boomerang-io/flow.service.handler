@@ -15,8 +15,6 @@ import net.boomerangplatform.kube.exception.KubeRuntimeException;
 @Configuration
 public class KubeConfiguration {
 
-  private static final int TIMEOUT = 300;
-
   private static final Logger LOGGER = LogManager.getLogger(KubeConfiguration.class);
 
   @Value("${kube.api.base.path}")
@@ -30,6 +28,9 @@ public class KubeConfiguration {
 
   @Value("${kube.api.type}")
   private String kubeApiType;
+
+  @Value("${kube.api.timeout}")
+  private Integer kubeApiTimeOut;
 
   @Bean
   public ApiClient connectToKube() {
@@ -54,8 +55,8 @@ public class KubeConfiguration {
       apiKeyAuth.setApiKey(kubeApiToken);
       apiKeyAuth.setApiKeyPrefix("Bearer");
     }
+    defaultClient.getHttpClient().setReadTimeout(kubeApiTimeOut.longValue(), TimeUnit.SECONDS);
     io.kubernetes.client.Configuration.setDefaultApiClient(defaultClient);
-    defaultClient.getHttpClient().setReadTimeout(TIMEOUT, TimeUnit.SECONDS);
 
     return defaultClient;
   }
