@@ -51,7 +51,7 @@ public class ElasticConfiguration {
               httpClientBuilder -> httpClientBuilder.setSSLContext(sslContext));
       return new RestHighLevelClient(builder);
     } catch (IOException | GeneralSecurityException e) {
-      LOGGER.error("Error", e);
+      LOGGER.error("Error: ", e);
     }
     return null;
   }
