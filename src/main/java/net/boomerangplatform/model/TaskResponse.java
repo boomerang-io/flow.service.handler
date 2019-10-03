@@ -2,27 +2,29 @@ package net.boomerangplatform.model;
 
 import java.util.HashMap;
 import java.util.Map;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class TaskResponse extends Response {
 
-  private Map<String, String> output = new HashMap<>();
+	@JsonProperty("output")
+	private Map<String, String> output = new HashMap<String, String>();
 
-  public TaskResponse() {
-    // Do nothing
-  }
+	public TaskResponse() {
+	}
 
-  public TaskResponse(String code, String desc, Map<String, String> output) {
-    super(code, desc);
-    this.output = output;
-  }
+	public TaskResponse(String code, String desc, Map<String, String> output) {
+		super(code, desc);
+		this.output = output;
+	}
 
-  public Map<String, String> getOutput() {
-    return output;
-  }
+	public Map<String, String> getOutput() {
+		return output;
+	}
 
-  public void setOutput(Map<String, String> output) {
-    this.output = output;
-  }
+	public void setOutput(Map<String, String> output) {
+		this.output = output;
+	}
 }

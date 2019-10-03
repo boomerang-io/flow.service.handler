@@ -1,37 +1,38 @@
 package net.boomerangplatform.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Response {
 
-  private String code;
+	@JsonProperty("code")
+	private String code;
 
-  private String message;
+	@JsonProperty("message")
+	private String message;
 
-  public Response() {
-    // Do nothing
-  }
+	public Response() {
+	}
 
-  public Response(String code, String desc) {
-    super();
-    this.code = code;
-    this.message = desc;
-  }
+	public Response(String code, String desc) {
+		super();
+		this.code = code;
+		this.message = desc;
+	}
 
-  public String getMessage() {
-    return this.message;
-  }
+	public String getMessage() {
+		return this.message;
+	}
+	public String getCode() {
+		return this.code;
+	}
 
-  public String getCode() {
-    return this.code;
-  }
+	public void setMessage(String desc) {
+		this.message = desc;
+	}
 
-  public void setMessage(String desc) {
-    this.message = desc;
-  }
-
-  public void setCode(String code) {
-    this.code = code;
-  }
+	public void setCode(String code) {
+		this.code = code;
+	}
 }
