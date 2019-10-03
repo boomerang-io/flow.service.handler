@@ -1,83 +1,91 @@
 package net.boomerangplatform.model;
 
-import static net.boomerangplatform.util.ListUtil.sanityNullList;
 import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonIgnoreProperties
 public class Task {
+	
+	@JsonProperty("workflowName")
+    private String workflowName;
+	
+	@JsonProperty("workflowId")
+    private String workflowId;
+	
+	@JsonProperty("workflowActivityId")
+    private String workflowActivityId;
 
-  private String workflowName;
+	@JsonProperty("taskName")
+    private String taskName;
+	
+	@JsonProperty("taskId")
+    private String taskId;
+	
+	@JsonProperty("inputs")
+	private TaskProperties inputs;
+	
+	@JsonProperty("arguments")
+    private List<String> arguments;
 
-  private String workflowId;
+	public String getWorkflowName() {
+		return workflowName;
+	}
 
-  private String workflowActivityId;
+	public void setWorkflowName(String workflowName) {
+		this.workflowName = workflowName;
+	}
 
-  private String taskName;
+	public String getWorkflowId() {
+		return workflowId;
+	}
 
-  private String taskId;
+	public void setWorkflowId(String workflowId) {
+		this.workflowId = workflowId;
+	}
 
-  private TaskProperties inputs;
+	public String getWorkflowActivityId() {
+		return workflowActivityId;
+	}
 
-  private List<String> arguments;
+	public void setWorkflowActivityId(String workflowActivityId) {
+		this.workflowActivityId = workflowActivityId;
+	}
 
-  public String getWorkflowName() {
-    return workflowName;
-  }
+	public String getTaskId() {
+		return taskId;
+	}
 
-  public void setWorkflowName(String workflowName) {
-    this.workflowName = workflowName;
-  }
+	public void setTaskId(String taskId) {
+		this.taskId = taskId;
+	}
 
-  public String getWorkflowId() {
-    return workflowId;
-  }
+	public String getTaskName() {
+		return taskName;
+	}
 
-  public void setWorkflowId(String workflowId) {
-    this.workflowId = workflowId;
-  }
+	public void setTaskName(String taskName) {
+		this.taskName = taskName;
+	}
 
-  public String getWorkflowActivityId() {
-    return workflowActivityId;
-  }
+	public TaskProperties getInputs() {
+		return inputs;
+	}
 
-  public void setWorkflowActivityId(String workflowActivityId) {
-    this.workflowActivityId = workflowActivityId;
-  }
+	public void setInputs(TaskProperties inputs) {
+		this.inputs = inputs;
+	}
 
-  public String getTaskId() {
-    return taskId;
-  }
+	public List<String> getArguments() {
+		return arguments;
+	}
 
-  public void setTaskId(String taskId) {
-    this.taskId = taskId;
-  }
-
-  public String getTaskName() {
-    return taskName;
-  }
-
-  public void setTaskName(String taskName) {
-    this.taskName = taskName;
-  }
-
-  public TaskProperties getInputs() {
-    return inputs;
-  }
-
-  public void setInputs(TaskProperties inputs) {
-    this.inputs = inputs;
-  }
-
-  public List<String> getArguments() {
-    return sanityNullList(arguments);
-  }
-
-  public void setArguments(List<String> arguments) {
-    this.arguments = sanityNullList(arguments);
-  }
-
-  public void setArgument(String argument) {
-    this.arguments.add(argument);
-  }
+	public void setArguments(List<String> arguments) {
+		this.arguments = arguments;
+	}
+	
+	public void setArgument(String argument) {
+        this.arguments.add(argument);
+    }
 }

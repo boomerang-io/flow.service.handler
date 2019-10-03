@@ -1,58 +1,65 @@
 package net.boomerangplatform.model;
 
 import java.util.Map;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonIgnoreProperties
 public class Workflow {
+	
+	@JsonProperty("workflowName")
+    private String workflowName;
+	
+	@JsonProperty("workflowId")
+    private String workflowId;
+	
+	@JsonProperty("workflowActivityId")
+    private String workflowActivityId;
+	
+	@JsonProperty("storage")
+    private WorkflowStorage storage;
+	
+	@JsonProperty("inputs")
+    private Map<String, String> inputs;
 
-  private String workflowName;
+	public String getWorkflowName() {
+		return workflowName;
+	}
 
-  private String workflowId;
+	public void setWorkflowName(String workflowName) {
+		this.workflowName = workflowName;
+	}
 
-  private String workflowActivityId;
+	public String getWorkflowId() {
+		return workflowId;
+	}
 
-  private WorkflowStorage storage;
+	public void setWorkflowId(String workflowId) {
+		this.workflowId = workflowId;
+	}
 
-  private Map<String, String> inputs;
+	public String getWorkflowActivityId() {
+		return workflowActivityId;
+	}
 
-  public String getWorkflowName() {
-    return workflowName;
-  }
+	public void setWorkflowActivityId(String workflowActivityId) {
+		this.workflowActivityId = workflowActivityId;
+	}
 
-  public void setWorkflowName(String workflowName) {
-    this.workflowName = workflowName;
-  }
+	public WorkflowStorage getWorkflowStorage() {
+		return storage;
+	}
 
-  public String getWorkflowId() {
-    return workflowId;
-  }
+	public void setWorkflowStorage(WorkflowStorage storage) {
+		this.storage = storage;
+	}
 
-  public void setWorkflowId(String workflowId) {
-    this.workflowId = workflowId;
-  }
+	public Map<String, String> getInputs() {
+		return inputs;
+	}
 
-  public String getWorkflowActivityId() {
-    return workflowActivityId;
-  }
-
-  public void setWorkflowActivityId(String workflowActivityId) {
-    this.workflowActivityId = workflowActivityId;
-  }
-
-  public WorkflowStorage getWorkflowStorage() {
-    return storage;
-  }
-
-  public void setWorkflowStorage(WorkflowStorage storage) {
-    this.storage = storage;
-  }
-
-  public Map<String, String> getInputs() {
-    return inputs;
-  }
-
-  public void setInputs(Map<String, String> inputs) {
-    this.inputs = inputs;
-  }
+	public void setInputs(Map<String, String> inputs) {
+		this.inputs = inputs;
+	}
 }

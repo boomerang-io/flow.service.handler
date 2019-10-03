@@ -1,28 +1,31 @@
 package net.boomerangplatform.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonIgnoreProperties
 public class WorkflowStorage {
+	
+	@JsonProperty("enable")
+    private Boolean enable;
+	
+	@JsonProperty("size")
+    private String size;
 
-  private Boolean enable;
+	public Boolean getEnable() {
+		return enable;
+	}
 
-  private String size;
+	public void setEnable(Boolean enable) {
+		this.enable = enable;
+	}
 
-  public Boolean getEnable() {
-    return enable;
-  }
+	public String getSize() {
+		return size;
+	}
 
-  public void setEnable(Boolean enable) {
-    this.enable = enable;
-  }
-
-  public String getSize() {
-    return size;
-  }
-
-  public void setSize(String size) {
-    this.size = size;
-  }
-
+	public void setSize(String size) {
+		this.size = size;
+	}
+	
 }
