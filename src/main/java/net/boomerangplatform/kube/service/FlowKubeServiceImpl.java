@@ -29,6 +29,11 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
   private static final Logger LOGGER = LogManager.getLogger(FlowKubeServiceImpl.class);
 
   @Override
+  public String getJobPrefix() {
+    return PREFIX_JOB;
+  }
+
+  @Override
   protected V1Job createJobBody(String workflowName, String workflowId, String activityId,
       String taskName, String taskId, List<String> arguments,
       Map<String, String> taskInputProperties) {
@@ -36,7 +41,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
     // Initialize Job Body
     V1Job body = new V1Job();
     body.metadata(
-        getMetadata(workflowName, workflowId, activityId, taskId, PREFIX_JOB + "-", true));
+        getMetadata(workflowName, workflowId, activityId, taskId, getJobPrefix() + "-", true));
 
     // Create Spec
     V1JobSpec jobSpec = new V1JobSpec();

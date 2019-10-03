@@ -154,6 +154,17 @@
 		</dependency>
 		
 		<dependency>
+            <groupId>org.elasticsearch.client</groupId>
+            <artifactId>elasticsearch-rest-high-level-client</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.elasticsearch</groupId>
+            <artifactId>elasticsearch</artifactId>
+        </dependency>
+		
+		
+		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
@@ -168,6 +179,7 @@
 			<groupId>net.boomerangplatform</groupId>
 			<artifactId>lib-testing</artifactId>
 			<version>1.0.4</version>
+			<scope>test</scope>
 		</dependency>
 	</dependencies>
 

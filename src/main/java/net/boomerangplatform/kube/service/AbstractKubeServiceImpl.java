@@ -3,6 +3,7 @@ package net.boomerangplatform.kube.service;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
@@ -18,7 +19,20 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.elasticsearch.action.search.ClearScrollRequest;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.search.SearchScrollRequest;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.Scroll;
+import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.MessageSource;
+import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import com.google.common.io.ByteStreams;
 import com.google.gson.Gson;
@@ -59,6 +73,8 @@ import net.boomerangplatform.kube.exception.KubeRuntimeException;
 
 public abstract class AbstractKubeServiceImpl implements AbstractKubeService { // NOSONAR
 
+  private static final Logger LOGGER = LogManager.getLogger(AbstractKubeService.class);
+
   private static final int PROPERTY_SIZE = 2;
 
   private static final Pattern PATTERN_PROPERTIES = Pattern.compile("\\s*\\n\\s*");
@@ -70,8 +86,6 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   private static final int TIMEOUT_ONE_MINUTE = 60;
 
   private static final String EXCEPTION = "Exception: ";
-
-  private static final Logger LOGGER = LogManager.getLogger(AbstractKubeService.class);
 
   private static final String PREFIX_PVC = "bmrg-pvc-";
 
@@ -160,6 +174,16 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   @Value("${kube.image}")
   private String kubeImage;
 
+  @Value("${kube.worker.logging.type}")
+  protected String loggingType;
+
+  @Autowired
+  private MessageSource messageSource;
+
+  @Autowired
+  private RestHighLevelClient elasticRestClient;
+
+
   private ApiClient apiClient; // NOSONAR
 
   protected abstract String getLabelSelector(String workflowId, String workflowActivityId,
@@ -180,6 +204,8 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
 
   protected abstract V1ConfigMap createWorkflowConfigMapBody(String workflowName, String workflowId,
       String workflowActivityId, Map<String, String> inputProps);
+
+  public abstract String getJobPrefix();
 
   @Override
   public V1Job createJob(String workflowName, String workflowId, String workflowActivityId,
@@ -272,11 +298,20 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
     StreamingResponseBody responseBody = null;
     try {
+      List<V1Pod> allPods =
+          getCoreApi().listNamespacedPod(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty,
+              null, null, labelSelector, null, null, TIMEOUT_ONE_MINUTE, false).getItems();
+
+      if (allPods.isEmpty()) {
+        return getExternalLogs(workflowActivityId);
+      }
+
       Watch<V1Pod> watch = createPodWatch(labelSelector, getCoreApi());
       V1Pod pod = getPod(watch);
 
-      if (pod == null || pod.getMetadata() == null) {
-        throw new KubeRuntimeException("Invalid Pod!");
+      if (pod == null || "succeeded".equalsIgnoreCase(pod.getStatus().getPhase())
+          || "failed".equalsIgnoreCase(pod.getStatus().getPhase())) {
+        return getExternalLogs(workflowActivityId);
       }
 
       PodLogs logs = new PodLogs();
@@ -808,6 +843,87 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
       watch.close();
     }
     return pod;
+  }
+
+  private StreamingResponseBody streamLogsFromElastic(String activityId) {
+    LOGGER.info("Streaming logs from elastic: " + getJobPrefix() + "-" + activityId + "-*");
+
+    return outputStream -> {
+      PrintWriter printWriter = new PrintWriter(outputStream);
+
+      final Scroll scroll = new Scroll(TimeValue.timeValueMinutes(1L));
+
+      SearchRequest searchRequest = new SearchRequest("logstash-*");
+
+      searchRequest.scroll(scroll);
+      SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+      searchSourceBuilder.from(0);
+      searchSourceBuilder.size(1000);
+      searchSourceBuilder.sort("offset");
+      searchSourceBuilder.query(QueryBuilders.matchPhraseQuery("kubernetes.pod",
+          getJobPrefix() + "-" + activityId + "-*"));
+      searchRequest.source(searchSourceBuilder);
+
+      SearchResponse searchResponse = elasticRestClient.search(searchRequest);
+      SearchHit[] searchHits = searchResponse.getHits().getHits();
+      LOGGER.info("Search returned back: " + searchHits.length);
+
+      if (searchHits.length == 0) {
+        printWriter.println(getErrorMessage());
+        printWriter.flush();
+        printWriter.close();
+        return;
+      }
+
+      for (SearchHit hits : searchHits) {
+        String logMessage = (String) hits.getSourceAsMap().get("log");
+        printWriter.println(logMessage);
+      }
+
+      String scrollId = searchResponse.getScrollId();
+      while (searchHits != null && searchHits.length > 0) {
+        SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
+        scrollRequest.scroll(scroll);
+        searchResponse = elasticRestClient.searchScroll(scrollRequest);
+        scrollId = searchResponse.getScrollId();
+        searchHits = searchResponse.getHits().getHits();
+        LOGGER.info("Search returned back: " + searchHits.length);
+        for (SearchHit hits : searchHits) {
+          String logMessage = (String) hits.getSourceAsMap().get("log");
+          printWriter.println(logMessage);
+        }
+      }
+
+      ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
+      clearScrollRequest.addScrollId(scrollId);
+      elasticRestClient.clearScroll(clearScrollRequest);
+
+      printWriter.flush();
+      printWriter.close();
+    };
+  }
+
+  private StreamingResponseBody getExternalLogs(String activityId) {
+    if ("elastic".equals(loggingType)) {
+      return streamLogsFromElastic(activityId);
+    } else {
+      return getDefaultErrorMessage();
+    }
+  }
+
+  private StreamingResponseBody getDefaultErrorMessage() {
+    LOGGER.info("Returning back default message.");
+
+    return outputStream -> {
+      outputStream.write(getErrorMessage().getBytes(StandardCharsets.UTF_8));
+      outputStream.flush();
+      outputStream.close();
+    };
+  }
+
+  private String getErrorMessage() {
+    MessageSourceAccessor accessor = new MessageSourceAccessor(messageSource);
+    return accessor.getMessage("logs.error");
   }
 
   private CoreV1Api getCoreApi() {

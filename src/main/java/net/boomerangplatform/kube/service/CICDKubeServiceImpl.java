@@ -33,6 +33,11 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
   private static final Logger LOGGER = LogManager.getLogger(CICDKubeServiceImpl.class);
 
   @Override
+  public String getJobPrefix() {
+    return PREFIX_JOB;
+  }
+
+  @Override
   protected V1Job createJobBody(String componentName, String componentId, String activityId,
       String taskName, String taskId, List<String> arguments,
       Map<String, String> taskInputProperties) {
@@ -41,7 +46,7 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
     V1Job body = new V1Job();
 
     body.metadata(getMetadata(componentName, componentId, activityId, taskId,
-        PREFIX_JOB + "-" + activityId, true));
+        getJobPrefix() + "-" + activityId, true));
 
     // Create Spec
     V1JobSpec jobSpec = new V1JobSpec();
@@ -53,7 +58,7 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
       envVars.addAll(createProxyEnvVars());
     }
     envVars.add(createEnvVar("DEBUG", kubeWorkerDebug.toString()));
-    envVars.add(createEnvVar("CI","true"));
+    envVars.add(createEnvVar("CI", "true"));
     container.env(envVars);
     container.args(arguments);
     if (checkPVCExists(componentId, null, null, true)) {

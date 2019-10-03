@@ -48,9 +48,10 @@ public class CICDKubeServiceTest {
   private ApiClient client;
 
   private static final int PORT = 8089;
+  
   @Rule
   public WireMockRule wireMockRule = new WireMockRule(PORT);
-
+  
   @Before
   public void setup() throws IOException {
     client = new ClientBuilder().setBasePath("http://localhost:" + PORT).build();
@@ -236,11 +237,13 @@ public class CICDKubeServiceTest {
 
   @Test
   public void testDeletePVCWithApiException() throws ApiException {
-    stubFor(delete(urlPathMatching("/api/v1/namespaces/default/persistentvolumeclaims/"))
-        .willReturn(okForContentType(MediaType.APPLICATION_JSON_VALUE, "{}")));
+    
     stubFor(get(urlPathMatching("/api/v1/namespaces/default/persistentvolumeclaims"))
         .willReturn(okForContentType(MediaType.APPLICATION_JSON_VALUE,
             "{\"apiVersion\": \"1.0\", \"items\": [{\"metadata\": {\"name\": \"metadataName\"}, \"status\": {\"phase\" : \"Bound\"}}]}")));
+
+    stubFor(delete(urlPathMatching("/api/v1/namespaces/default/persistentvolumeclaims/"))
+        .willReturn(okForContentType(MediaType.APPLICATION_JSON_VALUE, "{}")));
     stubFor(
         delete(urlPathMatching("/api/v1/namespaces/default/persistentvolumeclaims/metadataName"))
             .willReturn(aResponse().withStatus(404).withHeader("Content-Type", "text/plain")

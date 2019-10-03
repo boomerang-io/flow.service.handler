@@ -204,20 +204,6 @@ public class FlowKubeServiceTest {
   }
 
   @Test(expected = KubeRuntimeException.class)
-  public void testStreamPodLogWithoutPod() throws ApiException {
-    stubFor(get(urlPathMatching("/api/v1/namespaces/default/pods")).willReturn(okForContentType(
-        MediaType.APPLICATION_JSON_VALUE,
-        "{\"type\": \"type\", \"object\": {\"apiVersion\": \"1.0\", \"metadata\": {\"name\": \"configMapMetadataName\", \"namespace\": \"namespace\", \"containers\": [{\"name\": \"containerName\"}]}, \"status\": {\"conditions\": [{}], \"containerStatuses\": [{}], \"phase\": \"pending\"}, \"spec\": {\"containers\": [{\"name\": \"containerName\"}]}}}")));
-
-    stubFor(get(urlPathMatching("/api/v1/namespaces/namespace/pods/configMapMetadataName/log"))
-        .willReturn(okForContentType(MediaType.APPLICATION_JSON_VALUE,
-            "{\"type\": \"type\", \"object\": {\"apiVersion\": \"1.0\", \"metadata\": {\"name\": \"configMapMetadataName\", \"namespace\": \"namespace\", \"containers\": [{\"name\": \"containerName\"}]}, \"status\": {\"conditions\": [{}], \"containerStatuses\": [{}], \"phase\": \"Bound\"}, \"spec\": {\"containers\": [{\"name\": \"containerName\"}]}}}")));
-
-    flowKubeService.streamPodLog(new MockHttpServletResponse(), "workflowId", "workflowActivityId",
-        "taskId");
-  }
-
-  @Test(expected = KubeRuntimeException.class)
   public void testStreamPodLogWithException() throws ApiException {
     stubFor(get(urlPathMatching("/api/v1/namespaces/default/pods")).willReturn(aResponse()
         .withStatus(404).withHeader("Content-Type", "text/plain").withBody("Not Found")));
