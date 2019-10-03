@@ -25,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import io.kubernetes.client.ApiClient;
@@ -35,10 +36,12 @@ import io.kubernetes.client.models.V1Job;
 import io.kubernetes.client.models.V1PersistentVolumeClaim;
 import io.kubernetes.client.models.V1Status;
 import io.kubernetes.client.util.ClientBuilder;
+import net.boomerangplatform.Application;
 import net.boomerangplatform.kube.exception.KubeRuntimeException;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringBootTest
+@ContextConfiguration(classes = {Application.class, BaseKubeTest.class})
 @ActiveProfiles("cicd")
 public class CICDKubeServiceTest {
 
@@ -48,10 +51,10 @@ public class CICDKubeServiceTest {
   private ApiClient client;
 
   private static final int PORT = 8089;
-  
+
   @Rule
   public WireMockRule wireMockRule = new WireMockRule(PORT);
-  
+
   @Before
   public void setup() throws IOException {
     client = new ClientBuilder().setBasePath("http://localhost:" + PORT).build();
@@ -237,7 +240,7 @@ public class CICDKubeServiceTest {
 
   @Test
   public void testDeletePVCWithApiException() throws ApiException {
-    
+
     stubFor(get(urlPathMatching("/api/v1/namespaces/default/persistentvolumeclaims"))
         .willReturn(okForContentType(MediaType.APPLICATION_JSON_VALUE,
             "{\"apiVersion\": \"1.0\", \"items\": [{\"metadata\": {\"name\": \"metadataName\"}, \"status\": {\"phase\" : \"Bound\"}}]}")));

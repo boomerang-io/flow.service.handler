@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import io.kubernetes.client.ApiClient;
@@ -25,10 +26,12 @@ import io.kubernetes.client.Configuration;
 import io.kubernetes.client.models.V1JobList;
 import io.kubernetes.client.models.V1NamespaceList;
 import io.kubernetes.client.util.ClientBuilder;
+import net.boomerangplatform.Application;
 import net.boomerangplatform.kube.exception.KubeRuntimeException;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringBootTest
+@ContextConfiguration(classes = {Application.class, BaseKubeTest.class})
 @ActiveProfiles("local")
 public class KubeServiceTest {
 
@@ -67,7 +70,7 @@ public class KubeServiceTest {
     assertNotNull(namespaceList);
     assertNull(namespaceList.getApiVersion());
   }
-  
+
   @Test
   public void testGetAllJobs() {
     stubFor(get(urlPathMatching("/apis/batch/v1/namespaces/default/jobs")).willReturn(
@@ -80,28 +83,29 @@ public class KubeServiceTest {
 
   @Test
   public void testGetAllJobsWithException() {
-    stubFor(get(urlPathMatching("/apis/batch/v1/namespaces/default/jobs")).willReturn(aResponse().withStatus(404)
-        .withHeader("Content-Type", "text/plain").withBody("Not Found")));
+    stubFor(get(urlPathMatching("/apis/batch/v1/namespaces/default/jobs")).willReturn(aResponse()
+        .withStatus(404).withHeader("Content-Type", "text/plain").withBody("Not Found")));
 
     V1JobList jobList = kubeService.getAllJobs();
     assertNotNull(jobList);
     assertNull(jobList.getApiVersion());
   }
-  
+
   @Test
   public void testWatchNamespace() {
-    stubFor(get(urlPathMatching("/api/v1/namespaces")).willReturn(
-        okForContentType("application/json;stream=watch", "{\"apiVersion\": \"1.0\", \"metadata\": {\"name\": \"testMetadata\"}}")));
-    
+    stubFor(get(urlPathMatching("/api/v1/namespaces"))
+        .willReturn(okForContentType("application/json;stream=watch",
+            "{\"apiVersion\": \"1.0\", \"metadata\": {\"name\": \"testMetadata\"}}")));
+
     kubeService.watchNamespace();
   }
 
-  @Test(expected=KubeRuntimeException.class)
+  @Test(expected = KubeRuntimeException.class)
   public void testWatchNamespaceWithException() {
     stubFor(get(urlPathMatching("/api/v1/namespaces")).willReturn(aResponse().withStatus(404)
         .withHeader("Content-Type", "text/plain").withBody("Not Found")));
 
     kubeService.watchNamespace();
   }
-  
+
 }

@@ -23,6 +23,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
@@ -33,10 +34,12 @@ import io.kubernetes.client.models.V1ConfigMap;
 import io.kubernetes.client.models.V1Job;
 import io.kubernetes.client.models.V1PersistentVolumeClaimStatus;
 import io.kubernetes.client.util.ClientBuilder;
+import net.boomerangplatform.Application;
 import net.boomerangplatform.kube.exception.KubeRuntimeException;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringBootTest
+@ContextConfiguration(classes = {Application.class, BaseKubeTest.class})
 @ActiveProfiles("live")
 public class FlowKubeServiceTest {
 
@@ -46,6 +49,7 @@ public class FlowKubeServiceTest {
   private ApiClient client;
 
   private static final int PORT = 8089;
+
   @Rule
   public WireMockRule wireMockRule = new WireMockRule(PORT);
 
