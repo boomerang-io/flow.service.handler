@@ -8,9 +8,11 @@ WORKDIR $BMRG_HOME
 ADD target/$BMRG_SVC.jar service.jar
 RUN sh -c 'touch /service.jar'
 
-RUN adduser -u 2000 -G root -D bmrguser \
-&& chown -R 2000:0 $BMRG_HOME \
-&& chmod -R u+x $BMRG_HOME/service.jar
+# Create user, chown, and chmod. 
+# OpenShift requires that a numeric user is used in the USER declaration instead of the user name
+RUN chmod -R u+x $BMRG_HOME \
+    && chgrp -R 0 $BMRG_HOME \
+    && chmod -R g=u $BMRG_HOME
 USER 2000
 
 EXPOSE 8080
