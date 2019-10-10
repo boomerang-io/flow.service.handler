@@ -61,7 +61,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
   @Override
   protected V1Job createJobBody(String workflowName, String workflowId, String activityId,
       String taskName, String taskId, List<String> arguments,
-      Map<String, String> taskInputProperties) {
+      Map<String, String> taskProperties) {
 
     // Initialize Job Body
     V1Job body = new V1Job();
