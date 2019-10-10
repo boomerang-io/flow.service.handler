@@ -48,7 +48,7 @@ public class Workflow {
     this.storage = storage;
   }
 
-  public Map<String, String> getInputs() {
+  public Map<String, String> getProperties() {
     return inputs;
   }
 

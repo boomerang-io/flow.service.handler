@@ -26,11 +26,32 @@ import io.kubernetes.client.models.V1VolumeProjection;
 @Profile("live")
 public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
 
+  protected static final String ORG = "bmrg";
+
+  protected static final String PREFIX = ORG + "-cicd";
+
+  protected static final String PREFIX_JOB = PREFIX + "-worker";
+
+  protected static final String PREFIX_CFGMAP = PREFIX + "-cfg";
+
+  protected static final String PREFIX_VOL = PREFIX + "-vol";
+
+  protected static final String PREFIX_VOL_DATA = PREFIX_VOL + "-data";
+
+  protected static final String PREFIX_VOL_PROPS = PREFIX_VOL + "-props";
+
+  private static final String PREFIX_PVC = PREFIX + "-pvc-";
+
   private static final Logger LOGGER = LogManager.getLogger(FlowKubeServiceImpl.class);
 
   @Override
-  public String getJobPrefix() {
+  public String getPrefixJob() {
     return PREFIX_JOB;
+  }
+  
+  @Override
+  public String getPrefixPVC() {
+    return PREFIX_PVC;
   }
 
   @Override
@@ -41,7 +62,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
     // Initialize Job Body
     V1Job body = new V1Job();
     body.metadata(
-        getMetadata(workflowName, workflowId, activityId, taskId, getJobPrefix() + "-", true));
+        getMetadata(workflowName, workflowId, activityId, taskId, getPrefixJob() + "-", true));
 
     // Create Spec
     V1JobSpec jobSpec = new V1JobSpec();

@@ -1,8 +1,13 @@
 package net.boomerangplatform.model;
 
 import static net.boomerangplatform.util.ListUtil.sanityNullList;
+
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonIgnoreProperties
 public class Task {
@@ -17,7 +22,8 @@ public class Task {
 
   private String taskId;
 
-  private TaskProperties inputs;
+  @JsonProperty
+  private Map<String, String> properties = new HashMap<>();
 
   private List<String> arguments;
 
@@ -61,12 +67,16 @@ public class Task {
     this.taskName = taskName;
   }
 
-  public TaskProperties getInputs() {
-    return inputs;
+  public void setProperties(Map<String, String> properties) {
+    this.properties = properties;
   }
 
-  public void setInputs(TaskProperties inputs) {
-    this.inputs = inputs;
+  public Map<String, String> getProperties() {
+    return this.properties;
+  }
+
+  public void setProperty(String name, String value) {
+    this.properties.put(name, value);
   }
 
   public List<String> getArguments() {

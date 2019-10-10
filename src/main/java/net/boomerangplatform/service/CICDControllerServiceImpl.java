@@ -67,7 +67,7 @@ public class CICDControllerServiceImpl implements ControllerService {
     try {
       // TODO separate out cache handling to separate try catch to handle failure and continue.
       boolean cacheEnable =
-          "true".equals(task.getInputs().getProperties().get("component/cache.enabled"));
+          "true".equals(task.getProperties().get("component/cache.enabled"));
       boolean cacheExists = kubeService.checkPVCExists(task.getWorkflowId(), null, null, true);
       if (cacheEnable && !cacheExists) {
         kubeService.createPVC(task.getWorkflowName(), task.getWorkflowId(),
@@ -78,12 +78,12 @@ public class CICDControllerServiceImpl implements ControllerService {
       }
       kubeService.createTaskConfigMap(task.getWorkflowName(), task.getWorkflowId(),
           task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(),
-          task.getInputs().getProperties());
+          task.getProperties());
       kubeService.watchConfigMap(task.getWorkflowId(), task.getWorkflowActivityId(),
           task.getTaskId());
       kubeService.createJob(task.getWorkflowName(), task.getWorkflowId(),
           task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(), task.getArguments(),
-          task.getInputs().getProperties());
+          task.getProperties());
       kubeService.watchJob(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
     } catch (ApiException | KubeRuntimeException e) {
       LOGGER.error(EXCEPTION, e);

@@ -39,7 +39,7 @@ public class FlowControllerServiceImpl implements ControllerService {
         kubeService.watchPVC(workflow.getWorkflowId(), workflow.getWorkflowActivityId()).getPhase();
       }
       kubeService.createWorkflowConfigMap(workflow.getWorkflowName(), workflow.getWorkflowId(),
-          workflow.getWorkflowActivityId(), workflow.getInputs());
+          workflow.getWorkflowActivityId(), workflow.getProperties());
       kubeService.watchConfigMap(workflow.getWorkflowId(), workflow.getWorkflowActivityId(), null);
     } catch (ApiException | KubeRuntimeException e) {
       LOGGER.error(EXCEPTION, e);
@@ -71,11 +71,11 @@ public class FlowControllerServiceImpl implements ControllerService {
     try {
       kubeService.createTaskConfigMap(task.getWorkflowName(), task.getWorkflowId(),
           task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(),
-          task.getInputs().getProperties());
+          task.getProperties());
       kubeService.watchConfigMap(null, task.getWorkflowActivityId(), task.getTaskId());
       kubeService.createJob(task.getWorkflowName(), task.getWorkflowId(),
           task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(), task.getArguments(),
-          task.getInputs().getProperties());
+          task.getProperties());
       kubeService.watchJob(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
     } catch (KubeRuntimeException e) {
       LOGGER.error(EXCEPTION, e);

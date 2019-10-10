@@ -84,10 +84,10 @@ public class FlowControllerServiceTest {
     storage.setEnable(false);
     storage.setSize("200");
     workflow.setWorkflowStorage(storage);
-    workflow.setInputs(new HashMap<>());
+    workflow.setProperties(new HashMap<>());
     
     Mockito.when(kubeService.createWorkflowConfigMap("workflowName", "workflowId",
-        "workflowActivityId", workflow.getInputs())).thenThrow(KubeRuntimeException.class);
+        "workflowActivityId", workflow.getProperties())).thenThrow(KubeRuntimeException.class);
 
     Response response = flowControllerService.createWorkflow(workflow);
     assertEquals("1", response.getCode());
@@ -95,7 +95,7 @@ public class FlowControllerServiceTest {
         .startsWith("net.boomerangplatform.kube.exception.KubeRuntimeException"));
 
     Mockito.verify(kubeService).createWorkflowConfigMap("workflowName", "workflowId",
-        "workflowActivityId", workflow.getInputs());
+        "workflowActivityId", workflow.getProperties());
   }
 
   @Test
@@ -137,12 +137,12 @@ public class FlowControllerServiceTest {
 
     Mockito.when(kubeService.createTaskConfigMap(task.getWorkflowName(), task.getWorkflowId(),
         task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(),
-        task.getInputs().getProperties())).thenReturn(new V1ConfigMap());
+        task.getProperties().getProperties())).thenReturn(new V1ConfigMap());
     Mockito.when(kubeService.watchConfigMap(null, task.getWorkflowActivityId(), task.getTaskId()))
         .thenReturn(new V1ConfigMap());
     Mockito.when(kubeService.createJob(task.getWorkflowName(), task.getWorkflowId(),
         task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(), task.getArguments(),
-        task.getInputs().getProperties())).thenReturn(new V1Job());
+        task.getProperties().getProperties())).thenReturn(new V1Job());
     Mockito.when(
         kubeService.watchJob(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId()))
         .thenReturn(new V1Job());
@@ -161,12 +161,12 @@ public class FlowControllerServiceTest {
 
     Mockito.verify(kubeService).createTaskConfigMap(task.getWorkflowName(), task.getWorkflowId(),
         task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(),
-        task.getInputs().getProperties());
+        task.getProperties().getProperties());
     Mockito.verify(kubeService).watchConfigMap(null, task.getWorkflowActivityId(),
         task.getTaskId());
     Mockito.verify(kubeService).createJob(task.getWorkflowName(), task.getWorkflowId(),
         task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(), task.getArguments(),
-        task.getInputs().getProperties());
+        task.getProperties().getProperties());
     Mockito.verify(kubeService).watchJob(task.getWorkflowId(), task.getWorkflowActivityId(),
         task.getTaskId());
 
@@ -183,7 +183,7 @@ public class FlowControllerServiceTest {
 
     Mockito.when(kubeService.createTaskConfigMap(task.getWorkflowName(), task.getWorkflowId(),
         task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(),
-        task.getInputs().getProperties())).thenThrow(KubeRuntimeException.class);
+        task.getProperties().getProperties())).thenThrow(KubeRuntimeException.class);
     Mockito
         .when(kubeService.getTaskOutPutConfigMapData(task.getWorkflowId(),
             task.getWorkflowActivityId(), task.getTaskId(), task.getTaskName()))
@@ -199,7 +199,7 @@ public class FlowControllerServiceTest {
 
     Mockito.verify(kubeService).createTaskConfigMap(task.getWorkflowName(), task.getWorkflowId(),
         task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(),
-        task.getInputs().getProperties());
+        task.getProperties().getProperties());
     Mockito.verify(kubeService).getTaskOutPutConfigMapData(task.getWorkflowId(),
         task.getWorkflowActivityId(), task.getTaskId(), task.getTaskName());
     Mockito.verify(kubeService).deleteConfigMap(null, task.getWorkflowActivityId(),
@@ -367,7 +367,7 @@ public class FlowControllerServiceTest {
     TaskProperties properties = new TaskProperties();
     properties.setProperties(new HashMap<>());
     properties.setProperty("name1", "value1");
-    task.setInputs(properties);
+    task.setProperties(properties);
     return task;
   }
 

@@ -5,6 +5,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import net.boomerangplatform.model.CustomTask;
 import net.boomerangplatform.model.Task;
 import net.boomerangplatform.model.TaskResponse;
 import net.boomerangplatform.service.ControllerService;
@@ -16,8 +18,13 @@ public class TaskController {
   @Autowired
   private ControllerService controllerService;
 
-  @PostMapping(value = "/create")
+  @PostMapping(value = "/execute")
   public TaskResponse executeTask(@RequestBody Task task) {
+    return controllerService.executeTask(task);
+  }
+
+  @PostMapping(value = "/custom/execute")
+  public TaskResponse executeCustomTask(@RequestBody CustomTask task) {
     return controllerService.executeTask(task);
   }
 }

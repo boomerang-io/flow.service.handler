@@ -87,23 +87,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
 
   private static final String EXCEPTION = "Exception: ";
 
-  private static final String PREFIX_PVC = "bmrg-pvc-";
-
   protected static final Integer ONE_DAY_IN_SECONDS = 86400; // 60*60*24
-
-  protected static final String ORG = "bmrg";
-
-  protected static final String PREFIX = ORG + "-cicd";
-
-  protected static final String PREFIX_JOB = PREFIX + "-worker";
-
-  protected static final String PREFIX_CFGMAP = PREFIX + "-cfg";
-
-  protected static final String PREFIX_VOL = PREFIX + "-vol";
-
-  protected static final String PREFIX_VOL_DATA = PREFIX_VOL + "-data";
-
-  protected static final String PREFIX_VOL_PROPS = PREFIX_VOL + "-props";
 
   @Value("${kube.api.base.path}")
   protected String kubeApiBasePath;
@@ -205,7 +189,9 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   protected abstract V1ConfigMap createWorkflowConfigMapBody(String workflowName, String workflowId,
       String workflowActivityId, Map<String, String> inputProps);
 
-  public abstract String getJobPrefix();
+  public abstract String getPrefixJob();
+
+  public abstract String getPrefixPVC();
 
   @Override
   public V1Job createJob(String workflowName, String workflowId, String workflowActivityId,
@@ -249,7 +235,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     do {
       LOGGER.info("Starting Job Watcher #" + loopCount + " for Task (" + taskId + ")...");
       try {
-        watch = getJobWatch(getBatchApi(), labelSelector);
+        watch = createJobWatch(getBatchApi(), labelSelector);
         jobResult = getJobResult(taskId, watch);
       } catch (ApiException | IOException e) {
         LOGGER.error("getWatch Exception: ", e);
@@ -335,7 +321,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     V1ObjectMeta metadata = new V1ObjectMeta();
     metadata.annotations(createAnnotations(workflowName, workflowId, workflowActivityId, null));
     metadata.labels(createLabels(workflowId, workflowActivityId, null));
-    metadata.generateName(PREFIX_PVC);
+    metadata.generateName(getPrefixPVC());
     body.metadata(metadata);
 
     // Create PVC Spec
@@ -719,7 +705,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
 
   }
 
-  private Watch<V1Job> getJobWatch(BatchV1Api api, String labelSelector) throws ApiException {
+  private Watch<V1Job> createJobWatch(BatchV1Api api, String labelSelector) throws ApiException {
     return Watch.createWatch(createWatcherApiClient(),
         api.listNamespacedJobCall(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null,
             null, labelSelector, null, null, null, true, null, null),
@@ -846,7 +832,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   }
 
   private StreamingResponseBody streamLogsFromElastic(String activityId) {
-    LOGGER.info("Streaming logs from elastic: " + getJobPrefix() + "-" + activityId + "-*");
+    LOGGER.info("Streaming logs from elastic: " + getPrefixJob() + "-" + activityId + "-*");
 
     return outputStream -> {
       PrintWriter printWriter = new PrintWriter(outputStream);
@@ -861,7 +847,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
       searchSourceBuilder.size(1000);
       searchSourceBuilder.sort("offset");
       searchSourceBuilder.query(QueryBuilders.matchPhraseQuery("kubernetes.pod",
-          getJobPrefix() + "-" + activityId + "-*"));
+    		  getPrefixJob() + "-" + activityId + "-*"));
       searchRequest.source(searchSourceBuilder);
 
       SearchResponse searchResponse = elasticRestClient.search(searchRequest);
