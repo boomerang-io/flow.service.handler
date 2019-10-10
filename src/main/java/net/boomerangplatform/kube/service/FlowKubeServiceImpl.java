@@ -27,10 +27,14 @@ import io.kubernetes.client.models.V1VolumeProjection;
 public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
 
   protected static final String ORG = "bmrg";
+  
+  protected static final String PRODUCT = "flow";
+  
+  protected static final String TIER = "worker";
 
-  protected static final String PREFIX = ORG + "-cicd";
+  protected static final String PREFIX = ORG + "-" + PRODUCT;
 
-  protected static final String PREFIX_JOB = PREFIX + "-worker";
+  protected static final String PREFIX_JOB = PREFIX + "-" + TIER;
 
   protected static final String PREFIX_CFGMAP = PREFIX + "-cfg";
 
@@ -40,7 +44,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
 
   protected static final String PREFIX_VOL_PROPS = PREFIX_VOL + "-props";
 
-  private static final String PREFIX_PVC = PREFIX + "-pvc-";
+  private static final String PREFIX_PVC = PREFIX + "-pvc";
 
   private static final Logger LOGGER = LogManager.getLogger(FlowKubeServiceImpl.class);
 
@@ -178,7 +182,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
 
 
   protected String getLabelSelector(String workflowId, String activityId, String taskId) {
-    StringBuilder labelSelector = new StringBuilder("platform=" + ORG + ",app=" + PREFIX);
+    StringBuilder labelSelector = new StringBuilder("platform=" + ORG + ",product=" + PRODUCT + ",tier=" + TIER);
     Optional.ofNullable(workflowId).ifPresent(str -> labelSelector.append(",workflow-id=" + str));
     Optional.ofNullable(activityId).ifPresent(str -> labelSelector.append(",activity-id=" + str));
     Optional.ofNullable(taskId).ifPresent(str -> labelSelector.append(",task-id=" + str));
@@ -191,7 +195,8 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
       String activityId, String taskId) {
     Map<String, String> annotations = new HashMap<>();
     annotations.put("boomerangplatform.net/platform", ORG);
-    annotations.put("boomerangplatform.net/app", PREFIX);
+    annotations.put("boomerangplatform.net/product", PRODUCT);
+    annotations.put("boomerangplatform.net/tier", TIER);
     annotations.put("boomerangplatform.net/workflow-name", workflowName);
     annotations.put("boomerangplatform.net/workflow-id", workflowId);
     annotations.put("boomerangplatform.net/activity-id", activityId);

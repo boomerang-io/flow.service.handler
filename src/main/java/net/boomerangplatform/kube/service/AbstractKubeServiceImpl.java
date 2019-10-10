@@ -321,7 +321,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     V1ObjectMeta metadata = new V1ObjectMeta();
     metadata.annotations(createAnnotations(workflowName, workflowId, workflowActivityId, null));
     metadata.labels(createLabels(workflowId, workflowActivityId, null));
-    metadata.generateName(getPrefixPVC());
+    metadata.generateName(getPrefixPVC() + "-");
     body.metadata(metadata);
 
     // Create PVC Spec

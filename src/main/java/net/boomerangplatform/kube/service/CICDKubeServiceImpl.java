@@ -31,10 +31,14 @@ import io.kubernetes.client.models.V1VolumeProjection;
 public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
 
   protected static final String ORG = "bmrg";
+  
+  protected static final String PRODUCT = "cicd";
+  
+  protected static final String TIER = "worker";
 
-  protected static final String PREFIX = ORG + "-cicd";
+  protected static final String PREFIX = ORG + "-" + PRODUCT;
 
-  protected static final String PREFIX_JOB = PREFIX + "-worker";
+  protected static final String PREFIX_JOB = PREFIX + "-" + TIER;
 
   protected static final String PREFIX_CFGMAP = PREFIX + "-cfg";
 
@@ -44,7 +48,7 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
 
   protected static final String PREFIX_VOL_PROPS = PREFIX_VOL + "-props";
 
-  private static final String PREFIX_PVC = PREFIX + "-pvc-";
+  private static final String PREFIX_PVC = PREFIX + "-pvc";
 
   private static final Logger LOGGER = LogManager.getLogger(CICDKubeServiceImpl.class);
 
@@ -180,7 +184,7 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
   }
 
   protected String getLabelSelector(String componentId, String activityId, String taskId) {
-    StringBuilder labelSelector = new StringBuilder("platform=" + ORG + ",app=" + PREFIX);
+    StringBuilder labelSelector = new StringBuilder("platform=" + ORG + ",product=" + PRODUCT + ",tier=" + TIER);
     Optional.ofNullable(componentId).ifPresent(str -> labelSelector.append(",component-id=" + str));
     Optional.ofNullable(activityId).ifPresent(str -> labelSelector.append(",activity-id=" + str));
     Optional.ofNullable(taskId).ifPresent(str -> labelSelector.append(",task-id=" + str));
