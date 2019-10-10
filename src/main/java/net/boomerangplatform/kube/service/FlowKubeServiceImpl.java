@@ -61,7 +61,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
   @Override
   protected V1Job createJobBody(String workflowName, String workflowId, String activityId,
       String taskName, String taskId, List<String> arguments,
-      Map<String, String> taskProperties) {
+      Map<String, String> taskProperties, Optional<String> image, Optional<String> command) {
 
     // Initialize Job Body
     V1Job body = new V1Job();
@@ -72,7 +72,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
     V1JobSpec jobSpec = new V1JobSpec();
     V1PodTemplateSpec templateSpec = new V1PodTemplateSpec();
     V1PodSpec podSpec = new V1PodSpec();
-    V1Container container = getContainer();
+    V1Container container = getContainer(image);
 
     List<V1EnvVar> envVars = new ArrayList<>();
     if (proxyEnabled) {

@@ -11,11 +11,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
 import javax.servlet.http.HttpServletResponse;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -33,13 +36,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
 import org.springframework.context.support.MessageSourceAccessor;
+import org.springframework.lang.Nullable;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
+
 import com.google.common.io.ByteStreams;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
+
 import io.kubernetes.client.ApiClient;
 import io.kubernetes.client.ApiException;
 import io.kubernetes.client.PodLogs;
@@ -175,7 +181,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
 
   protected abstract V1Job createJobBody(String workflowName, String workflowId,
       String workflowActivityId, String taskName, String taskId, List<String> arguments,
-      Map<String, String> taskInputProperties);
+      Map<String, String> taskInputProperties, Optional<String> image, Optional<String> command);
 
   protected abstract V1ConfigMap createTaskConfigMapBody(String workflowName, String workflowId,
       String workflowActivityId, String taskName, String taskId, Map<String, String> inputProps);
@@ -196,9 +202,36 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   @Override
   public V1Job createJob(String workflowName, String workflowId, String workflowActivityId,
       String taskName, String taskId, List<String> arguments,
-      Map<String, String> taskInputProperties) {
+      Map<String, String> taskProperties) {
     V1Job body = createJobBody(workflowName, workflowId, workflowActivityId, taskName, taskId,
-        arguments, taskInputProperties);
+        arguments, taskProperties, null, null);
+
+    V1Job jobResult = new V1Job();
+    try {
+      jobResult = getBatchApi().createNamespacedJob(kubeNamespace, body,
+          kubeApiIncludeuninitialized, kubeApiPretty, null);
+      LOGGER.info(jobResult);
+    } catch (ApiException e) {
+      if (e.getCause() instanceof SocketTimeoutException) {
+        SocketTimeoutException ste = (SocketTimeoutException) e.getCause();
+        if (ste.getMessage() != null && ste.getMessage().contains("timeout")) {
+          LOGGER.warn("Catching timeout and return as task error");
+          V1JobStatus badStatus = new V1JobStatus();
+          return body.status(badStatus.failed(1));
+        }
+      }
+      LOGGER.error("Error: ", e);
+    }
+
+    return jobResult;
+  }
+  
+  @Override
+  public V1Job createJob(String workflowName, String workflowId, String workflowActivityId,
+      String taskName, String taskId, List<String> arguments,
+      Map<String, String> taskProperties, Optional<String> image, Optional<String> command) {
+    V1Job body = createJobBody(workflowName, workflowId, workflowActivityId, taskName, taskId,
+        arguments, taskProperties, image, command);
 
     V1Job jobResult = new V1Job();
     try {
@@ -652,9 +685,9 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     return volMount;
   }
 
-  protected V1Container getContainer() {
+  protected V1Container getContainer(Optional<String> image) {
     V1Container container = new V1Container();
-    container.image(kubeImage);
+    container.image(image.orElse(kubeImage));
     container.name("worker-cntr");
     container.imagePullPolicy(kubeImagePullPolicy);
     V1SecurityContext securityContext = new V1SecurityContext();
