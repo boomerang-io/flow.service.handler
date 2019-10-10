@@ -29,7 +29,6 @@ import net.boomerangplatform.kube.exception.KubeRuntimeException;
 import net.boomerangplatform.kube.service.CICDKubeServiceImpl;
 import net.boomerangplatform.model.Response;
 import net.boomerangplatform.model.Task;
-import net.boomerangplatform.model.TaskProperties;
 import net.boomerangplatform.model.TaskResponse;
 import net.boomerangplatform.model.Workflow;
 import net.boomerangplatform.model.WorkflowStorage;
@@ -133,12 +132,12 @@ public class CICDControllerServiceTest {
         .thenReturn(false);
     Mockito.when(kubeService.createTaskConfigMap(task.getWorkflowName(), task.getWorkflowId(),
         task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(),
-        task.getProperties().getProperties())).thenReturn(new V1ConfigMap());
+        task.getProperties())).thenReturn(new V1ConfigMap());
     Mockito.when(kubeService.watchConfigMap(task.getWorkflowId(), task.getWorkflowActivityId(),
         task.getTaskId())).thenReturn(new V1ConfigMap());
     Mockito.when(kubeService.createJob(task.getWorkflowName(), task.getWorkflowId(),
         task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(), task.getArguments(),
-        task.getProperties().getProperties())).thenReturn(new V1Job());
+        task.getProperties())).thenReturn(new V1Job());
     Mockito.when(
         kubeService.watchJob(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId()))
         .thenReturn(new V1Job());
@@ -153,12 +152,12 @@ public class CICDControllerServiceTest {
     Mockito.verify(kubeService).checkPVCExists(task.getWorkflowId(), null, null, true);
     Mockito.verify(kubeService).createTaskConfigMap(task.getWorkflowName(), task.getWorkflowId(),
         task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(),
-        task.getProperties().getProperties());
+        task.getProperties());
     Mockito.verify(kubeService).watchConfigMap(task.getWorkflowId(), task.getWorkflowActivityId(),
         task.getTaskId());
     Mockito.verify(kubeService).createJob(task.getWorkflowName(), task.getWorkflowId(),
         task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(), task.getArguments(),
-        task.getProperties().getProperties());
+        task.getProperties());
     Mockito.verify(kubeService).watchJob(task.getWorkflowId(), task.getWorkflowActivityId(),
         task.getTaskId());
 
@@ -169,7 +168,7 @@ public class CICDControllerServiceTest {
   @Test
   public void testExecuteTaskWithCache() throws ApiException {
     Task task = getDefaultTask();
-    task.getProperties().setProperty("component/cache.enabled", "true");
+    task.setProperty("component/cache.enabled", "true");
 
     Mockito.when(kubeService.checkPVCExists(task.getWorkflowId(), null, null, true))
         .thenReturn(false);
@@ -179,12 +178,12 @@ public class CICDControllerServiceTest {
         .thenReturn(new V1PersistentVolumeClaimStatus());
     Mockito.when(kubeService.createTaskConfigMap(task.getWorkflowName(), task.getWorkflowId(),
         task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(),
-        task.getProperties().getProperties())).thenReturn(new V1ConfigMap());
+        task.getProperties())).thenReturn(new V1ConfigMap());
     Mockito.when(kubeService.watchConfigMap(task.getWorkflowId(), task.getWorkflowActivityId(),
         task.getTaskId())).thenReturn(new V1ConfigMap());
     Mockito.when(kubeService.createJob(task.getWorkflowName(), task.getWorkflowId(),
         task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(), task.getArguments(),
-        task.getProperties().getProperties())).thenReturn(new V1Job());
+        task.getProperties())).thenReturn(new V1Job());
     Mockito.when(
         kubeService.watchJob(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId()))
         .thenReturn(new V1Job());
@@ -203,12 +202,12 @@ public class CICDControllerServiceTest {
 
     Mockito.verify(kubeService).createTaskConfigMap(task.getWorkflowName(), task.getWorkflowId(),
         task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(),
-        task.getProperties().getProperties());
+        task.getProperties());
     Mockito.verify(kubeService).watchConfigMap(task.getWorkflowId(), task.getWorkflowActivityId(),
         task.getTaskId());
     Mockito.verify(kubeService).createJob(task.getWorkflowName(), task.getWorkflowId(),
         task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(), task.getArguments(),
-        task.getProperties().getProperties());
+        task.getProperties());
     Mockito.verify(kubeService).watchJob(task.getWorkflowId(), task.getWorkflowActivityId(),
         task.getTaskId());
 
@@ -227,7 +226,7 @@ public class CICDControllerServiceTest {
     Mockito.when(kubeService.deletePVC(task.getWorkflowId(), null)).thenReturn(new V1Status());
     Mockito.when(kubeService.createTaskConfigMap(task.getWorkflowName(), task.getWorkflowId(),
         task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(),
-        task.getProperties().getProperties())).thenThrow(KubeRuntimeException.class);
+        task.getProperties())).thenThrow(KubeRuntimeException.class);
     Mockito.when(kubeService.deleteConfigMap(task.getWorkflowId(), task.getWorkflowActivityId(),
         task.getTaskId())).thenReturn(new V1Status());
 
@@ -240,7 +239,7 @@ public class CICDControllerServiceTest {
     Mockito.verify(kubeService).deletePVC(task.getWorkflowId(), null);
     Mockito.verify(kubeService).createTaskConfigMap(task.getWorkflowName(), task.getWorkflowId(),
         task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(),
-        task.getProperties().getProperties());
+        task.getProperties());
     Mockito.verify(kubeService).deleteConfigMap(task.getWorkflowId(), task.getWorkflowActivityId(),
         task.getTaskId());
   }
@@ -411,10 +410,8 @@ public class CICDControllerServiceTest {
     task.setWorkflowActivityId("workflowActivityId");
     task.setTaskId("taskId");
     task.setTaskName("taskName");
-    TaskProperties properties = new TaskProperties();
-    properties.setProperties(new HashMap<>());
-    properties.setProperty("name1", "value1");
-    task.setInputs(properties);
+    task.setProperties(new HashMap<>());
+    task.setProperty("name1", "value1");
     return task;
   }
 }

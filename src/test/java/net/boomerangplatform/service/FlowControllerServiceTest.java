@@ -5,10 +5,13 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+
 import javax.servlet.http.HttpServletResponse;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
@@ -19,6 +22,7 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
+
 import io.kubernetes.client.ApiException;
 import io.kubernetes.client.models.V1ConfigMap;
 import io.kubernetes.client.models.V1Job;
@@ -29,7 +33,6 @@ import net.boomerangplatform.kube.exception.KubeRuntimeException;
 import net.boomerangplatform.kube.service.FlowKubeServiceImpl;
 import net.boomerangplatform.model.Response;
 import net.boomerangplatform.model.Task;
-import net.boomerangplatform.model.TaskProperties;
 import net.boomerangplatform.model.TaskResponse;
 import net.boomerangplatform.model.Workflow;
 import net.boomerangplatform.model.WorkflowStorage;
@@ -137,12 +140,12 @@ public class FlowControllerServiceTest {
 
     Mockito.when(kubeService.createTaskConfigMap(task.getWorkflowName(), task.getWorkflowId(),
         task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(),
-        task.getProperties().getProperties())).thenReturn(new V1ConfigMap());
+        task.getProperties())).thenReturn(new V1ConfigMap());
     Mockito.when(kubeService.watchConfigMap(null, task.getWorkflowActivityId(), task.getTaskId()))
         .thenReturn(new V1ConfigMap());
     Mockito.when(kubeService.createJob(task.getWorkflowName(), task.getWorkflowId(),
         task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(), task.getArguments(),
-        task.getProperties().getProperties())).thenReturn(new V1Job());
+        task.getProperties())).thenReturn(new V1Job());
     Mockito.when(
         kubeService.watchJob(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId()))
         .thenReturn(new V1Job());
@@ -161,12 +164,12 @@ public class FlowControllerServiceTest {
 
     Mockito.verify(kubeService).createTaskConfigMap(task.getWorkflowName(), task.getWorkflowId(),
         task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(),
-        task.getProperties().getProperties());
+        task.getProperties());
     Mockito.verify(kubeService).watchConfigMap(null, task.getWorkflowActivityId(),
         task.getTaskId());
     Mockito.verify(kubeService).createJob(task.getWorkflowName(), task.getWorkflowId(),
         task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(), task.getArguments(),
-        task.getProperties().getProperties());
+        task.getProperties());
     Mockito.verify(kubeService).watchJob(task.getWorkflowId(), task.getWorkflowActivityId(),
         task.getTaskId());
 
@@ -183,7 +186,7 @@ public class FlowControllerServiceTest {
 
     Mockito.when(kubeService.createTaskConfigMap(task.getWorkflowName(), task.getWorkflowId(),
         task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(),
-        task.getProperties().getProperties())).thenThrow(KubeRuntimeException.class);
+        task.getProperties())).thenThrow(KubeRuntimeException.class);
     Mockito
         .when(kubeService.getTaskOutPutConfigMapData(task.getWorkflowId(),
             task.getWorkflowActivityId(), task.getTaskId(), task.getTaskName()))
@@ -199,7 +202,7 @@ public class FlowControllerServiceTest {
 
     Mockito.verify(kubeService).createTaskConfigMap(task.getWorkflowName(), task.getWorkflowId(),
         task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(),
-        task.getProperties().getProperties());
+        task.getProperties());
     Mockito.verify(kubeService).getTaskOutPutConfigMapData(task.getWorkflowId(),
         task.getWorkflowActivityId(), task.getTaskId(), task.getTaskName());
     Mockito.verify(kubeService).deleteConfigMap(null, task.getWorkflowActivityId(),
@@ -364,10 +367,8 @@ public class FlowControllerServiceTest {
     task.setWorkflowActivityId("workflowActivityId");
     task.setTaskId("taskId");
     task.setTaskName("taskName");
-    TaskProperties properties = new TaskProperties();
-    properties.setProperties(new HashMap<>());
-    properties.setProperty("name1", "value1");
-    task.setProperties(properties);
+    task.setProperties(new HashMap<>());
+    task.setProperty("name1", "value1");
     return task;
   }
 

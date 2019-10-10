@@ -14,7 +14,7 @@ public class Workflow {
 
   private WorkflowStorage storage;
 
-  private Map<String, String> inputs;
+  private Map<String, String> properties;
 
   public String getWorkflowName() {
     return workflowName;
@@ -49,10 +49,10 @@ public class Workflow {
   }
 
   public Map<String, String> getProperties() {
-    return inputs;
+    return properties;
   }
 
-  public void setInputs(Map<String, String> inputs) {
-    this.inputs = inputs;
+  public void setProperties(Map<String, String> properties) {
+    this.properties = properties;
   }
 }
