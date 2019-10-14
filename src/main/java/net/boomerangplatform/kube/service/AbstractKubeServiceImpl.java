@@ -36,7 +36,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
 import org.springframework.context.support.MessageSourceAccessor;
-import org.springframework.lang.Nullable;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import com.google.common.io.ByteStreams;
@@ -696,13 +695,16 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     return container;
   }
 
+/*
+ * Passes through optional method inputs to the sub methods which need to handle this.
+ */
   protected V1ObjectMeta getMetadata(String workflowName, String workflowId,
-      String workflowActivityId, String taskId, String generateName, boolean withWorkflowId) {
+      String workflowActivityId, String taskId, String generateName) {
     V1ObjectMeta metadata = new V1ObjectMeta();
     metadata.annotations(createAnnotations(workflowName, workflowId, workflowActivityId, taskId));
-    metadata.labels(createLabels(withWorkflowId ? workflowId : null, workflowActivityId, taskId));
+    metadata.labels(createLabels(workflowId, workflowActivityId, taskId));
     if (StringUtils.isNotBlank(generateName)) {
-      metadata.generateName(generateName);
+      metadata.generateName(generateName + "-");
     }
     return metadata;
   }

@@ -66,7 +66,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
     // Initialize Job Body
     V1Job body = new V1Job();
     body.metadata(
-        getMetadata(workflowName, workflowId, activityId, taskId, getPrefixJob() + "-", true));
+        getMetadata(workflowName, workflowId, activityId, taskId, getPrefixJob()));
 
     // Create Spec
     V1JobSpec jobSpec = new V1JobSpec();
@@ -129,7 +129,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
     podSpec.imagePullSecrets(imagePullSecretList);
     podSpec.restartPolicy(kubeWorkerJobRestartPolicy);
     templateSpec.spec(podSpec);
-    templateSpec.metadata(getMetadata(workflowName, workflowId, activityId, taskId, null, true));
+    templateSpec.metadata(getMetadata(workflowName, workflowId, activityId, taskId, null));
 
     jobSpec.backoffLimit(kubeWorkerJobBackOffLimit);
     jobSpec.template(templateSpec);
@@ -146,7 +146,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
     V1ConfigMap body = new V1ConfigMap();
 
     body.metadata(
-        getMetadata(workflowName, workflowId, workflowActivityId, taskId, PREFIX_CFGMAP, false));
+        getMetadata(workflowName, workflowId, workflowActivityId, taskId, PREFIX_CFGMAP));
 
     // Create Data
     Map<String, String> inputsWithFixedKeys = new HashMap<>();
@@ -164,7 +164,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
     V1ConfigMap body = new V1ConfigMap();
 
     body.metadata(
-        getMetadata(workflowName, workflowId, workflowActivityId, null, PREFIX_CFGMAP, false));
+        getMetadata(workflowName, workflowId, workflowActivityId, null, PREFIX_CFGMAP));
 
     // Create Data
     Map<String, String> inputsWithFixedKeys = new HashMap<>();
@@ -198,8 +198,10 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
     annotations.put("boomerangplatform.net/product", PRODUCT);
     annotations.put("boomerangplatform.net/tier", TIER);
     annotations.put("boomerangplatform.net/workflow-name", workflowName);
-    annotations.put("boomerangplatform.net/workflow-id", workflowId);
-    annotations.put("boomerangplatform.net/activity-id", activityId);
+    Optional.ofNullable(workflowId)
+    .ifPresent(str -> annotations.put("boomerangplatform.net/workflow-id", str));
+    Optional.ofNullable(activityId)
+    .ifPresent(str -> annotations.put("boomerangplatform.net/activity-id", str));
     Optional.ofNullable(taskId)
         .ifPresent(str -> annotations.put("boomerangplatform.net/task-id", str));
 
@@ -209,7 +211,8 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
   protected Map<String, String> createLabels(String workflowId, String activityId, String taskId) {
     Map<String, String> labels = new HashMap<>();
     labels.put("platform", ORG);
-    labels.put("app", PREFIX);
+    labels.put("product", PRODUCT);
+    labels.put("tier", TIER);
     Optional.ofNullable(workflowId).ifPresent(str -> labels.put("workflow-id", str));
     Optional.ofNullable(activityId).ifPresent(str -> labels.put("activity-id", str));
     Optional.ofNullable(taskId).ifPresent(str -> labels.put("task-id", str));

@@ -22,6 +22,7 @@ import io.kubernetes.client.models.V1HostAlias;
 import io.kubernetes.client.models.V1Job;
 import io.kubernetes.client.models.V1JobSpec;
 import io.kubernetes.client.models.V1LocalObjectReference;
+import io.kubernetes.client.models.V1ObjectMeta;
 import io.kubernetes.client.models.V1PersistentVolumeClaimVolumeSource;
 import io.kubernetes.client.models.V1PodSpec;
 import io.kubernetes.client.models.V1PodTemplateSpec;
@@ -72,9 +73,9 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
 
     // Initialize Job Body
     V1Job body = new V1Job();
-
-    body.metadata(getMetadata(componentName, componentId, activityId, taskId,
-    		PREFIX_JOB + "-" + activityId, true));
+    V1ObjectMeta jobMetadata = getMetadata(componentName, componentId, activityId, taskId, null);
+	jobMetadata.name(PREFIX_JOB + "-" + activityId);
+    body.metadata(jobMetadata);
 
     // Create Spec
     V1JobSpec jobSpec = new V1JobSpec();
@@ -143,7 +144,7 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
     podSpec.imagePullSecrets(imagePullSecretList);
     podSpec.restartPolicy(kubeWorkerJobRestartPolicy);
     templateSpec.spec(podSpec);
-    templateSpec.metadata(getMetadata(componentName, componentId, activityId, taskId, null, true));
+    templateSpec.metadata(getMetadata(componentName, componentId, activityId, taskId, null));
 
     jobSpec.backoffLimit(kubeWorkerJobBackOffLimit);
     jobSpec.template(templateSpec);
@@ -158,7 +159,7 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
   protected V1ConfigMap createTaskConfigMapBody(String componentName, String componentId,
       String activityId, String taskName, String taskId, Map<String, String> inputProps) {
     V1ConfigMap body = new V1ConfigMap();
-    body.metadata(getMetadata(componentName, componentId, activityId, taskId, PREFIX_CFGMAP, true));
+    body.metadata(getMetadata(componentName, componentId, activityId, taskId, PREFIX_CFGMAP));
 
     // Create Data
     Map<String, String> inputsWithFixedKeys = new HashMap<>();
@@ -170,7 +171,7 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
   protected V1ConfigMap createWorkflowConfigMapBody(String componentName, String componentId,
       String activityId, Map<String, String> inputProps) {
     V1ConfigMap body = new V1ConfigMap();
-    body.metadata(getMetadata(componentName, componentId, activityId, null, PREFIX_CFGMAP, true));
+    body.metadata(getMetadata(componentName, componentId, activityId, null, PREFIX_CFGMAP));
 
     // Create Data
     Map<String, String> inputsWithFixedKeys = new HashMap<>();
