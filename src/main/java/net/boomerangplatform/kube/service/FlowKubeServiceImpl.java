@@ -82,7 +82,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
     container.env(envVars);
     container.args(arguments);
     if (!getPVCName(workflowId, activityId).isEmpty()) {
-      container.addVolumeMountsItem(getVolumeMount(PREFIX_VOL_DATA, "/" + "cache"));
+      container.addVolumeMountsItem(getVolumeMount(PREFIX_VOL_DATA, "/cache"));
       V1Volume workerVolume = getVolume(PREFIX_VOL_DATA);
       V1PersistentVolumeClaimVolumeSource workerVolumePVCSource =
           new V1PersistentVolumeClaimVolumeSource();
@@ -91,7 +91,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
       podSpec.addVolumesItem(workerVolume);
     }
 
-    container.addVolumeMountsItem(getVolumeMount(PREFIX_VOL_PROPS, "/" + "props"));
+    container.addVolumeMountsItem(getVolumeMount(PREFIX_VOL_PROPS, "/props"));
 
     // Creation of Projected Volume with multiple ConfigMaps
     V1Volume volumeProps = getVolume(PREFIX_VOL_PROPS);

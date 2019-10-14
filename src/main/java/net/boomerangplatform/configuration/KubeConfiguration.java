@@ -72,7 +72,7 @@ public class KubeConfiguration {
         kubeApiDebug.isEmpty() ? Boolean.FALSE : Boolean.valueOf(kubeApiDebug));
     io.kubernetes.client.Configuration.setDefaultApiClient(defaultClient);
 
-    LOGGER.info("Connecting to: " + defaultClient.getBasePath().toString());
+    LOGGER.info("Connecting to: " + defaultClient.getBasePath());
     return defaultClient;
   }
 }

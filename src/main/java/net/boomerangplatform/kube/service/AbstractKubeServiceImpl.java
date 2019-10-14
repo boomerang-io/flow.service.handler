@@ -691,6 +691,8 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     container.imagePullPolicy(kubeImagePullPolicy);
     V1SecurityContext securityContext = new V1SecurityContext();
     securityContext.setPrivileged(true);
+//	Only works with Kube 1.12. ICP 3.1.1 is Kube 1.11.5
+//	TODO: securityContext.setProcMount("Unmasked");
     container.setSecurityContext(securityContext);
     return container;
   }

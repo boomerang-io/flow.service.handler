@@ -91,7 +91,7 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
     container.env(envVars);
     container.args(arguments);
     if (checkPVCExists(componentId, null, null, true)) {
-      container.addVolumeMountsItem(getVolumeMount(PREFIX_VOL_DATA, "/" + "cache"));
+      container.addVolumeMountsItem(getVolumeMount(PREFIX_VOL_DATA, "/cache"));
       V1Volume workerVolume = getVolume(PREFIX_VOL_DATA);
       V1PersistentVolumeClaimVolumeSource workerVolumePVCSource =
           new V1PersistentVolumeClaimVolumeSource();
@@ -99,7 +99,7 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
           .persistentVolumeClaim(workerVolumePVCSource.claimName(getPVCName(componentId, null)));
       podSpec.addVolumesItem(workerVolume);
     }
-    container.addVolumeMountsItem(getVolumeMount(PREFIX_VOL_PROPS, "/" + "props"));
+    container.addVolumeMountsItem(getVolumeMount(PREFIX_VOL_PROPS, "/props"));
 
     // Creation of Projected Volume for multiple ConfigMaps
     V1Volume volumeProps = getVolume(PREFIX_VOL_PROPS);
