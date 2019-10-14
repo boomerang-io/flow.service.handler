@@ -2,16 +2,20 @@ package net.boomerangplatform.service;
 
 import java.util.HashMap;
 import java.util.Map;
+
 import javax.servlet.http.HttpServletResponse;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
+
 import io.kubernetes.client.ApiException;
 import net.boomerangplatform.kube.exception.KubeRuntimeException;
 import net.boomerangplatform.kube.service.FlowKubeServiceImpl;
+import net.boomerangplatform.model.CustomTask;
 import net.boomerangplatform.model.Response;
 import net.boomerangplatform.model.Task;
 import net.boomerangplatform.model.TaskResponse;
@@ -77,6 +81,31 @@ public class FlowControllerServiceImpl implements ControllerService {
       kubeService.createJob(task.getWorkflowName(), task.getWorkflowId(),
           task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(), task.getArguments(),
           task.getProperties());
+      kubeService.watchJob(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
+    } catch (KubeRuntimeException e) {
+      LOGGER.error(EXCEPTION, e);
+      response.setCode("1");
+      response.setMessage(e.toString());
+    } finally {
+      response.setOutput(kubeService.getTaskOutPutConfigMapData(task.getWorkflowId(),
+          task.getWorkflowActivityId(), task.getTaskId(), task.getTaskName()));
+      kubeService.deleteConfigMap(null, task.getWorkflowActivityId(), task.getTaskId());
+    }
+    return response;
+  }
+
+  @Override
+  public TaskResponse executeTask(CustomTask task) {
+    TaskResponse response = new TaskResponse("0",
+        "Task (" + task.getTaskId() + ") has been executed successfully.", null);
+    try {
+      kubeService.createTaskConfigMap(task.getWorkflowName(), task.getWorkflowId(),
+          task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(),
+          task.getProperties());
+      kubeService.watchConfigMap(null, task.getWorkflowActivityId(), task.getTaskId());
+      kubeService.createJob(task.getWorkflowName(), task.getWorkflowId(),
+          task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(), task.getArguments(),
+          task.getProperties(), task.getImage(), task.getCommand());
       kubeService.watchJob(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
     } catch (KubeRuntimeException e) {
       LOGGER.error(EXCEPTION, e);

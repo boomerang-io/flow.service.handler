@@ -45,8 +45,8 @@ public interface AbstractKubeService {
       String taskId,
       List<String> arguments,
       Map<String, String> taskProperties,
-      Optional<String> image,
-      Optional<String> command);
+      String image,
+      String command);
 
   V1ConfigMap watchConfigMap(String workflowId, String workflowActivityId, String taskId);
 

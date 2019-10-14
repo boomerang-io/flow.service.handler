@@ -3,6 +3,8 @@ package net.boomerangplatform.service;
 import java.util.Map;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
+
+import net.boomerangplatform.model.CustomTask;
 import net.boomerangplatform.model.Response;
 import net.boomerangplatform.model.Task;
 import net.boomerangplatform.model.TaskResponse;
@@ -26,4 +28,6 @@ public interface ControllerService {
 
   Response setJobOutputProperties(String workflowId, String workflowActivityId, String taskId,
       String taskName, Map<String, String> properties);
+
+TaskResponse executeTask(CustomTask task);
 }

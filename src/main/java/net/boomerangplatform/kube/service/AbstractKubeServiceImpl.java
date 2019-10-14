@@ -180,7 +180,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
 
   protected abstract V1Job createJobBody(String workflowName, String workflowId,
       String workflowActivityId, String taskName, String taskId, List<String> arguments,
-      Map<String, String> taskInputProperties, Optional<String> image, Optional<String> command);
+      Map<String, String> taskInputProperties, String image, String command);
 
   protected abstract V1ConfigMap createTaskConfigMapBody(String workflowName, String workflowId,
       String workflowActivityId, String taskName, String taskId, Map<String, String> inputProps);
@@ -228,7 +228,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   @Override
   public V1Job createJob(String workflowName, String workflowId, String workflowActivityId,
       String taskName, String taskId, List<String> arguments,
-      Map<String, String> taskProperties, Optional<String> image, Optional<String> command) {
+      Map<String, String> taskProperties, String image, String command) {
     V1Job body = createJobBody(workflowName, workflowId, workflowActivityId, taskName, taskId,
         arguments, taskProperties, image, command);
 
@@ -684,9 +684,11 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     return volMount;
   }
 
-  protected V1Container getContainer(Optional<String> image) {
+  protected V1Container getContainer(String image, String command) {
     V1Container container = new V1Container();
-    container.image(image.orElse(kubeImage));
+    LOGGER.info("Container Image: " + Optional.ofNullable(image).orElse(kubeImage));
+    container.image(Optional.ofNullable(image).orElse(kubeImage));
+    Optional.ofNullable(command).ifPresent(str -> container.addCommandItem(str));
     container.name("worker-cntr");
     container.imagePullPolicy(kubeImagePullPolicy);
     V1SecurityContext securityContext = new V1SecurityContext();

@@ -69,7 +69,7 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
   @Override
   protected V1Job createJobBody(String componentName, String componentId, String activityId,
       String taskName, String taskId, List<String> arguments,
-      Map<String, String> taskProperties, Optional<String> image, Optional<String> command) {
+      Map<String, String> taskProperties, String image, String command) {
 
     // Initialize Job Body
     V1Job body = new V1Job();
@@ -81,7 +81,7 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
     V1JobSpec jobSpec = new V1JobSpec();
     V1PodTemplateSpec templateSpec = new V1PodTemplateSpec();
     V1PodSpec podSpec = new V1PodSpec();
-    V1Container container = getContainer(image);
+    V1Container container = getContainer(image, command);
     List<V1EnvVar> envVars = new ArrayList<>();
     if (proxyEnabled) {
       envVars.addAll(createProxyEnvVars());

@@ -1,10 +1,14 @@
 package net.boomerangplatform.service.mock;
 
 import java.util.Map;
+
 import javax.servlet.http.HttpServletResponse;
+
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
+
+import net.boomerangplatform.model.CustomTask;
 import net.boomerangplatform.model.Response;
 import net.boomerangplatform.model.Task;
 import net.boomerangplatform.model.TaskResponse;
@@ -20,6 +24,11 @@ public class MockControllerService implements ControllerService {
     return null;
   }
 
+  @Override
+  public TaskResponse executeTask(CustomTask task) {
+    return null;
+  }
+  
   @Override
   public Response createWorkflow(Workflow workflow) {
     return null;
