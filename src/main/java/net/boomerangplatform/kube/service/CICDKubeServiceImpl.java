@@ -201,10 +201,13 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
       String activityId, String taskId) {
     Map<String, String> annotations = new HashMap<>();
     annotations.put("boomerangplatform.net/platform", ORG);
-    annotations.put("boomerangplatform.net/app", PREFIX);
+    annotations.put("boomerangplatform.net/product", PRODUCT);
+    annotations.put("boomerangplatform.net/tier", TIER);
     annotations.put("boomerangplatform.net/component-name", componentName);
-    annotations.put("boomerangplatform.net/component-id", componentId);
-    annotations.put("boomerangplatform.net/activity-id", activityId);
+    Optional.ofNullable(componentId)
+    .ifPresent(str -> annotations.put("boomerangplatform.net/component-id", componentId));
+    Optional.ofNullable(activityId)
+    .ifPresent(str -> annotations.put("boomerangplatform.net/activity-id", activityId));
     Optional.ofNullable(taskId)
         .ifPresent(str -> annotations.put("boomerangplatform.net/task-id", str));
 
@@ -214,7 +217,8 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
   protected Map<String, String> createLabels(String componentId, String activityId, String taskId) {
     Map<String, String> labels = new HashMap<>();
     labels.put("platform", ORG);
-    labels.put("app", PREFIX);
+    labels.put("product", PRODUCT);
+    labels.put("tier", TIER);
     Optional.ofNullable(componentId).ifPresent(str -> labels.put("component-id", str));
     Optional.ofNullable(activityId).ifPresent(str -> labels.put("activity-id", str));
     Optional.ofNullable(taskId).ifPresent(str -> labels.put("task-id", str));
