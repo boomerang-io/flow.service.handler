@@ -23,7 +23,7 @@ import io.kubernetes.client.models.V1Volume;
 import io.kubernetes.client.models.V1VolumeProjection;
 
 @Service
-@Profile("live")
+@Profile({"live", "local"})
 public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
 
   protected static final String ORG = "bmrg";

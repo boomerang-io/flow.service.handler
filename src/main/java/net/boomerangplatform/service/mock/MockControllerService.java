@@ -12,7 +12,7 @@ import net.boomerangplatform.model.Workflow;
 import net.boomerangplatform.service.ControllerService;
 
 @Service
-@Profile("local")
+@Profile("mock")
 public class MockControllerService implements ControllerService {
 
   @Override

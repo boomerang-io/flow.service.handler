@@ -18,7 +18,7 @@ import net.boomerangplatform.model.TaskResponse;
 import net.boomerangplatform.model.Workflow;
 
 @Service
-@Profile("live")
+@Profile({"live", "local"})
 public class FlowControllerServiceImpl implements ControllerService {
 
   private static final String EXCEPTION = "Exception: ";
@@ -33,6 +33,7 @@ public class FlowControllerServiceImpl implements ControllerService {
     Response response = new Response("0", "Workflow Activity (" + workflow.getWorkflowActivityId()
         + ") has been created successfully.");
     try {
+    	LOGGER.info(workflow.toString());
       if (workflow.getWorkflowStorage().getEnable()) {
         kubeService.createPVC(workflow.getWorkflowName(), workflow.getWorkflowId(),
             workflow.getWorkflowActivityId(), workflow.getWorkflowStorage().getSize());

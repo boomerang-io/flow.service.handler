@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 @JsonIgnoreProperties
 public class WorkflowStorage {
 
+  
   private Boolean enable;
 
   private String size;

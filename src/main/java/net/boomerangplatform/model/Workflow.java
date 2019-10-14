@@ -1,7 +1,9 @@
 package net.boomerangplatform.model;
 
 import java.util.Map;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonIgnoreProperties
 public class Workflow {
@@ -12,6 +14,7 @@ public class Workflow {
 
   private String workflowActivityId;
 
+  @JsonProperty("storage")
   private WorkflowStorage storage;
 
   private Map<String, String> properties;
