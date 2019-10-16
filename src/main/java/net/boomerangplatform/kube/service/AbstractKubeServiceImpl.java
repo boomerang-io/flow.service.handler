@@ -311,6 +311,9 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     return baos.toString(StandardCharsets.UTF_8);
   }
 
+  private boolean streamLogsFromElastic() {
+	  return "elastic".equals(loggingType);
+  }
   @Override
   public StreamingResponseBody streamPodLog(HttpServletResponse response, String workflowId,
       String workflowActivityId, String taskId) {
@@ -322,7 +325,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
           getCoreApi().listNamespacedPod(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty,
               null, null, labelSelector, null, null, TIMEOUT_ONE_MINUTE, false).getItems();
 
-      if (allPods.isEmpty()) {
+      if (allPods.isEmpty() && streamLogsFromElastic()) {
         return getExternalLogs(workflowActivityId);
       }
 
@@ -331,7 +334,12 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
 
       if (pod == null || "succeeded".equalsIgnoreCase(pod.getStatus().getPhase())
           || "failed".equalsIgnoreCase(pod.getStatus().getPhase())) {
-        return getExternalLogs(workflowActivityId);
+    	  if (streamLogsFromElastic()) {
+    		  return getExternalLogs(workflowActivityId);
+    	  }
+    	  else {
+    		  return getDefaultErrorMessage();
+    	  }
       }
 
       PodLogs logs = new PodLogs();
@@ -931,11 +939,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   }
 
   private StreamingResponseBody getExternalLogs(String activityId) {
-    if ("elastic".equals(loggingType)) {
       return streamLogsFromElastic(activityId);
-    } else {
-      return getDefaultErrorMessage();
-    }
   }
 
   private StreamingResponseBody getDefaultErrorMessage() {
