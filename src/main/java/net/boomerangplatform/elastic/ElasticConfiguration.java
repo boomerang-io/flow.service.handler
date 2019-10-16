@@ -18,6 +18,7 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 
 @Configuration
 public class ElasticConfiguration {
@@ -37,6 +38,7 @@ public class ElasticConfiguration {
   protected Integer elasticPort;
 
   @Bean
+  @Lazy
   public RestHighLevelClient elasticRestClient() {
     try {
       KeyStore truststore = KeyStore.getInstance("jks");
@@ -52,6 +54,7 @@ public class ElasticConfiguration {
       return new RestHighLevelClient(builder);
     } catch (IOException | GeneralSecurityException e) {
       LOGGER.error("Error: ", e);
+      
     }
     return null;
   }
