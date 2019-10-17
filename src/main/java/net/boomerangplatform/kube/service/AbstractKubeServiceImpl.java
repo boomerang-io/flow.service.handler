@@ -337,9 +337,6 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     	  if (streamLogsFromElastic()) {
     		  return getExternalLogs(workflowActivityId);
     	  }
-    	  else {
-    		  return getDefaultErrorMessage();
-    	  }
       }
 
       PodLogs logs = new PodLogs();
