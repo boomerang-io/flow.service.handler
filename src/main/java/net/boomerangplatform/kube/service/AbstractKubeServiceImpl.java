@@ -317,6 +317,9 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   @Override
   public StreamingResponseBody streamPodLog(HttpServletResponse response, String workflowId,
       String workflowActivityId, String taskId) {
+	  
+	  
+	LOGGER.info("Stream logging type is: " + loggingType);
 
     String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
     StreamingResponseBody responseBody = null;
@@ -338,7 +341,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     		  return getExternalLogs(workflowActivityId);
     	  }
       }
-
+  
       PodLogs logs = new PodLogs();
       InputStream inputStream = logs.streamNamespacedPodLog(pod);
 
