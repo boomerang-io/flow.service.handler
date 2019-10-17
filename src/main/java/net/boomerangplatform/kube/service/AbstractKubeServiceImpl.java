@@ -170,8 +170,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   @Autowired
   private MessageSource messageSource;
 
-  @Autowired
-  @Lazy
+  @Autowired(required = false)
   private RestHighLevelClient elasticRestClient;
 
 

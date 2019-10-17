@@ -23,39 +23,54 @@ import org.springframework.context.annotation.Lazy;
 @Configuration
 public class ElasticConfiguration {
 
-  private static final Logger LOGGER = LogManager.getLogger(ElasticConfiguration.class);
+	private static final Logger LOGGER = LogManager.getLogger(ElasticConfiguration.class);
 
-  @Value("${kube.worker.logging.keystore.name}")
-  protected String keystorePath;
+	@Value("${kube.worker.logging.keystore.name}")
+	protected String keystorePath;
 
-  @Value("${kube.worker.logging.keystore.password}")
-  protected String keystorePassword;
+	@Value("${kube.worker.logging.keystore.password}")
+	protected String keystorePassword;
 
-  @Value("${kube.worker.logging.host}")
-  protected String elasticHost;
+	@Value("${kube.worker.logging.host}")
+	protected String elasticHost;
 
-  @Value("${kube.worker.logging.port}")
-  protected Integer elasticPort;
+	@Value("${kube.worker.logging.port}")
+	protected Integer elasticPort;
 
-  @Bean
-  @Lazy
-  public RestHighLevelClient elasticRestClient() {
-    try {
-      KeyStore truststore = KeyStore.getInstance("jks");
-      try (InputStream is = Files.newInputStream(Paths.get(keystorePath))) {
-        truststore.load(is, keystorePassword.toCharArray());
-      }
-      SSLContextBuilder sslBuilder =
-          SSLContexts.custom().loadKeyMaterial(truststore, keystorePassword.toCharArray());
-      final SSLContext sslContext = sslBuilder.build();
-      RestClientBuilder builder = RestClient
-          .builder(new HttpHost(elasticHost, elasticPort, "https")).setHttpClientConfigCallback(
-              httpClientBuilder -> httpClientBuilder.setSSLContext(sslContext));
-      return new RestHighLevelClient(builder);
-    } catch (IOException | GeneralSecurityException e) {
-      LOGGER.error("Error: ", e);
-      
-    }
-    return null;
-  }
+	@Value("${kube.worker.logging.type}")
+	protected String loggingType;
+
+	@Bean
+	public RestHighLevelClient elasticRestClient() {
+
+		if (streamLogsFromElastic()) {
+			LOGGER.info("Configuring log streaming for elastic.");
+
+			try {
+				KeyStore truststore = KeyStore.getInstance("jks");
+				try (InputStream is = Files.newInputStream(Paths.get(keystorePath))) {
+					truststore.load(is, keystorePassword.toCharArray());
+				}
+				SSLContextBuilder sslBuilder = SSLContexts.custom().loadKeyMaterial(truststore,
+						keystorePassword.toCharArray());
+				final SSLContext sslContext = sslBuilder.build();
+				RestClientBuilder builder = RestClient.builder(new HttpHost(elasticHost, elasticPort, "https"))
+						.setHttpClientConfigCallback(httpClientBuilder -> httpClientBuilder.setSSLContext(sslContext));
+				return new RestHighLevelClient(builder);
+			} catch (IOException | GeneralSecurityException e) {
+				LOGGER.error("Error: ", e);
+				e.printStackTrace();
+			}
+		}
+		else {
+			LOGGER.info("Elastic search has been disabled");
+		}
+		
+		LOGGER.info("Returning empty elastic configuration.");
+		return null;
+	}
+
+	private boolean streamLogsFromElastic() {
+		return "elastic".equals(loggingType);
+	}
 }
