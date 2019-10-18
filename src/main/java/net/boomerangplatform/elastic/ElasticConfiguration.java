@@ -1,29 +1,31 @@
 package net.boomerangplatform.elastic;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import javax.net.ssl.SSLContext;
+
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.http.HttpHost;
+import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.ssl.SSLContexts;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
-import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.RestClientBuilder.HttpClientConfigCallback;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Lazy;
+
+import net.boomerangplatform.kube.service.AbstractKubeService;
+
+import org.elasticsearch.client.RestHighLevelClient;
 
 @Configuration
 public class ElasticConfiguration {
-
-	private static final Logger LOGGER = LogManager.getLogger(ElasticConfiguration.class);
 
 	@Value("${kube.worker.logging.keystore.name}")
 	protected String keystorePath;
@@ -40,12 +42,12 @@ public class ElasticConfiguration {
 	@Value("${kube.worker.logging.type}")
 	protected String loggingType;
 
+    private static final Logger LOGGER = LogManager.getLogger(ElasticConfiguration.class);
+	  
 	@Bean
 	public RestHighLevelClient elasticRestClient() {
-
 		if (streamLogsFromElastic()) {
-			LOGGER.info("Configuring log streaming for elastic.");
-
+			LOGGER.info("Configuring elastic client");
 			try {
 				KeyStore truststore = KeyStore.getInstance("jks");
 				try (InputStream is = Files.newInputStream(Paths.get(keystorePath))) {
@@ -55,18 +57,19 @@ public class ElasticConfiguration {
 						keystorePassword.toCharArray());
 				final SSLContext sslContext = sslBuilder.build();
 				RestClientBuilder builder = RestClient.builder(new HttpHost(elasticHost, elasticPort, "https"))
-						.setHttpClientConfigCallback(httpClientBuilder -> httpClientBuilder.setSSLContext(sslContext));
-				return new RestHighLevelClient(builder);
-			} catch (IOException | GeneralSecurityException e) {
-				LOGGER.error("Error: ", e);
-				e.printStackTrace();
+						.setHttpClientConfigCallback(new HttpClientConfigCallback() {
+							@Override
+							public HttpAsyncClientBuilder customizeHttpClient(
+									HttpAsyncClientBuilder httpClientBuilder) {
+								return httpClientBuilder.setSSLContext(sslContext);
+							}
+						});
+				return new RestHighLevelClient(builder.build());
+			} catch (Exception e) {
+				LOGGER.error("Error connecting to elsatic.");
+				LOGGER.error(ExceptionUtils.getStackTrace(e));
 			}
 		}
-		else {
-			LOGGER.info("Elastic search has been disabled");
-		}
-		
-		LOGGER.info("Returning empty elastic configuration.");
 		return null;
 	}
 
