@@ -882,7 +882,10 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   private StreamingResponseBody streamLogsFromElastic(String activityId) {
     LOGGER.info("Streaming logs from elastic: " + getPrefixJob() + "-" + activityId + "-*");
 
+    LOGGER.info("kubernetes.pod=", getPrefixJob() + "-" + activityId + "-*");
     return outputStream -> {
+    	
+    	
       PrintWriter printWriter = new PrintWriter(outputStream);
 
       final Scroll scroll = new Scroll(TimeValue.timeValueMinutes(1L));
