@@ -19,7 +19,7 @@ public abstract class BaseKubeTest {
     httpHosts[0] = new HttpHost("localhost", 9200, "http");
 
     RestClientBuilder builder = RestClient.builder(httpHosts);
-    return new RestHighLevelClient(builder);
+    return new RestHighLevelClient(builder.build());
   }
 
 }
