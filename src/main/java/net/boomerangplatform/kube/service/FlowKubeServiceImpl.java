@@ -66,7 +66,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
     // Initialize Job Body
     V1Job body = new V1Job();
     body.metadata(
-        getMetadata(workflowName, workflowId, activityId, taskId, getPrefixJob()));
+        getMetadata(workflowName, workflowId, activityId, taskId, getPrefixJob() + "-" + activityId));
 
     // Create Spec
     V1JobSpec jobSpec = new V1JobSpec();
