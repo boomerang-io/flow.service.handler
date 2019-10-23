@@ -35,7 +35,6 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
@@ -205,6 +204,8 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
       Map<String, String> taskProperties) {
     V1Job body = createJobBody(workflowName, workflowId, workflowActivityId, taskName, taskId,
         arguments, taskProperties, null, null);
+    
+    LOGGER.info(body);
 
     V1Job jobResult = new V1Job();
     try {
@@ -221,6 +222,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
         }
       }
       LOGGER.error("Error: ", e);
+      throw new KubeRuntimeException("Error createJob", e);
     }
 
     return jobResult;
@@ -248,6 +250,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
         }
       }
       LOGGER.error("Error: ", e);
+      throw new KubeRuntimeException("Error createJob", e);
     }
 
     return jobResult;

@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "1ac51ea1-fce6-4571-8f4b-3d051c8c4c97",
+		"_postman_id": "98084e9e-9168-4c8d-8b3d-d4b1ca4a7b26",
 		"name": "boomerang.service.controller",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
@@ -17,15 +17,15 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n\t\"workflowName\": \"tysons-test-workflow\",\n\t\"workflowId\": \"19880224\",\n\t\"workflowActivityId\": \"2019011401\",\n\t\"storage\": {\n\t\t\"enable\":\"false\"\n\t},\n\t\"inputs\": {\n\t\t\"channel\":\"@gchickma\",\n\t\t\"message\":\"tyson is cool\"\n\t}\n}"
+					"raw": "{\n\t\"workflowName\": \"tysons-test-workflow\",\n\t\"workflowId\": \"19880224\",\n\t\"workflowActivityId\": \"2019011401\",\n\t\"storage\": {\n\t\t\"enable\": false\n\t},\n\t\"properties\": {\n\t\t\"channel\":\"@gchickma\",\n\t\t\"message\":\"tyson is cool\"\n\t}\n}"
 				},
 				"url": {
-					"raw": "http://localhost:7731/controller/workflow/create",
+					"raw": "http://localhost:8080/controller/workflow/create",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "7731",
+					"port": "8080",
 					"path": [
 						"controller",
 						"workflow",
@@ -50,12 +50,12 @@
 					"raw": "{\n\t\"workflowName\": \"tysons-test-workflow\",\n\t\"workflowId\": \"19880224\",\n\t\"workflowActivityId\": \"2019011133\"\n}"
 				},
 				"url": {
-					"raw": "http://localhost:7731/controller/workflow/terminate",
+					"raw": "http://localhost:8080/controller/workflow/terminate",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "7731",
+					"port": "8080",
 					"path": [
 						"controller",
 						"workflow",
@@ -66,7 +66,7 @@
 			"response": []
 		},
 		{
-			"name": "Create Task",
+			"name": "Execute Task",
 			"request": {
 				"method": "POST",
 				"header": [
@@ -77,19 +77,50 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n\t\"workflowName\": \"tysons-test-workflow\",\n\t\"workflowId\": \"19880224\",\n\t\"workflowActivityId\": \"2019011401\",\n\t\"taskName\": \"Send Slack Message\",\n\t\"taskId\": \"19880224\",\n\t\"inputs\":{\n\t\t\"properties\": {\n\t\t\t\"channel\":\"${p:Send Slack Message/channel}\",\n\t\t\t\"title\":\"Hello\",\n\t\t\t\"message\":\"this should work\"\n\t\t}\n\t},\n\t\"arguments\": [\n\t\t\"slack\",\n\t\t\"sendWebhook\"\n\t]\n}"
+					"raw": "{\n\t\"workflowName\": \"tysons-test-workflow\",\n\t\"workflowId\": \"19880224\",\n\t\"workflowActivityId\": \"2019011401\",\n\t\"taskName\": \"Send Slack Message\",\n\t\"taskId\": \"19880224\",\n\t\"properties\": {\n\t\t\"channel\":\"${p:Send Slack Message/channel}\",\n\t\t\"title\":\"Hello\",\n\t\t\"message\":\"this should work\"\n\t},\n\t\"arguments\": [\n\t\t\"slack\",\n\t\t\"sendWebhook\"\n\t]\n}"
 				},
 				"url": {
-					"raw": "http://localhost:7731/controller/task/create",
+					"raw": "http://localhost:8080/controller/task/create",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "7731",
+					"port": "8080",
 					"path": [
 						"controller",
 						"task",
 						"create"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Execute Custom Task",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"workflowName\": \"tysons-test-workflow\",\n\t\"workflowId\": \"19880224\",\n\t\"workflowActivityId\": \"2019011401\",\n\t\"taskName\": \"Send Slack Message\",\n\t\"taskId\": \"198802241\",\n\t\"properties\": {\n\t\t\"channel\":\"${p:Send Slack Message/channel}\",\n\t\t\"title\":\"Hello\",\n\t\t\"message\":\"this should work\"\n\t},\n\t\"image\":\"busyboxplus:curl\",\n\t\"command\": \"\",\n\t\"arguments\": [\n\t\t\"-v\",\n\t\t\"http://google.com\"\n\t]\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/controller/task/custom/execute",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"controller",
+						"task",
+						"custom",
+						"execute"
 					]
 				}
 			},
@@ -110,12 +141,12 @@
 					"raw": ""
 				},
 				"url": {
-					"raw": "http://localhost:7731/controller/property/set?workflowId=19880224&workflowActivityId=2019011134&taskId=19880224&taskName=SendSlackMessage&key=channel&value=@twlawrie",
+					"raw": "http://localhost:8080/controller/property/set?workflowId=19880224&workflowActivityId=2019011134&taskId=19880224&taskName=SendSlackMessage&key=channel&value=@twlawrie",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "7731",
+					"port": "8080",
 					"path": [
 						"controller",
 						"property",
@@ -166,12 +197,12 @@
 					"raw": "{\n\t\"key1\": \"value1\",\n\t\"key2\": \"value2\"\n}"
 				},
 				"url": {
-					"raw": "http://localhost:7731/controller/properties/set?workflowId=19880224&workflowActivityId=2019011134&taskId=19880224&taskName=SendSlackMessage",
+					"raw": "http://localhost:8080/controller/properties/set?workflowId=19880224&workflowActivityId=2019011134&taskId=19880224&taskName=SendSlackMessage",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "7731",
+					"port": "8080",
 					"path": [
 						"controller",
 						"properties",
@@ -227,12 +258,12 @@
 					"raw": ""
 				},
 				"url": {
-					"raw": "http://localhost:7731/controller/log/get?workflowId=19880224&workflowActivityId=2019011401&taskId=198802241",
+					"raw": "http://localhost:8080/controller/log/get?workflowId=19880224&workflowActivityId=2019011401&taskId=198802241",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "7731",
+					"port": "8080",
 					"path": [
 						"controller",
 						"log",
@@ -274,12 +305,12 @@
 					"raw": ""
 				},
 				"url": {
-					"raw": "http://localhost:7731/controller/log/stream?workflowId=19880224&workflowActivityId=2019011134&taskId=19880224",
+					"raw": "http://localhost:8080/controller/log/stream?workflowId=19880224&workflowActivityId=2019011134&taskId=19880224",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "7731",
+					"port": "8080",
 					"path": [
 						"controller",
 						"log",
@@ -318,16 +349,12 @@
 				},
 				"method": "GET",
 				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": ""
-				},
 				"url": {
-					"raw": "localhost:7731/controller/api-docs",
+					"raw": "localhost:8080/controller/api-docs",
 					"host": [
 						"localhost"
 					],
-					"port": "7731",
+					"port": "8080",
 					"path": [
 						"controller",
 						"api-docs"
@@ -336,5 +363,6 @@
 			},
 			"response": []
 		}
-	]
+	],
+	"protocolProfileBehavior": {}
 }

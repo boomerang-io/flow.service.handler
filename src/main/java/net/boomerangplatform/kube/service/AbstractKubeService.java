@@ -2,10 +2,11 @@ package net.boomerangplatform.kube.service;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import javax.servlet.http.HttpServletResponse;
+
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
+
 import io.kubernetes.client.ApiException;
 import io.kubernetes.client.models.V1ConfigMap;
 import io.kubernetes.client.models.V1Job;
