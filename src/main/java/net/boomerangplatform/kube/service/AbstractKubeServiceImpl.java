@@ -220,9 +220,9 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
           V1JobStatus badStatus = new V1JobStatus();
           return body.status(badStatus.failed(1));
         }
+      } else {
+          throw new KubeRuntimeException("Error createJob", e);
       }
-      LOGGER.error("Error: ", e);
-      throw new KubeRuntimeException("Error createJob", e);
     }
 
     return jobResult;
@@ -234,6 +234,8 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
       Map<String, String> taskProperties, String image, String command) {
     V1Job body = createJobBody(workflowName, workflowId, workflowActivityId, taskName, taskId,
         arguments, taskProperties, image, command);
+    
+    LOGGER.info(body);
 
     V1Job jobResult = new V1Job();
     try {
@@ -248,9 +250,9 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
           V1JobStatus badStatus = new V1JobStatus();
           return body.status(badStatus.failed(1));
         }
+      } else {
+          throw new KubeRuntimeException("Error createJob", e);
       }
-      LOGGER.error("Error: ", e);
-      throw new KubeRuntimeException("Error createJob", e);
     }
 
     return jobResult;
