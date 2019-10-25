@@ -458,22 +458,26 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   public V1Status deletePVC(String workflowId, String workflowActivityId) {
     V1DeleteOptions deleteOptions = new V1DeleteOptions();
     V1Status result = new V1Status();
-    try {
-      result = getCoreApi().deleteNamespacedPersistentVolumeClaim(
-          getPVCName(workflowId, workflowActivityId), kubeNamespace, kubeApiPretty, deleteOptions,
-          null, null, null, null);
-    } catch (JsonSyntaxException e) {
-      if (e.getCause() instanceof IllegalStateException) {
-        IllegalStateException ise = (IllegalStateException) e.getCause();
-        if (ise.getMessage() != null
-            && ise.getMessage().contains("Expected a string but was BEGIN_OBJECT")) {
-          LOGGER.error(
-              "Catching exception because of issue https://github.com/kubernetes-client/java/issues/86");
+    String pvcName = getPVCName(workflowId, workflowActivityId);
+    if (!pvcName.isEmpty()) {
+      try {
+        result =
+            getCoreApi()
+                .deleteNamespacedPersistentVolumeClaim(
+                    pvcName, kubeNamespace, kubeApiPretty, deleteOptions, null, null, null, null);
+      } catch (JsonSyntaxException e) {
+        if (e.getCause() instanceof IllegalStateException) {
+          IllegalStateException ise = (IllegalStateException) e.getCause();
+          if (ise.getMessage() != null
+              && ise.getMessage().contains("Expected a string but was BEGIN_OBJECT")) {
+            LOGGER.error(
+                "Catching exception because of issue https://github.com/kubernetes-client/java/issues/86");
+          }
+          LOGGER.error("Exception when running deletePVC()", e);
         }
+      } catch (ApiException e) {
         LOGGER.error("Exception when running deletePVC()", e);
       }
-    } catch (ApiException e) {
-      LOGGER.error("Exception when running deletePVC()", e);
     }
     return result;
   }
