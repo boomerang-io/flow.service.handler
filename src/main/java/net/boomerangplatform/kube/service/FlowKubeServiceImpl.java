@@ -82,7 +82,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
     container.env(envVars);
     container.args(arguments);
     if (!getPVCName(workflowId, activityId).isEmpty()) {
-      container.addVolumeMountsItem(getVolumeMount(PREFIX_VOL_DATA, "/cache"));
+      container.addVolumeMountsItem(getVolumeMount(PREFIX_VOL_DATA, "/data"));
       V1Volume workerVolume = getVolume(PREFIX_VOL_DATA);
       V1PersistentVolumeClaimVolumeSource workerVolumePVCSource =
           new V1PersistentVolumeClaimVolumeSource();
