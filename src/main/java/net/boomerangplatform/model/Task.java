@@ -17,6 +17,8 @@ public class Task {
   private String workflowId;
 
   private String workflowActivityId;
+  
+  private String taskActivityId;
 
   private String taskName;
 
@@ -90,4 +92,12 @@ public class Task {
   public void setArgument(String argument) {
     this.arguments.add(argument);
   }
+
+public String getTaskActivityId() {
+	return taskActivityId;
+}
+
+public void setTaskActivityId(String taskActivityId) {
+	this.taskActivityId = taskActivityId;
+}
 }

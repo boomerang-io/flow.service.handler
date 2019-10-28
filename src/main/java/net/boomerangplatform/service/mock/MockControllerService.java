@@ -19,47 +19,47 @@ import net.boomerangplatform.service.ControllerService;
 @Profile("mock")
 public class MockControllerService implements ControllerService {
 
-  @Override
-  public TaskResponse executeTask(Task task) {
-    return null;
-  }
+	@Override
+	public TaskResponse executeTask(Task task) {
+		return null;
+	}
 
-  @Override
-  public TaskResponse executeTask(CustomTask task) {
-    return null;
-  }
-  
-  @Override
-  public Response createWorkflow(Workflow workflow) {
-    return null;
-  }
+	@Override
+	public TaskResponse executeTask(CustomTask task) {
+		return null;
+	}
 
-  @Override
-  public Response terminateWorkflow(Workflow workflow) {
-    return null;
-  }
+	@Override
+	public Response createWorkflow(Workflow workflow) {
+		return null;
+	}
 
-  @Override
-  public Response setJobOutputProperty(String workflowId, String workflowActivityId, String taskId,
-      String taskName, String key, String value) {
-    return null;
-  }
+	@Override
+	public Response terminateWorkflow(Workflow workflow) {
+		return null;
+	}
 
-  @Override
-  public Response getLogForTask(String workflowId, String workflowActivityId, String taskId) {
-    return null;
-  }
+	@Override
+	public Response setJobOutputProperty(String workflowId, String workflowActivityId, String taskId, String taskName,
+			String key, String value) {
+		return null;
+	}
 
-  @Override
-  public StreamingResponseBody streamLogForTask(HttpServletResponse response, String workflowId,
-      String workflowActivityId, String taskId) {
-    return null;
-  }
+	@Override
+	public Response getLogForTask(String workflowId, String workflowActivityId, String taskId, String taskActivityId) {
+		return null;
+	}
 
-  @Override
-  public Response setJobOutputProperties(String workflowId, String workflowActivityId,
-      String taskId, String taskName, Map<String, String> properties) {
-    return null;
-  }
+	@Override
+	public StreamingResponseBody streamLogForTask(HttpServletResponse response, String workflowId,
+			String workflowActivityId, String taskId, String taskActivityId) {
+		return null;
+	}
+
+	@Override
+	public Response setJobOutputProperties(String workflowId, String workflowActivityId, String taskId, String taskName,
+			Map<String, String> properties) {
+		return null;
+	}
 
 }

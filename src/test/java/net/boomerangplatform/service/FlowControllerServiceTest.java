@@ -144,7 +144,7 @@ public class FlowControllerServiceTest {
     Mockito.when(kubeService.watchConfigMap(null, task.getWorkflowActivityId(), task.getTaskId()))
         .thenReturn(new V1ConfigMap());
     Mockito.when(kubeService.createJob(task.getWorkflowName(), task.getWorkflowId(),
-        task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(), task.getArguments(),
+        task.getWorkflowActivityId(),task.getTaskActivityId(), task.getTaskName(), task.getTaskId(), task.getArguments(),
         task.getProperties())).thenReturn(new V1Job());
     Mockito.when(
         kubeService.watchJob(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId()))
@@ -168,7 +168,7 @@ public class FlowControllerServiceTest {
     Mockito.verify(kubeService).watchConfigMap(null, task.getWorkflowActivityId(),
         task.getTaskId());
     Mockito.verify(kubeService).createJob(task.getWorkflowName(), task.getWorkflowId(),
-        task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(), task.getArguments(),
+        task.getWorkflowActivityId(), task.getTaskActivityId(),task.getTaskName(), task.getTaskId(), task.getArguments(),
         task.getProperties());
     Mockito.verify(kubeService).watchJob(task.getWorkflowId(), task.getWorkflowActivityId(),
         task.getTaskId());
@@ -299,14 +299,14 @@ public class FlowControllerServiceTest {
     String workflowActivityId = "workflowActivityId";
     String taskId = "taskId";
 
-    Mockito.when(kubeService.getPodLog(workflowId, workflowActivityId, taskId))
+    Mockito.when(kubeService.getPodLog(workflowId, workflowActivityId, taskId,taskId))
         .thenReturn("Success");
 
-    Response response = flowControllerService.getLogForTask(workflowId, workflowActivityId, taskId);
+    Response response = flowControllerService.getLogForTask(workflowId, workflowActivityId, taskId,taskId);
     assertEquals("0", response.getCode());
     assertEquals("Success", response.getMessage());
 
-    Mockito.verify(kubeService).getPodLog(workflowId, workflowActivityId, taskId);
+    Mockito.verify(kubeService).getPodLog(workflowId, workflowActivityId, taskId,taskId);
   }
 
   @Test
@@ -315,15 +315,15 @@ public class FlowControllerServiceTest {
     String workflowActivityId = "workflowActivityId";
     String taskId = "taskId";
 
-    Mockito.when(kubeService.getPodLog(workflowId, workflowActivityId, taskId))
+    Mockito.when(kubeService.getPodLog(workflowId, workflowActivityId, taskId,taskId))
         .thenThrow(KubeRuntimeException.class);
 
-    Response response = flowControllerService.getLogForTask(workflowId, workflowActivityId, taskId);
+    Response response = flowControllerService.getLogForTask(workflowId, workflowActivityId, taskId,taskId);
     assertEquals("1", response.getCode());
     assertTrue(response.getMessage()
         .startsWith("net.boomerangplatform.kube.exception.KubeRuntimeException"));
 
-    Mockito.verify(kubeService).getPodLog(workflowId, workflowActivityId, taskId);
+    Mockito.verify(kubeService).getPodLog(workflowId, workflowActivityId, taskId,taskId);
   }
 
   @Test
@@ -333,14 +333,14 @@ public class FlowControllerServiceTest {
     String taskId = "taskId";
     HttpServletResponse response = new MockHttpServletResponse();
 
-    Mockito.when(kubeService.streamPodLog(response, workflowId, workflowActivityId, taskId))
+    Mockito.when(kubeService.streamPodLog(response, workflowId, workflowActivityId, taskId,taskId))
         .thenReturn(mock(StreamingResponseBody.class));
 
     StreamingResponseBody streamingResponseBody =
-        flowControllerService.streamLogForTask(response, workflowId, workflowActivityId, taskId);
+        flowControllerService.streamLogForTask(response, workflowId, workflowActivityId, taskId,taskId);
     assertNotNull(streamingResponseBody);
 
-    Mockito.verify(kubeService).streamPodLog(response, workflowId, workflowActivityId, taskId);
+    Mockito.verify(kubeService).streamPodLog(response, workflowId, workflowActivityId, taskId,taskId);
   }
 
   @Test
@@ -350,14 +350,14 @@ public class FlowControllerServiceTest {
     String taskId = "taskId";
     HttpServletResponse response = new MockHttpServletResponse();
 
-    Mockito.when(kubeService.streamPodLog(response, workflowId, workflowActivityId, taskId))
+    Mockito.when(kubeService.streamPodLog(response, workflowId, workflowActivityId, taskId,taskId))
         .thenThrow(KubeRuntimeException.class);
 
     StreamingResponseBody streamingResponseBody =
-        flowControllerService.streamLogForTask(response, workflowId, workflowActivityId, taskId);
+        flowControllerService.streamLogForTask(response, workflowId, workflowActivityId, taskId,taskId);
     assertNull(streamingResponseBody);
 
-    Mockito.verify(kubeService).streamPodLog(response, workflowId, workflowActivityId, taskId);
+    Mockito.verify(kubeService).streamPodLog(response, workflowId, workflowActivityId, taskId,taskId);
   }
 
   private Task getDefaultTask() {

@@ -23,17 +23,19 @@ public class LogController {
   public Response getLogForTask(
       @RequestParam(value = "workflowId", required = true) String workflowId,
       @RequestParam(value = "workflowActivityId", required = true) String workflowActivityId,
+      @RequestParam(value = "taskActivityId", required = false) String taskActivityId,
       @RequestParam(value = "taskId", required = true) String taskId) {
-    return controllerService.getLogForTask(workflowId, workflowActivityId, taskId);
+    return controllerService.getLogForTask(workflowId, workflowActivityId, taskId,taskActivityId);
   }
 
   @GetMapping(value = "/stream")
   public ResponseEntity<StreamingResponseBody> streamLogForTask(HttpServletResponse response,
       @RequestParam(value = "workflowId", required = true) String workflowId,
       @RequestParam(value = "workflowActivityId", required = true) String workflowActivityId,
+      @RequestParam(value = "taskActivityId", required = false) String taskActivityId,
       @RequestParam(value = "taskId", required = true) String taskId) {
     return new ResponseEntity<>(
-        controllerService.streamLogForTask(response, workflowId, workflowActivityId, taskId),
+        controllerService.streamLogForTask(response, workflowId, workflowActivityId, taskId, taskActivityId),
         HttpStatus.OK);
   }
 }

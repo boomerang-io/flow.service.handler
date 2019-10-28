@@ -199,7 +199,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   public abstract String getPrefixPVC();
 
   @Override
-  public V1Job createJob(String workflowName, String workflowId, String workflowActivityId,
+  public V1Job createJob(String workflowName, String workflowId, String workflowActivityId, String taskActivityId,
       String taskName, String taskId, List<String> arguments,
       Map<String, String> taskProperties) {
     V1Job body = createJobBody(workflowName, workflowId, workflowActivityId, taskName, taskId,
@@ -229,7 +229,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   }
   
   @Override
-  public V1Job createJob(String workflowName, String workflowId, String workflowActivityId,
+  public V1Job createJob(String workflowName, String workflowId, String workflowActivityId,  String taskActivityId,
       String taskName, String taskId, List<String> arguments,
       Map<String, String> taskProperties, String image, String command) {
     V1Job body = createJobBody(workflowName, workflowId, workflowActivityId, taskName, taskId,
@@ -290,7 +290,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   }
 
   @Override
-  public String getPodLog(String workflowId, String workflowActivityId, String taskId) {
+  public String getPodLog(String workflowId, String workflowActivityId, String taskId,  String taskActivityId) {
     String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
 
     PodLogs logs = new PodLogs();
@@ -320,7 +320,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   }
   @Override
   public StreamingResponseBody streamPodLog(HttpServletResponse response, String workflowId,
-      String workflowActivityId, String taskId) {
+      String workflowActivityId, String taskId, String taskActivityId) {
 	  
 	  
 	LOGGER.info("Stream logging type is: " + loggingType);

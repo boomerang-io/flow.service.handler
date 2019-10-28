@@ -77,7 +77,7 @@ public class FlowKubeServiceTest {
         .willReturn(okForContentType(MediaType.APPLICATION_JSON_VALUE,
             "{\"apiVersion\": \"1.0\", \"items\": [{\"metadata\": {\"name\": \"metadataName\"}}]}")));
 
-    V1Job job = flowKubeService.createJob("workflowName", "workflowId", "workflowActivityId",
+    V1Job job = flowKubeService.createJob("workflowName", "workflowId", "workflowActivityId","taskActivityId",
         "taskName", "taskId", arguments, taskInputProperties);
 
     assertNotNull(job);
@@ -100,7 +100,7 @@ public class FlowKubeServiceTest {
         .willReturn(aResponse().withStatus(404).withHeader("Content-Type", "text/plain")
             .withBody("Not Found")));
 
-    V1Job job = flowKubeService.createJob("workflowName", "workflowId", "workflowActivityId",
+    V1Job job = flowKubeService.createJob("workflowName", "workflowId", "workflowActivityId","taskActivityId",
         "taskName", "taskId", arguments, taskInputProperties);
 
     assertNotNull(job);
@@ -202,7 +202,7 @@ public class FlowKubeServiceTest {
             "{\"type\": \"type\", \"object\": {\"apiVersion\": \"1.0\", \"metadata\": {\"name\": \"configMapMetadataName\", \"namespace\": \"namespace\", \"containers\": [{\"name\": \"containerName\"}]}, \"status\": {\"conditions\": [{}], \"containerStatuses\": [{}], \"phase\": \"Bound\"}, \"spec\": {\"containers\": [{\"name\": \"containerName\"}]}}}")));
 
     StreamingResponseBody streamingResponseBody = flowKubeService
-        .streamPodLog(new MockHttpServletResponse(), "workflowId", "workflowActivityId", "taskId");
+        .streamPodLog(new MockHttpServletResponse(), "workflowId", "workflowActivityId", "taskId", "taskActivityId");
 
     assertNotNull(streamingResponseBody);
   }
@@ -213,7 +213,7 @@ public class FlowKubeServiceTest {
         .withStatus(404).withHeader("Content-Type", "text/plain").withBody("Not Found")));
 
     flowKubeService.streamPodLog(new MockHttpServletResponse(), "workflowId", "workflowActivityId",
-        "taskId");
+        "taskId", "taskActivityId");
   }
 
   @Test

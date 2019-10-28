@@ -79,7 +79,7 @@ public class CICDKubeServiceTest {
         .willReturn(okForContentType(MediaType.APPLICATION_JSON_VALUE,
             "{\"apiVersion\": \"1.0\", \"items\": [{\"metadata\": {\"name\": \"metadataName\"}, \"status\": {\"phase\" : \"Bound\"}}]}")));
 
-    V1Job job = cicdKubeService.createJob("workflowName", "workflowId", "workflowActivityId",
+    V1Job job = cicdKubeService.createJob("workflowName", "workflowId", "workflowActivityId", "taskActivityId",
         "taskName", "taskId", arguments, taskInputProperties);
 
     assertNotNull(job);
@@ -99,7 +99,7 @@ public class CICDKubeServiceTest {
         .willReturn(okForContentType(MediaType.APPLICATION_JSON_VALUE,
             "{\"apiVersion\": \"1.0\", \"items\": []}")));
 
-    V1Job job = cicdKubeService.createJob("workflowName", "workflowId", "workflowActivityId",
+    V1Job job = cicdKubeService.createJob("workflowName", "workflowId", "workflowActivityId", "taskActivityId",
         "taskName", "taskId", null, null);
 
     assertNotNull(job);
@@ -122,7 +122,7 @@ public class CICDKubeServiceTest {
         .willReturn(aResponse().withStatus(404).withHeader("Content-Type", "text/plain")
             .withBody("Not Found")));
 
-    V1Job job = cicdKubeService.createJob("workflowName", "workflowId", "workflowActivityId",
+    V1Job job = cicdKubeService.createJob("workflowName", "workflowId", "workflowActivityId", "taskActivityId",
         "taskName", "taskId", arguments, taskInputProperties);
 
     assertNotNull(job);
@@ -173,7 +173,7 @@ public class CICDKubeServiceTest {
     stubFor(get(urlPathMatching("/api/v1/namespaces/namespace/pods/name/log"))
         .willReturn(okForContentType(MediaType.APPLICATION_JSON_VALUE, "{}")));
 
-    String log = cicdKubeService.getPodLog("workflowId", "workflowActivityId", "taskId");
+    String log = cicdKubeService.getPodLog("workflowId", "workflowActivityId", "taskId", "taskActivityId");
 
     assertNotNull(log);
   }
@@ -183,7 +183,7 @@ public class CICDKubeServiceTest {
     stubFor(get(urlPathMatching("/api/v1/namespaces/default/pods")).willReturn(aResponse()
         .withStatus(404).withHeader("Content-Type", "text/plain").withBody("Not Found")));
 
-    cicdKubeService.getPodLog("workflowId", "workflowActivityId", "taskId");
+    cicdKubeService.getPodLog("workflowId", "workflowActivityId", "taskId", "taskActivityId");
   }
 
   @Test

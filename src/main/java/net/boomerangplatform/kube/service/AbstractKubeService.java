@@ -33,6 +33,7 @@ public interface AbstractKubeService {
       String workflowName,
       String workflowId,
       String workflowActivityId,
+      String taskActivityId,
       String taskName,
       String taskId,
       List<String> arguments,
@@ -42,6 +43,7 @@ public interface AbstractKubeService {
       String workflowName,
       String workflowId,
       String workflowActivityId,
+      String taskActivityId,
       String taskName,
       String taskId,
       List<String> arguments,
@@ -64,10 +66,10 @@ public interface AbstractKubeService {
   Map<String, String> getTaskOutPutConfigMapData(
       String workflowId, String workflowActivityId, String taskId, String taskName);
 
-  String getPodLog(String workflowId, String workflowActivityId, String taskId);
+  String getPodLog(String workflowId, String workflowActivityId, String taskId,  String taskActivityId);
 
   StreamingResponseBody streamPodLog(
-      HttpServletResponse response, String workflowId, String workflowActivityId, String taskId);
+      HttpServletResponse response, String workflowId, String workflowActivityId, String taskId, String taskActivityId);
 
   void patchTaskConfigMap(
       String workflowId,

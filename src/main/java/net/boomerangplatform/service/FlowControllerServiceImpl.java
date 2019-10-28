@@ -79,7 +79,7 @@ public class FlowControllerServiceImpl implements ControllerService {
           task.getProperties());
       kubeService.watchConfigMap(null, task.getWorkflowActivityId(), task.getTaskId());
       kubeService.createJob(task.getWorkflowName(), task.getWorkflowId(),
-          task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(), task.getArguments(),
+          task.getWorkflowActivityId(), task.getTaskActivityId(),task.getTaskName(), task.getTaskId(), task.getArguments(),
           task.getProperties());
       kubeService.watchJob(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
     } catch (KubeRuntimeException e) {
@@ -104,7 +104,7 @@ public class FlowControllerServiceImpl implements ControllerService {
           task.getProperties());
       kubeService.watchConfigMap(null, task.getWorkflowActivityId(), task.getTaskId());
       kubeService.createJob(task.getWorkflowName(), task.getWorkflowId(),
-          task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(), task.getArguments(),
+          task.getWorkflowActivityId(),task.getTaskActivityId(), task.getTaskName(), task.getTaskId(), task.getArguments(),
           task.getProperties(), task.getImage(), task.getCommand());
       kubeService.watchJob(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
     } catch (KubeRuntimeException e) {
@@ -154,10 +154,10 @@ public class FlowControllerServiceImpl implements ControllerService {
   }
 
   @Override
-  public Response getLogForTask(String workflowId, String workflowActivityId, String taskId) {
+  public Response getLogForTask(String workflowId, String workflowActivityId, String taskId, String taskActivityId) {
     Response response = new Response("0", "");
     try {
-      response.setMessage(kubeService.getPodLog(workflowId, workflowActivityId, taskId));
+      response.setMessage(kubeService.getPodLog(workflowId, workflowActivityId, taskId, taskActivityId));
     } catch (KubeRuntimeException e) {
       LOGGER.error(EXCEPTION, e);
       response.setCode("1");
@@ -168,10 +168,10 @@ public class FlowControllerServiceImpl implements ControllerService {
 
   @Override
   public StreamingResponseBody streamLogForTask(HttpServletResponse response, String workflowId,
-      String workflowActivityId, String taskId) {
+      String workflowActivityId, String taskId,  String taskActivityId) {
     StreamingResponseBody srb = null;
     try {
-      srb = kubeService.streamPodLog(response, workflowId, workflowActivityId, taskId);
+      srb = kubeService.streamPodLog(response, workflowId, workflowActivityId, taskId, taskActivityId);
     } catch (KubeRuntimeException e) {
       LOGGER.error(EXCEPTION, e);
     }
