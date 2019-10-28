@@ -333,6 +333,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
               null, null, labelSelector, null, null, TIMEOUT_ONE_MINUTE, false).getItems();
 
       if (allPods.isEmpty() && streamLogsFromElastic()) {
+    	LOGGER.error("All Pods is empty.");
         return getExternalLogs(workflowActivityId);
       }
 
