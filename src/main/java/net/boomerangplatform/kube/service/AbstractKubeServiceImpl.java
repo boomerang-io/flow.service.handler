@@ -338,6 +338,18 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
 
       Watch<V1Pod> watch = createPodWatch(labelSelector, getCoreApi());
       V1Pod pod = getPod(watch);
+      
+      if (pod == null) {
+    	  LOGGER.error("V1Pod is empty...");
+      }
+      else {
+    	  if (pod.getStatus() == null) {
+    		  LOGGER.error("Pod Status is empty");
+    	  }
+    	  else {
+    		  LOGGER.info("Phase: " + pod.getStatus().getPhase());
+    	  }
+      }
 
       if (pod == null || "succeeded".equalsIgnoreCase(pod.getStatus().getPhase())
           || "failed".equalsIgnoreCase(pod.getStatus().getPhase())) {
