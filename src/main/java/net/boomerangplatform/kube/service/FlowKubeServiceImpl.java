@@ -59,14 +59,14 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
   }
 
   @Override
-  protected V1Job createJobBody(String workflowName, String workflowId, String activityId,
+  protected V1Job createJobBody(String workflowName, String workflowId, String activityId, String taskActivityId,
       String taskName, String taskId, List<String> arguments,
       Map<String, String> taskProperties, String image, String command) {
 
     // Initialize Job Body
     V1Job body = new V1Job();
     body.metadata(
-        getMetadata(workflowName, workflowId, activityId, taskId, getPrefixJob() + "-" + activityId));
+        getMetadata(workflowName, workflowId, activityId, taskId, getPrefixJob() + "-" + taskActivityId));
 
     // Create Spec
     V1JobSpec jobSpec = new V1JobSpec();
