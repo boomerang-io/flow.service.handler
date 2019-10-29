@@ -85,9 +85,9 @@ public class CICDControllerServiceImpl implements ControllerService {
           task.getProperties());
       kubeService.watchConfigMap(task.getWorkflowId(), task.getWorkflowActivityId(),
           task.getTaskId());
-      kubeService.createJob(task.getWorkflowName(), task.getWorkflowId(), task.getTaskActivityId(),
-          task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(), task.getArguments(),
-          task.getProperties());
+      kubeService.createJob(task.getWorkflowName(), task.getWorkflowId(),
+              task.getWorkflowActivityId(), task.getTaskActivityId(),task.getTaskName(), task.getTaskId(), task.getArguments(),
+              task.getProperties());
       kubeService.watchJob(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
     } catch (ApiException | KubeRuntimeException e) {
       LOGGER.error(EXCEPTION, e);
