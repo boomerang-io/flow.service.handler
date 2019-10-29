@@ -1,14 +1,23 @@
 package net.boomerangplatform.kube.service;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
+import javax.servlet.http.HttpServletResponse;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
+
+import io.kubernetes.client.ApiException;
+import io.kubernetes.client.PodLogs;
 import io.kubernetes.client.models.V1ConfigMap;
 import io.kubernetes.client.models.V1Container;
 import io.kubernetes.client.models.V1EnvVar;
@@ -16,11 +25,14 @@ import io.kubernetes.client.models.V1Job;
 import io.kubernetes.client.models.V1JobSpec;
 import io.kubernetes.client.models.V1LocalObjectReference;
 import io.kubernetes.client.models.V1PersistentVolumeClaimVolumeSource;
+import io.kubernetes.client.models.V1Pod;
 import io.kubernetes.client.models.V1PodSpec;
 import io.kubernetes.client.models.V1PodTemplateSpec;
 import io.kubernetes.client.models.V1ProjectedVolumeSource;
 import io.kubernetes.client.models.V1Volume;
 import io.kubernetes.client.models.V1VolumeProjection;
+import io.kubernetes.client.util.Watch;
+import net.boomerangplatform.kube.exception.KubeRuntimeException;
 
 @Service
 @Profile({"live", "local"})
@@ -219,4 +231,56 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
     return labels;
   }
 
+  @Override
+  public StreamingResponseBody streamPodLog(HttpServletResponse response, String workflowId,
+      String workflowActivityId, String taskId, String taskActivityId) {
+	  
+	LOGGER.info("Stream logging type is: " + loggingType);
+
+    String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
+    StreamingResponseBody responseBody = null;
+    try {
+      List<V1Pod> allPods =
+          getCoreApi().listNamespacedPod(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty,
+              null, null, labelSelector, null, null, TIMEOUT_ONE_MINUTE, false).getItems();
+
+      if (allPods.isEmpty() && streamLogsFromElastic()) {
+    	LOGGER.error("All Pods is empty.");
+        return getExternalLogs(taskActivityId);
+      }
+
+      Watch<V1Pod> watch = createPodWatch(labelSelector, getCoreApi());
+      V1Pod pod = getPod(watch);
+      
+      if (pod == null) {
+    	  LOGGER.error("V1Pod is empty...");
+      }
+      else {
+    	  if (pod.getStatus() == null) {
+    		  LOGGER.error("Pod Status is empty");
+    	  }
+    	  else {
+    		  LOGGER.info("Phase: " + pod.getStatus().getPhase());
+    	  }
+      }
+
+      if (pod == null || "succeeded".equalsIgnoreCase(pod.getStatus().getPhase())
+          || "failed".equalsIgnoreCase(pod.getStatus().getPhase())) {
+    	  if (streamLogsFromElastic()) {
+    		  return getExternalLogs(taskActivityId);
+    	  }
+      }
+  
+      PodLogs logs = new PodLogs();
+      InputStream inputStream = logs.streamNamespacedPodLog(pod);
+
+      responseBody = getPodLog(inputStream, pod.getMetadata().getName());
+    } catch (ApiException | IOException e) {
+      LOGGER.error("streamPodLog Exception: ", e);
+      throw new KubeRuntimeException("Error streamPodLog", e);
+    }
+
+    return responseBody;
+  }
+  
 }

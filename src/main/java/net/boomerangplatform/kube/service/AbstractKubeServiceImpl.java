@@ -88,7 +88,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
 
   private static final int BYTE_SIZE = 1024;
 
-  private static final int TIMEOUT_ONE_MINUTE = 60;
+  protected static final int TIMEOUT_ONE_MINUTE = 60;
 
   private static final String EXCEPTION = "Exception: ";
 
@@ -107,7 +107,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   protected String kubeApiType;
 
   @Value("${kube.api.pretty}")
-  private String kubeApiPretty;
+  protected String kubeApiPretty;
 
   @Value("${kube.api.includeunitialized}")
   protected Boolean kubeApiIncludeuninitialized;
@@ -315,13 +315,13 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     return baos.toString(StandardCharsets.UTF_8);
   }
 
-  private boolean streamLogsFromElastic() {
+  protected boolean streamLogsFromElastic() {
 	  return "elastic".equals(loggingType);
   }
+  
   @Override
   public StreamingResponseBody streamPodLog(HttpServletResponse response, String workflowId,
       String workflowActivityId, String taskId, String taskActivityId) {
-	  
 	  
 	LOGGER.info("Stream logging type is: " + loggingType);
 
@@ -782,7 +782,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
         new TypeToken<Watch.Response<V1Job>>() {}.getType());
   }
 
-  private Watch<V1Pod> createPodWatch(String labelSelector, CoreV1Api api) throws ApiException {
+  protected Watch<V1Pod> createPodWatch(String labelSelector, CoreV1Api api) throws ApiException {
     return Watch.createWatch(createWatcherApiClient(),
         api.listNamespacedPodCall(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null,
             null, labelSelector, null, null, null, true, null, null),
@@ -851,7 +851,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     }
   }
 
-  private StreamingResponseBody getPodLog(InputStream inputStream, String podName) {
+  protected StreamingResponseBody getPodLog(InputStream inputStream, String podName) {
     return outputStream -> {
       byte[] data = new byte[BYTE_SIZE];
       int nRead = 0;
@@ -872,7 +872,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     };
   }
 
-  private V1Pod getPod(Watch<V1Pod> watch) throws IOException {
+  protected V1Pod getPod(Watch<V1Pod> watch) throws IOException {
     V1Pod pod = null;
     try {
       for (Watch.Response<V1Pod> item : watch) {
@@ -962,11 +962,11 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     };
   }
 
-  private StreamingResponseBody getExternalLogs(String activityId) {
+  protected StreamingResponseBody getExternalLogs(String activityId) {
       return streamLogsFromElastic(activityId);
   }
 
-  private StreamingResponseBody getDefaultErrorMessage() {
+  protected StreamingResponseBody getDefaultErrorMessage() {
     LOGGER.info("Returning back default message.");
 
     return outputStream -> {
@@ -981,11 +981,11 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     return accessor.getMessage("logs.error");
   }
 
-  private CoreV1Api getCoreApi() {
+  protected CoreV1Api getCoreApi() {
     return apiClient == null ? new CoreV1Api() : new CoreV1Api(apiClient);
   }
 
-  private BatchV1Api getBatchApi() {
+  protected BatchV1Api getBatchApi() {
     return apiClient == null ? new BatchV1Api() : new BatchV1Api(apiClient);
   }
 
