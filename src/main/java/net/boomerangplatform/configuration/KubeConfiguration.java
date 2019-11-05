@@ -44,9 +44,7 @@ public class KubeConfiguration {
       if ("cluster".equals(kubeApiType)) {
         defaultClient =
             Config.fromCluster()
-                .setVerifyingSsl(false)
-                .setDebugging(
-                    kubeApiDebug.isEmpty() ? Boolean.FALSE : Boolean.valueOf(kubeApiDebug));
+                .setVerifyingSsl(false);
 
       } else if ("custom".equals(kubeApiType)) {
         defaultClient =
