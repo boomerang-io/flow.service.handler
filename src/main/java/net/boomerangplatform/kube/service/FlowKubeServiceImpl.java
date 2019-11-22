@@ -20,6 +20,7 @@ import io.kubernetes.client.ApiException;
 import io.kubernetes.client.PodLogs;
 import io.kubernetes.client.models.V1ConfigMap;
 import io.kubernetes.client.models.V1Container;
+import io.kubernetes.client.models.V1EmptyDirVolumeSource;
 import io.kubernetes.client.models.V1EnvVar;
 import io.kubernetes.client.models.V1ExecAction;
 import io.kubernetes.client.models.V1Handler;
@@ -107,20 +108,28 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
     }
     
     if (Optional.ofNullable(image).isPresent()) {
+    	List<V1Container> initContainers = new ArrayList<>();
+    	initContainers.add(getContainer(null, "ls -ltr").addVolumeMountsItem(getVolumeMount("lifecycle", "/cli")));
+    	podSpec.initContainers(initContainers);
+    	container.addVolumeMountsItem(getVolumeMount("lifecycle", "/lifecycle"));
     	V1Lifecycle lifecycle = new V1Lifecycle();
         V1Handler preStopHandler = new V1Handler();
         V1ExecAction exec = new V1ExecAction();
-        exec.addCommandItem("/bin/echo");
-        exec.addCommandItem("Entered PreStop Lifecycle");
+        exec.addCommandItem("cd");
+        exec.addCommandItem("/lifecycle");
         exec.addCommandItem("&&");
-        exec.addCommandItem("sleep");
-        exec.addCommandItem("10");
-        exec.addCommandItem("&&");
-        exec.addCommandItem("less");
-        exec.addCommandItem("/dev/termination-log");
+        exec.addCommandItem("node");
+        exec.addCommandItem("cli");
+        exec.addCommandItem("lifecycle");
+        exec.addCommandItem("setOutputProperty");
         preStopHandler.setExec(exec);
         lifecycle.setPreStop(preStopHandler);
         container.lifecycle(lifecycle);
+        V1Volume lifecycleVol = getVolume("lifecyle");
+        V1EmptyDirVolumeSource emptyDir = new V1EmptyDirVolumeSource();
+        lifecycleVol.emptyDir(emptyDir);
+        podSpec.addVolumesItem(lifecycleVol);
+        
     }
     
     container.addVolumeMountsItem(getVolumeMount(PREFIX_VOL_PROPS, "/props"));
