@@ -21,8 +21,11 @@ import io.kubernetes.client.PodLogs;
 import io.kubernetes.client.models.V1ConfigMap;
 import io.kubernetes.client.models.V1Container;
 import io.kubernetes.client.models.V1EnvVar;
+import io.kubernetes.client.models.V1ExecAction;
+import io.kubernetes.client.models.V1Handler;
 import io.kubernetes.client.models.V1Job;
 import io.kubernetes.client.models.V1JobSpec;
+import io.kubernetes.client.models.V1Lifecycle;
 import io.kubernetes.client.models.V1LocalObjectReference;
 import io.kubernetes.client.models.V1PersistentVolumeClaimVolumeSource;
 import io.kubernetes.client.models.V1Pod;
@@ -102,7 +105,17 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
           workerVolumePVCSource.claimName(getPVCName(workflowId, activityId)));
       podSpec.addVolumesItem(workerVolume);
     }
-
+    
+    if (Optional.ofNullable(image).isPresent()) {
+    	V1Lifecycle lifecycle = new V1Lifecycle();
+        V1Handler preStopHandler = new V1Handler();
+        V1ExecAction exec = new V1ExecAction();
+        exec.addCommandItem("/bin/bash -c echo 'Entered PreStop Lifecycle");
+        preStopHandler.setExec(exec);
+        lifecycle.setPreStop(preStopHandler);
+        container.lifecycle(lifecycle);
+    }
+    
     container.addVolumeMountsItem(getVolumeMount(PREFIX_VOL_PROPS, "/props"));
 
     // Creation of Projected Volume with multiple ConfigMaps
