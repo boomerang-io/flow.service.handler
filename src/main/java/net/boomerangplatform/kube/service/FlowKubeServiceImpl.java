@@ -109,14 +109,14 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
     
     if (Optional.ofNullable(image).isPresent()) {
     	List<V1Container> initContainers = new ArrayList<>();
-    	initContainers.add(getContainer(null, null).name("init-worker").addVolumeMountsItem(getVolumeMount("lifecycle", "/cli")));
+    	initContainers.add(getContainer(null, "cp -r -v /cli /lifecycle").name("init-worker").addVolumeMountsItem(getVolumeMount("lifecycle", "/lifecycle")));
     	podSpec.setInitContainers(initContainers);
-    	container.addVolumeMountsItem(getVolumeMount("lifecycle", "/cli"));
+    	container.addVolumeMountsItem(getVolumeMount("lifecycle", "/lifecycle"));
     	V1Lifecycle lifecycle = new V1Lifecycle();
         V1Handler preStopHandler = new V1Handler();
         V1ExecAction exec = new V1ExecAction();
         exec.addCommandItem("cd");
-        exec.addCommandItem("/cli");
+        exec.addCommandItem("/lifecycle");
         exec.addCommandItem("&&");
         exec.addCommandItem("node");
         exec.addCommandItem("cli");
