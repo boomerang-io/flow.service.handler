@@ -127,6 +127,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
         container.lifecycle(lifecycle);
         V1Volume lifecycleVol = getVolume("lifecyle");
         V1EmptyDirVolumeSource emptyDir = new V1EmptyDirVolumeSource();
+        emptyDir.setMedium("");
         lifecycleVol.emptyDir(emptyDir);
         podSpec.addVolumesItem(lifecycleVol);
         
