@@ -109,10 +109,9 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
     
     if (Optional.ofNullable(image).isPresent()) {
     	List<V1Container> initContainers = new ArrayList<>();
-//    	initContainers.add(getContainer(null, null).addVolumeMountsItem(getVolumeMount("lifecycle", "/cli")));
-    	initContainers.add(getContainer(null, null).name("init-worker"));
+    	initContainers.add(getContainer(null, "pwd").name("init-worker").addVolumeMountsItem(getVolumeMount("lifecycle", "/cli")));
     	podSpec.setInitContainers(initContainers);
-//    	container.addVolumeMountsItem(getVolumeMount("lifecycle", "/lifecycle"));
+    	container.addVolumeMountsItem(getVolumeMount("lifecycle", "/lifecycle"));
     	V1Lifecycle lifecycle = new V1Lifecycle();
         V1Handler preStopHandler = new V1Handler();
         V1ExecAction exec = new V1ExecAction();
@@ -126,11 +125,11 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
         preStopHandler.setExec(exec);
         lifecycle.setPreStop(preStopHandler);
         container.lifecycle(lifecycle);
-//        V1Volume lifecycleVol = getVolume("lifecyle");
-//        V1EmptyDirVolumeSource emptyDir = new V1EmptyDirVolumeSource();
+        V1Volume lifecycleVol = getVolume("lifecyle");
+        V1EmptyDirVolumeSource emptyDir = new V1EmptyDirVolumeSource();
 //        emptyDir.setMedium("");
-//        lifecycleVol.emptyDir(emptyDir);
-//        podSpec.addVolumesItem(lifecycleVol);
+        lifecycleVol.emptyDir(emptyDir);
+        podSpec.addVolumesItem(lifecycleVol);
         
     }
     
