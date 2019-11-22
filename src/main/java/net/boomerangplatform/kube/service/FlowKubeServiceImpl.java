@@ -112,6 +112,12 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
         V1ExecAction exec = new V1ExecAction();
         exec.addCommandItem("/bin/echo");
         exec.addCommandItem("Entered PreStop Lifecycle");
+        exec.addCommandItem("&&");
+        exec.addCommandItem("sleep");
+        exec.addCommandItem("10");
+        exec.addCommandItem("&&");
+        exec.addCommandItem("less");
+        exec.addCommandItem("/dev/termination-log");
         preStopHandler.setExec(exec);
         lifecycle.setPreStop(preStopHandler);
         container.lifecycle(lifecycle);
