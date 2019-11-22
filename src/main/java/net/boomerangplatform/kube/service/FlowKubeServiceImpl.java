@@ -126,7 +126,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
         preStopHandler.setExec(exec);
         lifecycle.setPreStop(preStopHandler);
         container.lifecycle(lifecycle);
-        V1Volume lifecycleVol = getVolume("lifecyle");
+        V1Volume lifecycleVol = getVolume("lifecycle");
         V1EmptyDirVolumeSource emptyDir = new V1EmptyDirVolumeSource();
 //        emptyDir.setMedium("");
         lifecycleVol.emptyDir(emptyDir);
