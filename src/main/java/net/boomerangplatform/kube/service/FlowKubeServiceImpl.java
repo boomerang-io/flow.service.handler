@@ -109,7 +109,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
     
     if (Optional.ofNullable(image).isPresent()) {
     	List<V1Container> initContainers = new ArrayList<>();
-    	V1Container initContainer = getContainer(null, "/bin/cp").name("init-worker").addVolumeMountsItem(getVolumeMount("lifecycle", "/lifecycle"))
+    	V1Container initContainer = getContainer(null, "/bin/cp").name("init-cntr").addVolumeMountsItem(getVolumeMount("lifecycle", "/lifecycle"))
     			.addCommandItem("-r")
     			.addCommandItem("-v")
     			.addCommandItem("/cli/")
@@ -120,13 +120,9 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
     	V1Lifecycle lifecycle = new V1Lifecycle();
         V1Handler preStopHandler = new V1Handler();
         V1ExecAction exec = new V1ExecAction();
-        exec.addCommandItem("cd");
-        exec.addCommandItem("/lifecycle");
-        exec.addCommandItem("&&");
-        exec.addCommandItem("node");
-        exec.addCommandItem("cli");
-        exec.addCommandItem("lifecycle");
-        exec.addCommandItem("setOutputProperty");
+        exec.addCommandItem("/bin/sh");
+        exec.addCommandItem("-c");
+        exec.addCommandItem("cd /lifecycle && node cli lifecycle setOutputProperty");
         preStopHandler.setExec(exec);
         lifecycle.setPreStop(preStopHandler);
         container.lifecycle(lifecycle);
