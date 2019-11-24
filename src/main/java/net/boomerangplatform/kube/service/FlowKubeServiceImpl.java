@@ -89,6 +89,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
     V1PodTemplateSpec templateSpec = new V1PodTemplateSpec();
     V1PodSpec podSpec = new V1PodSpec();
     V1Container container = getContainer(image, command);
+    List<V1Container> containerList = new ArrayList<>();
 
     List<V1EnvVar> envVars = new ArrayList<>();
     if (proxyEnabled) {
@@ -124,6 +125,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
     	lifecycleContainer.addArgsItem("lifecycle");
     	lifecycleContainer.addArgsItem("wait");
     	container.addVolumeMountsItem(getVolumeMount("lifecycle", "/lifecycle"));
+    	containerList.add(lifecycleContainer);
     	V1Lifecycle lifecycle = new V1Lifecycle();
     	V1Handler postStartHandler = new V1Handler();
     	V1ExecAction postStartexec = new V1ExecAction();
@@ -174,7 +176,6 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
       podSpec.serviceAccountName(kubeWorkerServiceAccount);
     }
 
-    List<V1Container> containerList = new ArrayList<>();
     containerList.add(container);
     podSpec.containers(containerList);
     V1LocalObjectReference imagePullSecret = new V1LocalObjectReference();
