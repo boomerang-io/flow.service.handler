@@ -122,7 +122,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
         V1ExecAction exec = new V1ExecAction();
         exec.addCommandItem("/bin/sh");
         exec.addCommandItem("-c");
-        exec.addCommandItem("cd /lifecycle/cli && curl --header \"Content-Type: application/json\" --data '{\"TEST\": \"Tyson is cool\"}' -X PATCH http://bmrg-flow-service-controller/controller/properties/set?workflowId=" + workflowId + "&workflowActivityId=" + activityId + "&taskId=" + taskId + "&taskName=" + taskName.replace(" ", ""));
+        exec.addCommandItem("cd /lifecycle/cli && apk add curl && curl --header \"Content-Type: application/json\" --data '{\"TEST\": \"Tyson is cool\"}' -X PATCH http://bmrg-flow-service-controller/controller/properties/set?workflowId=" + workflowId + "&workflowActivityId=" + activityId + "&taskId=" + taskId + "&taskName=" + taskName.replace(" ", ""));
         preStopHandler.setExec(exec);
         lifecycle.setPreStop(preStopHandler);
         container.lifecycle(lifecycle);
