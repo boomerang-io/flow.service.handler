@@ -95,6 +95,10 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
       envVars.addAll(createProxyEnvVars());
     }
     envVars.add(createEnvVar("DEBUG", kubeWorkerDebug.toString()));
+    envVars.add(createEnvVar("BMRG_WORKFLOW_ID", workflowId));
+    envVars.add(createEnvVar("BMRG_ACTIVITY_ID", activityId));
+    envVars.add(createEnvVar("BMRG_TASK_ID", taskId));
+    envVars.add(createEnvVar("BMRG_TASK_NAME", taskName.replace(" ", "")));
     container.env(envVars);
     container.args(arguments);
     if (!getPVCName(workflowId, activityId).isEmpty()) {
@@ -122,7 +126,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
         V1ExecAction exec = new V1ExecAction();
         exec.addCommandItem("/bin/sh");
         exec.addCommandItem("-c");
-        exec.addCommandItem("cd /lifecycle/cli && apk add curl && curl --header \"Content-Type: application/json\" --data '{\"TEST\": \"Tyson is cool\"}' -X PATCH http://bmrg-flow-service-controller/controller/properties/set?workflowId=" + workflowId + "&workflowActivityId=" + activityId + "&taskId=" + taskId + "&taskName=" + taskName.replace(" ", ""));
+        exec.addCommandItem("apk add curl && curl --header \"Content-Type: application/json\" --data '{\"TEST\": \"Tyson is cool\"}' -X PATCH http://bmrg-flow-service-controller/controller/properties/set?workflowId=" + workflowId + "&workflowActivityId=" + activityId + "&taskId=" + taskId + "&taskName=" + taskName.replace(" ", ""));
         preStopHandler.setExec(exec);
         lifecycle.setPreStop(preStopHandler);
         container.lifecycle(lifecycle);
