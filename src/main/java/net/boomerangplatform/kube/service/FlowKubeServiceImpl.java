@@ -112,22 +112,32 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
     }
     
     if (Optional.ofNullable(image).isPresent()) {
-    	List<V1Container> initContainers = new ArrayList<>();
-    	V1Container initContainer = getContainer(null, "/bin/cp").name("init-cntr").addVolumeMountsItem(getVolumeMount("lifecycle", "/lifecycle"))
-    			.addCommandItem("-r")
-    			.addCommandItem("-v")
-    			.addCommandItem("/cli/")
-    			.addCommandItem("/lifecycle");
-    	initContainers.add(initContainer);
-    	podSpec.setInitContainers(initContainers);
+//    	List<V1Container> initContainers = new ArrayList<>();
+//    	V1Container initContainer = getContainer(null, "/bin/cp").name("init-cntr").addVolumeMountsItem(getVolumeMount("lifecycle", "/lifecycle"))
+//    			.addCommandItem("-r")
+//    			.addCommandItem("-v")
+//    			.addCommandItem("/cli/")
+//    			.addCommandItem("/lifecycle");
+//    	initContainers.add(initContainer);
+//    	podSpec.setInitContainers(initContainers);
+    	V1Container lifecycleContainer = getContainer(null, null).name("lifecycle-cntr").addVolumeMountsItem(getVolumeMount("lifecycle", "/lifecycle"));
+    	lifecycleContainer.addArgsItem("lifecycle");
+    	lifecycleContainer.addArgsItem("wait");
     	container.addVolumeMountsItem(getVolumeMount("lifecycle", "/lifecycle"));
     	V1Lifecycle lifecycle = new V1Lifecycle();
+    	V1Handler postStartHandler = new V1Handler();
+    	V1ExecAction postStartexec = new V1ExecAction();
+    	postStartexec.addCommandItem("/bin/sh");
+    	postStartexec.addCommandItem("-c");
+    	postStartexec.addCommandItem("touch /lifecycle/lock");
+    	postStartHandler.setExec(postStartexec);
+        lifecycle.setPostStart(postStartHandler);
         V1Handler preStopHandler = new V1Handler();
-        V1ExecAction exec = new V1ExecAction();
-        exec.addCommandItem("/bin/sh");
-        exec.addCommandItem("-c");
-        exec.addCommandItem("apk add curl && curl --header \"Content-Type: application/json\" --data '{\"TEST\": \"Tyson is cool\"}' -X PATCH http://bmrg-flow-service-controller/controller/properties/set?workflowId=" + workflowId + "&workflowActivityId=" + activityId + "&taskId=" + taskId + "&taskName=" + taskName.replace(" ", ""));
-        preStopHandler.setExec(exec);
+        V1ExecAction preStopExec = new V1ExecAction();
+        preStopExec.addCommandItem("/bin/sh");
+        preStopExec.addCommandItem("-c");
+        preStopExec.addCommandItem("rm -f /lifecycle/lock");
+        preStopHandler.setExec(preStopExec);
         lifecycle.setPreStop(preStopHandler);
         container.lifecycle(lifecycle);
         V1Volume lifecycleVol = getVolume("lifecycle");
