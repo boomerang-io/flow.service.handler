@@ -12,6 +12,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
@@ -63,6 +64,9 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
   private static final String PREFIX_PVC = PREFIX + "-pvc";
 
   private static final Logger LOGGER = LogManager.getLogger(FlowKubeServiceImpl.class);
+
+  @Value("${kube.lifecycle.image}")
+  private String kubeLifecycleImage;
 
   @Override
   public String getPrefixJob() {
@@ -121,7 +125,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
 //    			.addCommandItem("/lifecycle");
 //    	initContainers.add(initContainer);
 //    	podSpec.setInitContainers(initContainers);
-    	V1Container lifecycleContainer = getContainer(null, null).name("lifecycle-cntr").addVolumeMountsItem(getVolumeMount("lifecycle", "/lifecycle"));
+    	V1Container lifecycleContainer = getContainer(kubeLifecycleImage, null).name("lifecycle-cntr").addVolumeMountsItem(getVolumeMount("lifecycle", "/lifecycle"));
     	lifecycleContainer.addArgsItem("lifecycle");
     	lifecycleContainer.addArgsItem("wait");
     	container.addVolumeMountsItem(getVolumeMount("lifecycle", "/lifecycle"));
