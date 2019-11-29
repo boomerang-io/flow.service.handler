@@ -220,11 +220,10 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
     do {
       LOGGER.info("Starting Job Watcher #" + loopCount + " for Task (" + taskId + ")...");
       try {
-//        watch = createJobWatch(getBatchApi(), labelSelector);
-//        jobResult = getJobResult(taskId, watch);
+    	Watch<V1Job> watch = createJobWatch(getBatchApi(), labelSelector);
         Watch<V1Pod> podWatch = createPodWatch(labelSelector, getCoreApi());
         V1Pod pod = getJobPod(podWatch);
-        LOGGER.info("--- Pod Status --- \n" + pod.getStatus());
+        jobResult = getJobResult(taskId, watch);
       } catch (ApiException | IOException e) {
         LOGGER.error("getWatch Exception: ", e);
         throw new KubeRuntimeException("Error createWatch", e);
@@ -258,17 +257,22 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
 	        for (V1ContainerStatus containerStatus : item.object.getStatus().getContainerStatuses()) {
 	          LOGGER.info("Container Status: " + containerStatus.toString() + "...");
 	          if ("worker-cntr".equalsIgnoreCase(containerStatus.getName()) && containerStatus.getState().getTerminated() != null) {
-//	        	  try {
-//        			  execJobLifecycle(name, "lifecycle-cntr");
-//	        	  } catch (Exception e) {
-//	        		  LOGGER.error("Lifecycle Execution Exception: ", e);
-//	        	        throw new KubeRuntimeException("Lifecycle Execution Exception", e);
-//	        	  }
 	        	  LOGGER.info("-----------------------------------------------");
-	        	  LOGGER.info("-----------------Ready to Exec-----------------");
+	        	  LOGGER.info("------- Executing Lifecycle Termination -------");
 	        	  LOGGER.info("-----------------------------------------------");
+	        	  try {
+        			  execJobLifecycle(name, "lifecycle-cntr");
+	        	  } catch (Exception e) {
+	        		  LOGGER.error("Lifecycle Execution Exception: ", e);
+	        	        throw new KubeRuntimeException("Lifecycle Execution Exception", e);
+	        	  }
+	        	  pod = item.object;
+	        	  break;
 	          }
 	        }
+        }
+        if (pod != null) {
+        	break;
         }
 //        if (!("pending".equalsIgnoreCase(phase) || "unknown".equalsIgnoreCase(phase))) {
 //          LOGGER.info("Pod " + name + " ready to stream logs...");
@@ -286,7 +290,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
 	    Exec exec = new Exec();
 	    exec.setApiClient(Configuration.getDefaultApiClient());
 //	    boolean tty = System.console() != null;
-	    String[] commands = new String[] {"/bin/sh", "-c", "ls -ltr"};
+	    String[] commands = new String[] {"node", "cli", "lifecycle", "terminate"};
 	    // final Process proc = exec.exec("default", "nginx-4217019353-k5sn9", new String[]
 	    //   {"sh", "-c", "echo foo"}, true, tty);
 	    LOGGER.info("Pod: " + podName + ", Container: " + containerName + ", Commands: " + commands);
@@ -312,23 +316,23 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
 //	            });
 //	    in.start();
 
-	    Thread out =
-	        new Thread(
-	            new Runnable() {
-	              public void run() {
-	                try {
-	                  ByteStreams.copy(proc.getInputStream(), System.out);
-	                } catch (IOException ex) {
-	                  ex.printStackTrace();
-	                }
-	              }
-	            });
-	    out.start();
+//	    Thread out =
+//	        new Thread(
+//	            new Runnable() {
+//	              public void run() {
+//	                try {
+//	                  ByteStreams.copy(proc.getInputStream(), System.out);
+//	                } catch (IOException ex) {
+//	                  ex.printStackTrace();
+//	                }
+//	              }
+//	            });
+//	    out.start();
 
 	    proc.waitFor();
 
 	    // wait for any last output; no need to wait for input thread
-	    out.join();
+//	    out.join();
 
 	    proc.destroy();
   }
