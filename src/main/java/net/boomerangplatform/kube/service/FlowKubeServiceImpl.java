@@ -282,7 +282,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
   private void execJobLifecycle(String podName, String containerName) throws ApiException, IOException, InterruptedException {
 	    Exec exec = new Exec();
 	    exec.setApiClient(getApiClient());
-	    boolean tty = System.console() != null;
+//	    boolean tty = System.console() != null;
 	    String[] commands = new String[] {"sh", "-c", "less /lifecycle/env"};
 	    // final Process proc = exec.exec("default", "nginx-4217019353-k5sn9", new String[]
 	    //   {"sh", "-c", "echo foo"}, true, tty);
@@ -292,21 +292,21 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
 	            podName,
 	            commands,
 	            containerName,
-	            true,
-	            tty);
+	            false,
+	            false);
 
-	    Thread in =
-	        new Thread(
-	            new Runnable() {
-	              public void run() {
-	                try {
-	                  ByteStreams.copy(System.in, proc.getOutputStream());
-	                } catch (IOException ex) {
-	                  ex.printStackTrace();
-	                }
-	              }
-	            });
-	    in.start();
+//	    Thread in =
+//	        new Thread(
+//	            new Runnable() {
+//	              public void run() {
+//	                try {
+//	                  ByteStreams.copy(System.in, proc.getOutputStream());
+//	                } catch (IOException ex) {
+//	                  ex.printStackTrace();
+//	                }
+//	              }
+//	            });
+//	    in.start();
 
 	    Thread out =
 	        new Thread(
