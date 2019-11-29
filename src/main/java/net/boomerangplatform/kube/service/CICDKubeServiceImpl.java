@@ -1,20 +1,24 @@
 package net.boomerangplatform.kube.service;
 
+import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
+import io.kubernetes.client.ApiException;
 import io.kubernetes.client.models.V1ConfigMap;
 import io.kubernetes.client.models.V1Container;
 import io.kubernetes.client.models.V1EnvVar;
@@ -29,6 +33,8 @@ import io.kubernetes.client.models.V1PodTemplateSpec;
 import io.kubernetes.client.models.V1ProjectedVolumeSource;
 import io.kubernetes.client.models.V1Volume;
 import io.kubernetes.client.models.V1VolumeProjection;
+import io.kubernetes.client.util.Watch;
+import net.boomerangplatform.kube.exception.KubeRuntimeException;
 
 @Service
 @Profile("cicd")
@@ -55,6 +61,9 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
   private static final String PREFIX_PVC = PREFIX + "-pvc";
 
   private static final Logger LOGGER = LogManager.getLogger(CICDKubeServiceImpl.class);
+
+  @Value("${kube.api.timeout}")
+  private Integer kubeApiTimeOut;
 
   @Override
   public String getPrefixJob() {
@@ -154,6 +163,36 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
     body.spec(jobSpec);
 
     return body;
+  }
+  
+  public V1Job watchJob(String workflowId, String workflowActivityId, String taskId) {
+    String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
+    Watch<V1Job> watch;
+    V1Job jobResult = null;
+
+    // Since upgrade to Java11 the watcher stops listening for events (irrespective of timeout) and
+    // does not throw exception.
+    // Loop will restart watcher based on our own timer
+    Integer loopCount = 1;
+    long endTime = System.nanoTime()
+        + TimeUnit.NANOSECONDS.convert(kubeApiTimeOut.longValue(), TimeUnit.SECONDS);
+    do {
+      LOGGER.info("Starting Job Watcher #" + loopCount + " for Task (" + taskId + ")...");
+      try {
+        watch = createJobWatch(getBatchApi(), labelSelector);
+        jobResult = getJobResult(taskId, watch);
+      } catch (ApiException | IOException e) {
+        LOGGER.error("getWatch Exception: ", e);
+        throw new KubeRuntimeException("Error createWatch", e);
+      }
+      loopCount++;
+    } while (System.nanoTime() < endTime && jobResult == null);
+    if (jobResult == null) {
+      // Final catch for a timeout and job still not complete.
+      throw new KubeRuntimeException(
+          "Task (" + taskId + ") has exceeded the maximum duration triggering failure.");
+    } 
+    return jobResult;
   }
 
   protected V1ConfigMap createTaskConfigMapBody(String componentName, String componentId,

@@ -193,6 +193,8 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
 
   protected abstract V1ConfigMap createWorkflowConfigMapBody(String workflowName, String workflowId,
       String workflowActivityId, Map<String, String> inputProps);
+  
+  public abstract V1Job watchJob(String workflowId, String workflowActivityId, String taskId);
 
   public abstract String getPrefixJob();
 
@@ -255,37 +257,6 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
       }
     }
 
-    return jobResult;
-  }
-
-  @Override
-  public V1Job watchJob(String workflowId, String workflowActivityId, String taskId) {
-    String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
-    Watch<V1Job> watch;
-    V1Job jobResult = null;
-
-    // Since upgrade to Java11 the watcher stops listening for events (irrespective of timeout) and
-    // does not throw exception.
-    // Loop will restart watcher based on our own timer
-    Integer loopCount = 1;
-    long endTime = System.nanoTime()
-        + TimeUnit.NANOSECONDS.convert(kubeApiTimeOut.longValue(), TimeUnit.SECONDS);
-    do {
-      LOGGER.info("Starting Job Watcher #" + loopCount + " for Task (" + taskId + ")...");
-      try {
-        watch = createJobWatch(getBatchApi(), labelSelector);
-        jobResult = getJobResult(taskId, watch);
-      } catch (ApiException | IOException e) {
-        LOGGER.error("getWatch Exception: ", e);
-        throw new KubeRuntimeException("Error createWatch", e);
-      }
-      loopCount++;
-    } while (System.nanoTime() < endTime && jobResult == null);
-    if (jobResult == null) {
-      // Final catch for a timeout and job still not complete.
-      throw new KubeRuntimeException(
-          "Task (" + taskId + ") has exceeded the maximum duration triggering failure.");
-    }
     return jobResult;
   }
 
@@ -775,7 +746,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
 
   }
 
-  private Watch<V1Job> createJobWatch(BatchV1Api api, String labelSelector) throws ApiException {
+  protected Watch<V1Job> createJobWatch(BatchV1Api api, String labelSelector) throws ApiException {
     return Watch.createWatch(createWatcherApiClient(),
         api.listNamespacedJobCall(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null,
             null, labelSelector, null, null, null, true, null, null),
@@ -790,7 +761,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   }
 
 
-  private V1Job getJobResult(String taskId, Watch<V1Job> watch) throws IOException {
+  protected V1Job getJobResult(String taskId, Watch<V1Job> watch) throws IOException {
     V1Job jobResult = null;
     try {
       jobResult = getJob(taskId, watch);

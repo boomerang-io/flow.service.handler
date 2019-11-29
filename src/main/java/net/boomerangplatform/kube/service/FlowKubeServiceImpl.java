@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -21,6 +22,7 @@ import io.kubernetes.client.ApiException;
 import io.kubernetes.client.PodLogs;
 import io.kubernetes.client.models.V1ConfigMap;
 import io.kubernetes.client.models.V1Container;
+import io.kubernetes.client.models.V1ContainerStatus;
 import io.kubernetes.client.models.V1EmptyDirVolumeSource;
 import io.kubernetes.client.models.V1EnvVar;
 import io.kubernetes.client.models.V1ExecAction;
@@ -31,6 +33,7 @@ import io.kubernetes.client.models.V1Lifecycle;
 import io.kubernetes.client.models.V1LocalObjectReference;
 import io.kubernetes.client.models.V1PersistentVolumeClaimVolumeSource;
 import io.kubernetes.client.models.V1Pod;
+import io.kubernetes.client.models.V1PodCondition;
 import io.kubernetes.client.models.V1PodSpec;
 import io.kubernetes.client.models.V1PodTemplateSpec;
 import io.kubernetes.client.models.V1ProjectedVolumeSource;
@@ -67,6 +70,9 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
 
   @Value("${kube.lifecycle.image}")
   private String kubeLifecycleImage;
+
+  @Value("${kube.api.timeout}")
+  private Integer kubeApiTimeOut;
 
   @Override
   public String getPrefixJob() {
@@ -150,6 +156,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
         V1EmptyDirVolumeSource emptyDir = new V1EmptyDirVolumeSource();
         lifecycleVol.emptyDir(emptyDir);
         podSpec.addVolumesItem(lifecycleVol);
+        container.addArgsItem("");
     }
     
     container.addVolumeMountsItem(getVolumeMount(PREFIX_VOL_PROPS, "/props"));
@@ -199,6 +206,67 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
     body.spec(jobSpec);
 
     return body;
+  }
+  
+  public V1Job watchJob(String workflowId, String workflowActivityId, String taskId) {
+    String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
+    V1Job jobResult = null;
+
+    // Since upgrade to Java11 the watcher stops listening for events (irrespective of timeout) and
+    // does not throw exception.
+    // Loop will restart watcher based on our own timer
+    Integer loopCount = 1;
+    long endTime = System.nanoTime()
+        + TimeUnit.NANOSECONDS.convert(kubeApiTimeOut.longValue(), TimeUnit.SECONDS);
+    do {
+      LOGGER.info("Starting Job Watcher #" + loopCount + " for Task (" + taskId + ")...");
+      try {
+//        watch = createJobWatch(getBatchApi(), labelSelector);
+//        jobResult = getJobResult(taskId, watch);
+        Watch<V1Pod> podWatch = createPodWatch(labelSelector, getCoreApi());
+        V1Pod pod = getJobPod(podWatch);
+        LOGGER.info("--- Pod Status --- \n" + pod.getStatus());
+      } catch (ApiException | IOException e) {
+        LOGGER.error("getWatch Exception: ", e);
+        throw new KubeRuntimeException("Error createWatch", e);
+      }
+      loopCount++;
+    } while (System.nanoTime() < endTime && jobResult == null);
+    if (jobResult == null) {
+      // Final catch for a timeout and job still not complete.
+      throw new KubeRuntimeException(
+          "Task (" + taskId + ") has exceeded the maximum duration triggering failure.");
+    } 
+    return jobResult;
+  }
+
+  private V1Pod getJobPod(Watch<V1Pod> watch) throws IOException {
+    V1Pod pod = null;
+    try {
+      for (Watch.Response<V1Pod> item : watch) {
+
+        String name = item.object.getMetadata().getName();
+        LOGGER.info("Pod: " + name + "...");
+        LOGGER.info("Pod Start Time: " + item.object.getStatus().getStartTime() + "...");
+        String phase = item.object.getStatus().getPhase();
+        LOGGER.info("Pod Phase: " + phase + "...");
+        for (V1PodCondition condition : item.object.getStatus().getConditions()) {
+          LOGGER.info("Pod Condition: " + condition.toString() + "...");
+        }
+        for (V1ContainerStatus containerStatus : item.object.getStatus().getContainerStatuses()) {
+          LOGGER.info("Container Status: " + containerStatus.toString() + "...");
+        }
+
+        if (!("pending".equalsIgnoreCase(phase) || "unknown".equalsIgnoreCase(phase))) {
+          LOGGER.info("Pod " + name + " ready to stream logs...");
+          pod = item.object;
+          break;
+        }
+      }
+    } finally {
+      watch.close();
+    }
+    return pod;
   }
 
   protected V1ConfigMap createTaskConfigMapBody(String workflowName, String workflowId,
