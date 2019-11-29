@@ -963,4 +963,8 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   void setApiClient(ApiClient apiClient) {
     this.apiClient = apiClient;
   }
+  
+  public ApiClient getApiClient() {
+    return this.apiClient;
+  }
 }

@@ -28,11 +28,8 @@ import io.kubernetes.client.models.V1Container;
 import io.kubernetes.client.models.V1ContainerStatus;
 import io.kubernetes.client.models.V1EmptyDirVolumeSource;
 import io.kubernetes.client.models.V1EnvVar;
-import io.kubernetes.client.models.V1ExecAction;
-import io.kubernetes.client.models.V1Handler;
 import io.kubernetes.client.models.V1Job;
 import io.kubernetes.client.models.V1JobSpec;
-import io.kubernetes.client.models.V1Lifecycle;
 import io.kubernetes.client.models.V1LocalObjectReference;
 import io.kubernetes.client.models.V1PersistentVolumeClaimVolumeSource;
 import io.kubernetes.client.models.V1Pod;
@@ -284,6 +281,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
   
   private void execJobLifecycle(String podName, String containerName) throws ApiException, IOException, InterruptedException {
 	    Exec exec = new Exec();
+	    exec.setApiClient(getApiClient());
 	    String[] commands = new String[] {"sh", "-c", "less /lifecycle/env"};
 	    // final Process proc = exec.exec("default", "nginx-4217019353-k5sn9", new String[]
 	    //   {"sh", "-c", "echo foo"}, true, tty);
