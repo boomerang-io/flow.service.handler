@@ -18,7 +18,10 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
+import com.google.common.io.ByteStreams;
+
 import io.kubernetes.client.ApiException;
+import io.kubernetes.client.Exec;
 import io.kubernetes.client.PodLogs;
 import io.kubernetes.client.models.V1ConfigMap;
 import io.kubernetes.client.models.V1Container;
@@ -258,18 +261,75 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
         if (item.object.getStatus().getContainerStatuses() != null) {
 	        for (V1ContainerStatus containerStatus : item.object.getStatus().getContainerStatuses()) {
 	          LOGGER.info("Container Status: " + containerStatus.toString() + "...");
+	          if ("worker-cntr".equalsIgnoreCase(containerStatus.getName()) && containerStatus.getState().getTerminated() != null) {
+	        	  try {
+        			  execJobLifecycle(name, "lifecycle-cntr");
+	        	  } catch (Exception e) {
+	        		  LOGGER.error("Lifecycle Execution Exception: ", e);
+	        	        throw new KubeRuntimeException("Lifecycle Execution Exception", e);
+	        	  }
+	        	  
+	          }
 	        }
         }
-        if (!("pending".equalsIgnoreCase(phase) || "unknown".equalsIgnoreCase(phase))) {
-          LOGGER.info("Pod " + name + " ready to stream logs...");
-          pod = item.object;
-          break;
-        }
+//        if (!("pending".equalsIgnoreCase(phase) || "unknown".equalsIgnoreCase(phase))) {
+//          LOGGER.info("Pod " + name + " ready to stream logs...");
+//          pod = item.object;
+//          break;
+//        }
       }
     } finally {
       watch.close();
     }
     return pod;
+  }
+  
+  private void execJobLifecycle(String podName, String containerName) throws ApiException, IOException, InterruptedException {
+	    Exec exec = new Exec();
+	    String[] commands = new String[] {"sh", "-c", "less /lifecycle/env"};
+	    // final Process proc = exec.exec("default", "nginx-4217019353-k5sn9", new String[]
+	    //   {"sh", "-c", "echo foo"}, true, tty);
+	    final Process proc =
+	        exec.exec(
+	        	kubeNamespace,
+	            podName,
+	            commands,
+	            containerName,
+	            true,
+	            false);
+
+	    Thread in =
+	        new Thread(
+	            new Runnable() {
+	              public void run() {
+	                try {
+	                  ByteStreams.copy(System.in, proc.getOutputStream());
+	                } catch (IOException ex) {
+	                  ex.printStackTrace();
+	                }
+	              }
+	            });
+	    in.start();
+
+	    Thread out =
+	        new Thread(
+	            new Runnable() {
+	              public void run() {
+	                try {
+	                  ByteStreams.copy(proc.getInputStream(), System.out);
+	                } catch (IOException ex) {
+	                  ex.printStackTrace();
+	                }
+	              }
+	            });
+	    out.start();
+
+	    proc.waitFor();
+
+	    // wait for any last output; no need to wait for input thread
+	    out.join();
+
+	    proc.destroy();
   }
 
   protected V1ConfigMap createTaskConfigMapBody(String workflowName, String workflowId,
