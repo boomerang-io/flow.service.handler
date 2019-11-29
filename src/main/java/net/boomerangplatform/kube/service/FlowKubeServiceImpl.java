@@ -255,10 +255,11 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
 	          LOGGER.info("Pod Condition: " + condition.toString() + "...");
 	        }
         }
-        for (V1ContainerStatus containerStatus : item.object.getStatus().getContainerStatuses()) {
-          LOGGER.info("Container Status: " + containerStatus.toString() + "...");
+        if (item.object.getStatus().getContainerStatuses() != null) {
+	        for (V1ContainerStatus containerStatus : item.object.getStatus().getContainerStatuses()) {
+	          LOGGER.info("Container Status: " + containerStatus.toString() + "...");
+	        }
         }
-
         if (!("pending".equalsIgnoreCase(phase) || "unknown".equalsIgnoreCase(phase))) {
           LOGGER.info("Pod " + name + " ready to stream logs...");
           pod = item.object;
