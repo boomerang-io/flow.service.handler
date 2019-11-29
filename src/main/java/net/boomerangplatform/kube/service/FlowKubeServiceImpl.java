@@ -258,13 +258,15 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
 	        for (V1ContainerStatus containerStatus : item.object.getStatus().getContainerStatuses()) {
 	          LOGGER.info("Container Status: " + containerStatus.toString() + "...");
 	          if ("worker-cntr".equalsIgnoreCase(containerStatus.getName()) && containerStatus.getState().getTerminated() != null) {
-	        	  try {
-        			  execJobLifecycle(name, "lifecycle-cntr");
-	        	  } catch (Exception e) {
-	        		  LOGGER.error("Lifecycle Execution Exception: ", e);
-	        	        throw new KubeRuntimeException("Lifecycle Execution Exception", e);
-	        	  }
-	        	  
+//	        	  try {
+//        			  execJobLifecycle(name, "lifecycle-cntr");
+//	        	  } catch (Exception e) {
+//	        		  LOGGER.error("Lifecycle Execution Exception: ", e);
+//	        	        throw new KubeRuntimeException("Lifecycle Execution Exception", e);
+//	        	  }
+	        	  LOGGER.info("-----------------------------------------------");
+	        	  LOGGER.info("-----------------Ready to Exec-----------------");
+	        	  LOGGER.info("-----------------------------------------------");
 	          }
 	        }
         }
