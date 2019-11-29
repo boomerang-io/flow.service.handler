@@ -250,8 +250,10 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
         LOGGER.info("Pod Start Time: " + item.object.getStatus().getStartTime() + "...");
         String phase = item.object.getStatus().getPhase();
         LOGGER.info("Pod Phase: " + phase + "...");
-        for (V1PodCondition condition : item.object.getStatus().getConditions()) {
-          LOGGER.info("Pod Condition: " + condition.toString() + "...");
+        if (item.object.getStatus().getConditions() != null) {
+	        for (V1PodCondition condition : item.object.getStatus().getConditions()) {
+	          LOGGER.info("Pod Condition: " + condition.toString() + "...");
+	        }
         }
         for (V1ContainerStatus containerStatus : item.object.getStatus().getContainerStatuses()) {
           LOGGER.info("Container Status: " + containerStatus.toString() + "...");
