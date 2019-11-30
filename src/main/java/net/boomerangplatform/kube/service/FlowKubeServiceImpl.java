@@ -294,7 +294,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
 	    String[] commands = new String[] {"node", "cli", "lifecycle", "terminate"};
 	    // final Process proc = exec.exec("default", "nginx-4217019353-k5sn9", new String[]
 	    //   {"sh", "-c", "echo foo"}, true, tty);
-	    LOGGER.info("Pod: " + podName + ", Container: " + containerName + ", Commands: " + commands);
+	    LOGGER.info("Pod: " + podName + ", Container: " + containerName + ", Commands: " + commands.toString());
 	    final Process proc =
 	        exec.exec(
 	        	kubeNamespace,
@@ -317,23 +317,23 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
 //	            });
 //	    in.start();
 
-//	    Thread out =
-//	        new Thread(
-//	            new Runnable() {
-//	              public void run() {
-//	                try {
-//	                  ByteStreams.copy(proc.getInputStream(), System.out);
-//	                } catch (IOException ex) {
-//	                  ex.printStackTrace();
-//	                }
-//	              }
-//	            });
-//	    out.start();
+	    Thread out =
+	        new Thread(
+	            new Runnable() {
+	              public void run() {
+	                try {
+	                  ByteStreams.copy(proc.getInputStream(), System.out);
+	                } catch (IOException ex) {
+	                  ex.printStackTrace();
+	                }
+	              }
+	            });
+	    out.start();
 
 	    proc.waitFor();
 
 	    // wait for any last output; no need to wait for input thread
-//	    out.join();
+	    out.join();
 
 	    proc.destroy();
   }
