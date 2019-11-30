@@ -272,6 +272,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
 	        }
         }
         if (pod != null) {
+        	LOGGER.info("Exiting Lifecycle Termination");
         	break;
         }
 //        if (!("pending".equalsIgnoreCase(phase) || "unknown".equalsIgnoreCase(phase))) {

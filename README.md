@@ -10,6 +10,14 @@ When writing new controller integrations, it is recommended to look through the 
 
 When running the service locally you need access to a kubernetes API endpoint
 
+## RBAC
+
+The controller and the workers need to run with special RBAC for their specific actions.
+
+### Verification
+
+`kubectl auth can-i create pods/exec --as=system:serviceaccount:bmrg-dev:bmrg-flow-controller`
+
 ## References
 
 ### Kubernetes Java Client
