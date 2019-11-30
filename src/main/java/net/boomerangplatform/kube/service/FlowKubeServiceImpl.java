@@ -3,6 +3,7 @@ package net.boomerangplatform.kube.service;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -292,9 +293,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
 	    exec.setApiClient(Configuration.getDefaultApiClient());
 //	    boolean tty = System.console() != null;
 	    String[] commands = new String[] {"node", "cli", "lifecycle", "terminate"};
-	    // final Process proc = exec.exec("default", "nginx-4217019353-k5sn9", new String[]
-	    //   {"sh", "-c", "echo foo"}, true, tty);
-	    LOGGER.info("Pod: " + podName + ", Container: " + containerName + ", Commands: " + commands.toString());
+	    LOGGER.info("Pod: " + podName + ", Container: " + containerName + ", Commands: " + Arrays.toString(commands));
 	    final Process proc =
 	        exec.exec(
 	        	kubeNamespace,
@@ -331,10 +330,8 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
 	    out.start();
 
 	    proc.waitFor();
-
 	    // wait for any last output; no need to wait for input thread
 	    out.join();
-
 	    proc.destroy();
   }
 
