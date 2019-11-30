@@ -292,7 +292,8 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
 	    Exec exec = new Exec();
 	    exec.setApiClient(Configuration.getDefaultApiClient());
 //	    boolean tty = System.console() != null;
-	    String[] commands = new String[] {"node", "cli", "lifecycle", "terminate"};
+//	    String[] commands = new String[] {"node", "cli", "lifecycle", "terminate"};
+	    String[] commands = new String[] {"/bin/sh", "-c", "rm -f /lifecycle/lock && ls -ltr /lifecycle"};
 	    LOGGER.info("Pod: " + podName + ", Container: " + containerName + ", Commands: " + Arrays.toString(commands));
 	    final Process proc =
 	        exec.exec(
