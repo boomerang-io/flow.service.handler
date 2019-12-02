@@ -66,6 +66,9 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
 
   @Value("${kube.api.timeout}")
   private Integer kubeApiTimeOut;
+  
+  @Value("${kube.resource.limit.ephemeral-storage}")
+  private Integer kubeResourceLimitEphemeralStorage;
 
   @Override
   public String getPrefixJob() {
@@ -102,7 +105,7 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
     container.env(envVars);
     container.args(arguments);
     V1ResourceRequirements resources = new V1ResourceRequirements();
-    resources.putLimitsItem("ephemeral-storage", new Quantity("10Gi"));
+    resources.putLimitsItem("ephemeral-storage", new Quantity(kubeResourceLimitEphemeralStorage));
     container.setResources(resources);
     if (checkPVCExists(componentId, null, null, true)) {
       container.addVolumeMountsItem(getVolumeMount(PREFIX_VOL_DATA, "/cache"));
