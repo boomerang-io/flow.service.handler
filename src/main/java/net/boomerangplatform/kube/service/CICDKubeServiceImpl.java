@@ -68,7 +68,7 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
   private Integer kubeApiTimeOut;
   
   @Value("${kube.resource.limit.ephemeral-storage}")
-  private Integer kubeResourceLimitEphemeralStorage;
+  private String kubeResourceLimitEphemeralStorage;
 
   @Override
   public String getPrefixJob() {
