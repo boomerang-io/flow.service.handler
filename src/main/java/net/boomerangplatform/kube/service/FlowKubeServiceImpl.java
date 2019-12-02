@@ -134,6 +134,10 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
     	V1Container lifecycleContainer = getContainer(kubeLifecycleImage, null).name("lifecycle-cntr").addVolumeMountsItem(getVolumeMount("lifecycle", "/lifecycle"));
     	lifecycleContainer.addArgsItem("lifecycle");
     	lifecycleContainer.addArgsItem("wait");
+    	lifecycleContainer.addEnvItem(createEnvVar("BMRG_WORKFLOW_ID", workflowId));
+    	lifecycleContainer.addEnvItem(createEnvVar("BMRG_ACTIVITY_ID", activityId));
+    	lifecycleContainer.addEnvItem(createEnvVar("BMRG_TASK_ID", taskId));
+    	lifecycleContainer.addEnvItem(createEnvVar("BMRG_TASK_NAME", taskName.replace(" ", "")));
     	container.addVolumeMountsItem(getVolumeMount("lifecycle", "/lifecycle"));
     	containerList.add(lifecycleContainer);
 //    	V1Lifecycle lifecycle = new V1Lifecycle();

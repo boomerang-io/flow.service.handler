@@ -19,6 +19,7 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
 import io.kubernetes.client.ApiException;
+import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.models.V1ConfigMap;
 import io.kubernetes.client.models.V1Container;
 import io.kubernetes.client.models.V1EnvVar;
@@ -31,6 +32,7 @@ import io.kubernetes.client.models.V1PersistentVolumeClaimVolumeSource;
 import io.kubernetes.client.models.V1PodSpec;
 import io.kubernetes.client.models.V1PodTemplateSpec;
 import io.kubernetes.client.models.V1ProjectedVolumeSource;
+import io.kubernetes.client.models.V1ResourceRequirements;
 import io.kubernetes.client.models.V1Volume;
 import io.kubernetes.client.models.V1VolumeProjection;
 import io.kubernetes.client.util.Watch;
@@ -99,6 +101,9 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
     envVars.add(createEnvVar("CI", "true"));
     container.env(envVars);
     container.args(arguments);
+    V1ResourceRequirements resources = new V1ResourceRequirements();
+    resources.putLimitsItem("ephemeral-storage", new Quantity("10Gi"));
+    container.setResources(resources);
     if (checkPVCExists(componentId, null, null, true)) {
       container.addVolumeMountsItem(getVolumeMount(PREFIX_VOL_DATA, "/cache"));
       V1Volume workerVolume = getVolume(PREFIX_VOL_DATA);
