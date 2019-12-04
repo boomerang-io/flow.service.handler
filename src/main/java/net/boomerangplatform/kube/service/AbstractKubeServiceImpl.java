@@ -494,7 +494,17 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     String jobName = getJobName(workflowId, workflowActivityId, taskId);
     if (!jobName.isEmpty()) {
       try {
-        result = getBatchApi().deleteNamespacedJob(jobName, kubeNamespace, kubeApiPretty, deleteOptions, null, null, null, null);
+        result = getBatchApi().deleteNamespacedJob(jobName, kubeNamespace, kubeApiPretty, deleteOptions, null, null, null, "Foreground");
+      } catch (JsonSyntaxException e) {
+    	if (e.getCause() instanceof IllegalStateException) {
+          IllegalStateException ise = (IllegalStateException) e.getCause();
+          if (ise.getMessage() != null
+              && ise.getMessage().contains("Expected a string but was BEGIN_OBJECT")) {
+            LOGGER.error(
+                "Catching exception because of issue https://github.com/kubernetes-client/java/issues/86");
+          }
+          LOGGER.error("Exception when running deletePVC()", e);
+        }
       } catch (ApiException e) {
         LOGGER.error("Exception when running deleteJob()", e);
       }
