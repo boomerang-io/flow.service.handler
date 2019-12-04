@@ -468,19 +468,20 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     return result;
   }
   
-  protected String getJobName(String workflowId, String workflowActivityId, String taskId) {
+  protected String getJobName(boolean onlyOnSuccess, String workflowId, String workflowActivityId, String taskId) {
 	    String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
 
 	    try {
 	    	V1JobList listOfJobs =
 	    	          getBatchApi().listNamespacedJob(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty,
 	    	              null, null, labelSelector, null, null, TIMEOUT_ONE_MINUTE, false);
-	    	listOfJobs.getItems().forEach(job -> {
-	        LOGGER.info(" Job Name: " + job.getMetadata().getName());
-	      });
-	      if (!listOfJobs.getItems().isEmpty()
-	          && listOfJobs.getItems().get(0).getMetadata().getName() != null) {
-	        return listOfJobs.getItems().get(0).getMetadata().getName();
+	      if (!listOfJobs.getItems().isEmpty()) {
+		    	Optional<V1Job> job = listOfJobs.getItems().stream()
+	    		.filter(item -> (onlyOnSuccess && item.getStatus().getSucceeded() == 1) || !onlyOnSuccess)
+	    		.findFirst();
+		    	String jobName = job.isPresent() ? job.get().getMetadata().getName() : "";
+		    	LOGGER.info(" Job Name: " + jobName);
+		    	return jobName;
 	      }
 	    } catch (ApiException e) {
 	      LOGGER.error(EXCEPTION, e);
@@ -493,7 +494,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     V1DeleteOptions deleteOptions = new V1DeleteOptions();
     deleteOptions.setPropagationPolicy("Background");
     V1Status result = new V1Status();
-    String jobName = getJobName(workflowId, workflowActivityId, taskId);
+    String jobName = getJobName(true, workflowId, workflowActivityId, taskId);
     if (!jobName.isEmpty()) {
       try {
         result = getBatchApi().deleteNamespacedJob(jobName, kubeNamespace, kubeApiPretty, deleteOptions, null, null, null, null);
