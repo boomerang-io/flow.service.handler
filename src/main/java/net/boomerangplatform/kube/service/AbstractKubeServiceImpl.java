@@ -59,6 +59,7 @@ import io.kubernetes.client.models.V1ContainerStatus;
 import io.kubernetes.client.models.V1DeleteOptions;
 import io.kubernetes.client.models.V1EnvVar;
 import io.kubernetes.client.models.V1Job;
+import io.kubernetes.client.models.V1JobList;
 import io.kubernetes.client.models.V1JobStatus;
 import io.kubernetes.client.models.V1ObjectMeta;
 import io.kubernetes.client.models.V1PersistentVolumeClaim;
@@ -461,6 +462,41 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
         }
       } catch (ApiException e) {
         LOGGER.error("Exception when running deletePVC()", e);
+      }
+    }
+    return result;
+  }
+  
+  protected String getJobName(String workflowId, String workflowActivityId, String taskId) {
+	    String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
+
+	    try {
+	    	V1JobList listOfJobs =
+	    	          getBatchApi().listNamespacedJob(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty,
+	    	              null, null, labelSelector, null, null, TIMEOUT_ONE_MINUTE, false);
+	    	listOfJobs.getItems().forEach(job -> {
+	        LOGGER.info(" Job Name: " + job.getMetadata().getName());
+	      });
+	      if (!listOfJobs.getItems().isEmpty()
+	          && listOfJobs.getItems().get(0).getMetadata().getName() != null) {
+	        return listOfJobs.getItems().get(0).getMetadata().getName();
+	      }
+	    } catch (ApiException e) {
+	      LOGGER.error(EXCEPTION, e);
+	    }
+	    return "";
+	  }
+  
+  @Override
+  public V1Status deleteJob(String workflowId, String workflowActivityId, String taskId) {
+    V1DeleteOptions deleteOptions = new V1DeleteOptions();
+    V1Status result = new V1Status();
+    String jobName = getJobName(workflowId, workflowActivityId, taskId);
+    if (!jobName.isEmpty()) {
+      try {
+        result = getBatchApi().deleteNamespacedJob(jobName, kubeNamespace, kubeApiPretty, deleteOptions, null, null, null, null);
+      } catch (ApiException e) {
+        LOGGER.error("Exception when running deleteJob()", e);
       }
     }
     return result;

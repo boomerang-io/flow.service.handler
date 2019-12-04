@@ -76,4 +76,6 @@ public interface AbstractKubeService {
       String taskName,
       Map<String, String> properties);
 
+V1Status deleteJob(String workflowId,String workflowActivityId,String taskId);
+
 }

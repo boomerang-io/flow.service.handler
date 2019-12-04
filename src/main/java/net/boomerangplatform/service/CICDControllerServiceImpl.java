@@ -8,6 +8,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
@@ -28,6 +29,9 @@ public class CICDControllerServiceImpl implements ControllerService {
   private static final String EXCEPTION = "Exception: ";
 
   private static final Logger LOGGER = LogManager.getLogger(CICDControllerServiceImpl.class);
+
+  @Value("${kube.worker.job.deletion}")
+  protected Boolean kubeWorkerJobDeletion;
 
   @Autowired
   private CICDKubeServiceImpl kubeService;
@@ -95,8 +99,10 @@ public class CICDControllerServiceImpl implements ControllerService {
       response.setMessage(e.toString());
       LOGGER.info("DEBUG::Task Is Being Set as Failed");
     } finally {
-      kubeService.deleteConfigMap(task.getWorkflowId(), task.getWorkflowActivityId(),
-          task.getTaskId());
+      kubeService.deleteConfigMap(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
+      if (kubeWorkerJobDeletion) {
+	      kubeService.deleteJob(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
+      }
     }
     return response;
   }
