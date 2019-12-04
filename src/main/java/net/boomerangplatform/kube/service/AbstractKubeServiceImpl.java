@@ -477,7 +477,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
 	    	              null, null, labelSelector, null, null, TIMEOUT_ONE_MINUTE, false);
 	      if (!listOfJobs.getItems().isEmpty()) {
 		    	Optional<V1Job> job = listOfJobs.getItems().stream()
-	    		.filter(item -> (onlyOnSuccess && item.getStatus().getSucceeded() == 1) || !onlyOnSuccess)
+	    		.filter(item -> (onlyOnSuccess && item.getStatus().getSucceeded() != null) || !onlyOnSuccess)
 	    		.findFirst();
 		    	String jobName = job.isPresent() ? job.get().getMetadata().getName() : "";
 		    	LOGGER.info(" Job Name: " + jobName);
