@@ -457,8 +457,9 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
               && ise.getMessage().contains("Expected a string but was BEGIN_OBJECT")) {
             LOGGER.error(
                 "Catching exception because of issue https://github.com/kubernetes-client/java/issues/86");
+          } else {
+        	  LOGGER.error("Exception when running deleteJob()", e);
           }
-          LOGGER.error("Exception when running deletePVC()", e);
         }
       } catch (ApiException e) {
         LOGGER.error("Exception when running deletePVC()", e);
@@ -490,11 +491,12 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   @Override
   public V1Status deleteJob(String workflowId, String workflowActivityId, String taskId) {
     V1DeleteOptions deleteOptions = new V1DeleteOptions();
+    deleteOptions.setPropagationPolicy("Background");
     V1Status result = new V1Status();
     String jobName = getJobName(workflowId, workflowActivityId, taskId);
     if (!jobName.isEmpty()) {
       try {
-        result = getBatchApi().deleteNamespacedJob(jobName, kubeNamespace, kubeApiPretty, deleteOptions, null, null, null, "Foreground");
+        result = getBatchApi().deleteNamespacedJob(jobName, kubeNamespace, kubeApiPretty, deleteOptions, null, null, null, null);
       } catch (JsonSyntaxException e) {
     	if (e.getCause() instanceof IllegalStateException) {
           IllegalStateException ise = (IllegalStateException) e.getCause();
@@ -502,8 +504,9 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
               && ise.getMessage().contains("Expected a string but was BEGIN_OBJECT")) {
             LOGGER.error(
                 "Catching exception because of issue https://github.com/kubernetes-client/java/issues/86");
+          } else {
+        	  LOGGER.error("Exception when running deleteJob()", e);
           }
-          LOGGER.error("Exception when running deletePVC()", e);
         }
       } catch (ApiException e) {
         LOGGER.error("Exception when running deleteJob()", e);
