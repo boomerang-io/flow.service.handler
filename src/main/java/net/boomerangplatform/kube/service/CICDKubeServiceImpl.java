@@ -22,6 +22,7 @@ import io.kubernetes.client.ApiException;
 import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.models.V1ConfigMap;
 import io.kubernetes.client.models.V1Container;
+import io.kubernetes.client.models.V1EmptyDirVolumeSource;
 import io.kubernetes.client.models.V1EnvVar;
 import io.kubernetes.client.models.V1HostAlias;
 import io.kubernetes.client.models.V1Job;
@@ -57,6 +58,8 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
   protected static final String PREFIX_VOL = PREFIX + "-vol";
 
   protected static final String PREFIX_VOL_DATA = PREFIX_VOL + "-data";
+  
+  protected static final String PREFIX_VOL_CACHE = PREFIX_VOL + "-cache";
 
   protected static final String PREFIX_VOL_PROPS = PREFIX_VOL + "-props";
 
@@ -72,6 +75,9 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
   
   @Value("${kube.resource.request.ephemeral-storage}")
   private String kubeResourceRequestEphemeralStorage;
+  
+  @Value("${kube.worker.storage.medium.memory}")
+  private Boolean kubeWorkerStorageMediumMemory;
 
   @Override
   public String getPrefixJob() {
@@ -112,8 +118,8 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
 //    resources.putRequestsItem("ephemeral-storage", new Quantity(kubeResourceRequestEphemeralStorage));
     container.setResources(resources);
     if (checkPVCExists(componentId, null, null, true)) {
-      container.addVolumeMountsItem(getVolumeMount(PREFIX_VOL_DATA, "/cache"));
-      V1Volume workerVolume = getVolume(PREFIX_VOL_DATA);
+      container.addVolumeMountsItem(getVolumeMount(PREFIX_VOL_CACHE, "/cache"));
+      V1Volume workerVolume = getVolume(PREFIX_VOL_CACHE);
       V1PersistentVolumeClaimVolumeSource workerVolumePVCSource =
           new V1PersistentVolumeClaimVolumeSource();
       workerVolume
@@ -121,6 +127,15 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
       podSpec.addVolumesItem(workerVolume);
     }
     container.addVolumeMountsItem(getVolumeMount(PREFIX_VOL_PROPS, "/props"));
+    
+    if (kubeWorkerStorageMediumMemory) {
+    	container.addVolumeMountsItem(getVolumeMount(PREFIX_VOL_DATA, "/data"));
+    	V1Volume dataVolume = getVolume(PREFIX_VOL_DATA);
+    	V1EmptyDirVolumeSource emptyDir = new V1EmptyDirVolumeSource();
+    	emptyDir.setMedium("Memory");
+    	dataVolume.emptyDir(emptyDir);
+    	podSpec.addVolumesItem(dataVolume);
+    }
 
     // Creation of Projected Volume for multiple ConfigMaps
     V1Volume volumeProps = getVolume(PREFIX_VOL_PROPS);
