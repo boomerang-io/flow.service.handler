@@ -76,8 +76,11 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
   @Value("${kube.resource.request.ephemeral-storage}")
   private String kubeResourceRequestEphemeralStorage;
   
-  @Value("${kube.worker.storage.medium.memory}")
-  private Boolean kubeWorkerStorageMediumMemory;
+  @Value("${kube.worker.storage.data.memory}")
+  private Boolean kubeWorkerStorageDataMemory;
+  
+  @Value("${kube.worker.storage.data.size}")
+  private String kubeWorkerStorageDataSize;
 
   @Override
   public String getPrefixJob() {
@@ -89,7 +92,10 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
     return PREFIX_PVC;
   }
 
-  @Override
+  /**
+ *
+ */
+@Override
   protected V1Job createJobBody(String componentName, String componentId, String activityId, String taskActivityId,
       String taskName, String taskId, List<String> arguments,
       Map<String, String> taskProperties, String image, String command) {
@@ -127,15 +133,21 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
       podSpec.addVolumesItem(workerVolume);
     }
     container.addVolumeMountsItem(getVolumeMount(PREFIX_VOL_PROPS, "/props"));
-    
-    if (kubeWorkerStorageMediumMemory) {
-    	container.addVolumeMountsItem(getVolumeMount(PREFIX_VOL_DATA, "/data"));
-    	V1Volume dataVolume = getVolume(PREFIX_VOL_DATA);
-    	V1EmptyDirVolumeSource emptyDir = new V1EmptyDirVolumeSource();
+
+    /*  The following code is integrated to the helm chart and CICD properties
+    * 	It allows for containers that breach the standard ephemeral-storage size by off-loading to memory
+    * 	See: https://kubernetes.io/docs/concepts/storage/volumes/#emptydir
+    */
+    container.addVolumeMountsItem(getVolumeMount(PREFIX_VOL_DATA, "/data"));
+	V1Volume dataVolume = getVolume(PREFIX_VOL_DATA);
+	V1EmptyDirVolumeSource emptyDir = new V1EmptyDirVolumeSource();
+    if (kubeWorkerStorageDataMemory && Boolean.valueOf(taskProperties.get("worker.storage.data.memory"))) {
+    	LOGGER.info("Setting /data to in memory storage...");
     	emptyDir.setMedium("Memory");
-    	dataVolume.emptyDir(emptyDir);
-    	podSpec.addVolumesItem(dataVolume);
     }
+	emptyDir.setSizeLimit(kubeWorkerStorageDataSize);
+	dataVolume.emptyDir(emptyDir);
+	podSpec.addVolumesItem(dataVolume);
 
     // Creation of Projected Volume for multiple ConfigMaps
     V1Volume volumeProps = getVolume(PREFIX_VOL_PROPS);
