@@ -3,12 +3,10 @@ package net.boomerangplatform.kube.service;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -19,15 +17,10 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
-import com.google.common.io.ByteStreams;
-
 import io.kubernetes.client.ApiException;
-import io.kubernetes.client.Configuration;
-import io.kubernetes.client.Exec;
 import io.kubernetes.client.PodLogs;
 import io.kubernetes.client.models.V1ConfigMap;
 import io.kubernetes.client.models.V1Container;
-import io.kubernetes.client.models.V1ContainerStatus;
 import io.kubernetes.client.models.V1EmptyDirVolumeSource;
 import io.kubernetes.client.models.V1EnvVar;
 import io.kubernetes.client.models.V1Job;
@@ -35,7 +28,6 @@ import io.kubernetes.client.models.V1JobSpec;
 import io.kubernetes.client.models.V1LocalObjectReference;
 import io.kubernetes.client.models.V1PersistentVolumeClaimVolumeSource;
 import io.kubernetes.client.models.V1Pod;
-import io.kubernetes.client.models.V1PodCondition;
 import io.kubernetes.client.models.V1PodSpec;
 import io.kubernetes.client.models.V1PodTemplateSpec;
 import io.kubernetes.client.models.V1ProjectedVolumeSource;
@@ -107,11 +99,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
     if (proxyEnabled) {
       envVars.addAll(createProxyEnvVars());
     }
-    envVars.add(createEnvVar("DEBUG", kubeWorkerDebug.toString()));
-    envVars.add(createEnvVar("BMRG_WORKFLOW_ID", workflowId));
-    envVars.add(createEnvVar("BMRG_ACTIVITY_ID", activityId));
-    envVars.add(createEnvVar("BMRG_TASK_ID", taskId));
-    envVars.add(createEnvVar("BMRG_TASK_NAME", taskName.replace(" ", "")));
+    envVars.addAll(createEnvVars(workflowId,activityId,taskName,taskId));
     container.env(envVars);
     container.args(arguments);
     if (!getPVCName(workflowId, activityId).isEmpty()) {
@@ -124,43 +112,32 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
       podSpec.addVolumesItem(workerVolume);
     }
     
+    /*
+     * The following code is for custom tasks only
+     */
     if (Optional.ofNullable(image).isPresent()) {
-    	List<V1Container> initContainers = new ArrayList<>();
-    	V1Container initContainer = getContainer(kubeLifecycleImage, null).name("init-cntr").addVolumeMountsItem(getVolumeMount("lifecycle", "/lifecycle"))
-    			.addArgsItem("lifecycle")
-    			.addArgsItem("init");
-    	initContainers.add(initContainer);
-    	podSpec.setInitContainers(initContainers);
-    	V1Container lifecycleContainer = getContainer(kubeLifecycleImage, null).name("lifecycle-cntr").addVolumeMountsItem(getVolumeMount("lifecycle", "/lifecycle"));
-    	lifecycleContainer.addArgsItem("lifecycle");
-    	lifecycleContainer.addArgsItem("wait");
-    	lifecycleContainer.addEnvItem(createEnvVar("BMRG_WORKFLOW_ID", workflowId));
-    	lifecycleContainer.addEnvItem(createEnvVar("BMRG_ACTIVITY_ID", activityId));
-    	lifecycleContainer.addEnvItem(createEnvVar("BMRG_TASK_ID", taskId));
-    	lifecycleContainer.addEnvItem(createEnvVar("BMRG_TASK_NAME", taskName.replace(" ", "")));
-    	container.addVolumeMountsItem(getVolumeMount("lifecycle", "/lifecycle"));
+      List<V1Container> initContainers = new ArrayList<>();
+      V1Container initContainer =
+          getContainer(kubeLifecycleImage, null)
+              .name("init-cntr")
+              .addVolumeMountsItem(getVolumeMount("lifecycle", "/lifecycle"))
+              .addArgsItem("lifecycle")
+              .addArgsItem("init");
+      initContainers.add(initContainer);
+      podSpec.setInitContainers(initContainers);
+      V1Container lifecycleContainer =
+          getContainer(kubeLifecycleImage, null)
+              .name("lifecycle-cntr")
+              .addVolumeMountsItem(getVolumeMount("lifecycle", "/lifecycle"))
+              .addArgsItem("lifecycle")
+              .addArgsItem("wait");
+    	lifecycleContainer.env(createEnvVars(workflowId,activityId,taskName,taskId));
     	containerList.add(lifecycleContainer);
-//    	V1Lifecycle lifecycle = new V1Lifecycle();
-//    	V1Handler postStartHandler = new V1Handler();
-//    	V1ExecAction postStartExec = new V1ExecAction();
-//    	postStartExec.addCommandItem("/bin/sh");
-//    	postStartExec.addCommandItem("-c");
-//    	postStartExec.addCommandItem("touch /lifecycle/lock");
-//    	postStartHandler.setExec(postStartExec);
-//        lifecycle.setPostStart(postStartHandler);
-//        V1Handler preStopHandler = new V1Handler();
-//        V1ExecAction preStopExec = new V1ExecAction();
-//        preStopExec.addCommandItem("/bin/sh");
-//        preStopExec.addCommandItem("-c");
-//        preStopExec.addCommandItem("rm -f /lifecycle/lock");
-//        preStopHandler.setExec(preStopExec);
-//        lifecycle.setPreStop(preStopHandler);
-//        container.lifecycle(lifecycle);
+    	container.addVolumeMountsItem(getVolumeMount("lifecycle", "/lifecycle"));
         V1Volume lifecycleVol = getVolume("lifecycle");
         V1EmptyDirVolumeSource emptyDir = new V1EmptyDirVolumeSource();
         lifecycleVol.emptyDir(emptyDir);
         podSpec.addVolumesItem(lifecycleVol);
-        container.addArgsItem("");
     }
     
     container.addVolumeMountsItem(getVolumeMount(PREFIX_VOL_PROPS, "/props"));
@@ -210,134 +187,6 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
     body.spec(jobSpec);
 
     return body;
-  }
-  
-  public V1Job watchJob(String workflowId, String workflowActivityId, String taskId) {
-    String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
-    V1Job jobResult = null;
-
-    // Since upgrade to Java11 the watcher stops listening for events (irrespective of timeout) and
-    // does not throw exception.
-    // Loop will restart watcher based on our own timer
-    Integer loopCount = 1;
-    long endTime = System.nanoTime()
-        + TimeUnit.NANOSECONDS.convert(kubeApiTimeOut.longValue(), TimeUnit.SECONDS);
-    do {
-      LOGGER.info("Starting Job Watcher #" + loopCount + " for Task (" + taskId + ")...");
-      try {
-    	Watch<V1Job> watch = createJobWatch(getBatchApi(), labelSelector);
-        Watch<V1Pod> podWatch = createPodWatch(labelSelector, getCoreApi());
-        V1Pod pod = getJobPod(podWatch);
-        jobResult = getJobResult(taskId, watch);
-      } catch (ApiException | IOException e) {
-        LOGGER.error("getWatch Exception: ", e);
-        throw new KubeRuntimeException("Error createWatch", e);
-      }
-      loopCount++;
-    } while (System.nanoTime() < endTime && jobResult == null);
-    if (jobResult == null) {
-      // Final catch for a timeout and job still not complete.
-      throw new KubeRuntimeException(
-          "Task (" + taskId + ") has exceeded the maximum duration triggering failure.");
-    } 
-    return jobResult;
-  }
-
-  private V1Pod getJobPod(Watch<V1Pod> watch) throws IOException {
-    V1Pod pod = null;
-    try {
-      for (Watch.Response<V1Pod> item : watch) {
-
-        String name = item.object.getMetadata().getName();
-        LOGGER.info("Pod: " + name + "...");
-        LOGGER.info("Pod Start Time: " + item.object.getStatus().getStartTime() + "...");
-        String phase = item.object.getStatus().getPhase();
-        LOGGER.info("Pod Phase: " + phase + "...");
-        if (item.object.getStatus().getConditions() != null) {
-	        for (V1PodCondition condition : item.object.getStatus().getConditions()) {
-	          LOGGER.info("Pod Condition: " + condition.toString() + "...");
-	        }
-        }
-        if (item.object.getStatus().getContainerStatuses() != null) {
-	        for (V1ContainerStatus containerStatus : item.object.getStatus().getContainerStatuses()) {
-	          LOGGER.info("Container Status: " + containerStatus.toString() + "...");
-	          if ("worker-cntr".equalsIgnoreCase(containerStatus.getName()) && containerStatus.getState().getTerminated() != null) {
-	        	  LOGGER.info("-----------------------------------------------");
-	        	  LOGGER.info("------- Executing Lifecycle Termination -------");
-	        	  LOGGER.info("-----------------------------------------------");
-	        	  try {
-        			  execJobLifecycle(name, "lifecycle-cntr");
-	        	  } catch (Exception e) {
-	        		  LOGGER.error("Lifecycle Execution Exception: ", e);
-	        	        throw new KubeRuntimeException("Lifecycle Execution Exception", e);
-	        	  }
-	        	  pod = item.object;
-	        	  break;
-	          }
-	        }
-        }
-        if (pod != null) {
-        	LOGGER.info("Exiting Lifecycle Termination");
-        	break;
-        }
-//        if (!("pending".equalsIgnoreCase(phase) || "unknown".equalsIgnoreCase(phase))) {
-//          LOGGER.info("Pod " + name + " ready to stream logs...");
-//          pod = item.object;
-//          break;
-//        }
-      }
-    } finally {
-      watch.close();
-    }
-    return pod;
-  }
-  
-  private void execJobLifecycle(String podName, String containerName) throws ApiException, IOException, InterruptedException {
-	    Exec exec = new Exec();
-	    exec.setApiClient(Configuration.getDefaultApiClient());
-//	    boolean tty = System.console() != null;
-//	    String[] commands = new String[] {"node", "cli", "lifecycle", "terminate"};
-	    String[] commands = new String[] {"/bin/sh", "-c", "rm -f /lifecycle/lock && ls -ltr /lifecycle"};
-	    LOGGER.info("Pod: " + podName + ", Container: " + containerName + ", Commands: " + Arrays.toString(commands));
-	    final Process proc =
-	        exec.exec(
-	        	kubeNamespace,
-	            podName,
-	            commands,
-	            containerName,
-	            false,
-	            false);
-
-//	    Thread in =
-//	        new Thread(
-//	            new Runnable() {
-//	              public void run() {
-//	                try {
-//	                  ByteStreams.copy(System.in, proc.getOutputStream());
-//	                } catch (IOException ex) {
-//	                  ex.printStackTrace();
-//	                }
-//	              }
-//	            });
-//	    in.start();
-
-	    Thread out =
-	        new Thread(
-	            new Runnable() {
-	              public void run() {
-	                try {
-	                  ByteStreams.copy(proc.getInputStream(), System.out);
-	                } catch (IOException ex) {
-	                  ex.printStackTrace();
-	                }
-	              }
-	            });
-	    out.start();
-
-	    proc.waitFor();
-	    // wait for any last output; no need to wait for input thread
-	    out.join();
-	    proc.destroy();
   }
 
   protected V1ConfigMap createTaskConfigMapBody(String workflowName, String workflowId,
@@ -468,6 +317,16 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
     }
 
     return responseBody;
+  }
+  
+  protected List<V1EnvVar> createEnvVars(String workflowId,String activityId,String taskName,String taskId){
+	  List<V1EnvVar> envVars = new ArrayList<>();
+	  envVars.add(createEnvVar("DEBUG", kubeWorkerDebug.toString()));
+	  envVars.add(createEnvVar("BMRG_WORKFLOW_ID", workflowId));
+	  envVars.add(createEnvVar("BMRG_ACTIVITY_ID", activityId));
+	  envVars.add(createEnvVar("BMRG_TASK_ID", taskId));
+	  envVars.add(createEnvVar("BMRG_TASK_NAME", taskName.replace(" ", "")));
+	  return envVars;
   }
   
 }

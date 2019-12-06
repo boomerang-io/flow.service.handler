@@ -92,7 +92,7 @@ public class CICDControllerServiceImpl implements ControllerService {
       kubeService.createJob(task.getWorkflowName(), task.getWorkflowId(),
               task.getWorkflowActivityId(), task.getTaskActivityId(),task.getTaskName(), task.getTaskId(), task.getArguments(),
               task.getProperties());
-      kubeService.watchJob(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
+      kubeService.watchJob(false, task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
     } catch (ApiException | KubeRuntimeException e) {
       LOGGER.error(EXCEPTION, e);
       response.setCode("1");

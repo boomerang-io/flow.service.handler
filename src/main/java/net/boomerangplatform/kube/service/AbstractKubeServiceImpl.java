@@ -8,6 +8,7 @@ import java.io.StringWriter;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,6 +48,8 @@ import com.google.gson.reflect.TypeToken;
 
 import io.kubernetes.client.ApiClient;
 import io.kubernetes.client.ApiException;
+import io.kubernetes.client.Configuration;
+import io.kubernetes.client.Exec;
 import io.kubernetes.client.PodLogs;
 import io.kubernetes.client.apis.BatchV1Api;
 import io.kubernetes.client.apis.CoreV1Api;
@@ -194,8 +197,6 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
 
   protected abstract V1ConfigMap createWorkflowConfigMapBody(String workflowName, String workflowId,
       String workflowActivityId, Map<String, String> inputProps);
-  
-  public abstract V1Job watchJob(String workflowId, String workflowActivityId, String taskId);
 
   public abstract String getPrefixJob();
 
@@ -259,6 +260,129 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     }
 
     return jobResult;
+  }
+  
+  public V1Job watchJob(boolean watchLifecycle, String workflowId, String workflowActivityId, String taskId) {
+	    String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
+	    V1Job jobResult = null;
+
+	    // Since upgrade to Java11 the watcher stops listening for events (irrespective of timeout) and
+	    // does not throw exception.
+	    // Loop will restart watcher based on our own timer
+	    Integer loopCount = 1;
+	    long endTime = System.nanoTime()
+	        + TimeUnit.NANOSECONDS.convert(kubeApiTimeOut.longValue(), TimeUnit.SECONDS);
+	    do {
+	      LOGGER.info("Starting Job Watcher #" + loopCount + " for Task (" + taskId + ")...");
+	      try {
+	    	Watch<V1Job> watch = createJobWatch(getBatchApi(), labelSelector);
+	    	if (watchLifecycle) {
+	            Watch<V1Pod> podWatch = createPodWatch(labelSelector, getCoreApi());
+	            getJobPod(podWatch);
+	    	}
+	        jobResult = getJobResult(taskId, watch);
+	      } catch (ApiException | IOException e) {
+	        LOGGER.error("getWatch Exception: ", e);
+	        throw new KubeRuntimeException("Error createWatch", e);
+	      }
+	      loopCount++;
+	    } while (System.nanoTime() < endTime && jobResult == null);
+	    if (jobResult == null) {
+	      // Final catch for a timeout and job still not complete.
+	      throw new KubeRuntimeException(
+	          "Task (" + taskId + ") has exceeded the maximum duration triggering failure.");
+	    } 
+	    return jobResult;
+	  }
+
+  private void getJobPod(Watch<V1Pod> watch) throws IOException {
+    V1Pod pod = null;
+    try {
+      for (Watch.Response<V1Pod> item : watch) {
+
+        String name = item.object.getMetadata().getName();
+        LOGGER.info("Pod: " + name + ", started: " + item.object.getStatus().getStartTime() + "...");
+        String phase = item.object.getStatus().getPhase();
+        LOGGER.info("Pod Phase: " + phase + "...");
+        if (item.object.getStatus().getConditions() != null) {
+	        for (V1PodCondition condition : item.object.getStatus().getConditions()) {
+	          LOGGER.info("Pod Condition: " + condition.toString() + "...");
+	        }
+        }
+        if (item.object.getStatus().getContainerStatuses() != null) {
+	        for (V1ContainerStatus containerStatus : item.object.getStatus().getContainerStatuses()) {
+	          LOGGER.info("Container Status: " + containerStatus.toString() + "...");
+	          if ("worker-cntr".equalsIgnoreCase(containerStatus.getName()) && containerStatus.getState().getTerminated() != null) {
+	        	  LOGGER.info("-----------------------------------------------");
+	        	  LOGGER.info("------- Executing Lifecycle Termination -------");
+	        	  LOGGER.info("-----------------------------------------------");
+	        	  try {
+        			  execJobLifecycle(name, "lifecycle-cntr");
+	        	  } catch (Exception e) {
+	        		  LOGGER.error("Lifecycle Execution Exception: ", e);
+	        	        throw new KubeRuntimeException("Lifecycle Execution Exception", e);
+	        	  }
+	        	  pod = item.object;
+	        	  break;
+	          }
+	        }
+        }
+        if (pod != null) {
+        	LOGGER.info("Exiting Lifecycle Termination");
+        	break;
+        }
+      }
+    } finally {
+      watch.close();
+    }
+  }
+  
+  private void execJobLifecycle(String podName, String containerName) throws ApiException, IOException, InterruptedException {
+	    Exec exec = new Exec();
+	    exec.setApiClient(Configuration.getDefaultApiClient());
+//	    boolean tty = System.console() != null;
+//	    String[] commands = new String[] {"node", "cli", "lifecycle", "terminate"};
+	    String[] commands = new String[] {"/bin/sh", "-c", "rm -f /lifecycle/lock && ls -ltr /lifecycle"};
+	    LOGGER.info("Pod: " + podName + ", Container: " + containerName + ", Commands: " + Arrays.toString(commands));
+	    final Process proc =
+	        exec.exec(
+	        	kubeNamespace,
+	            podName,
+	            commands,
+	            containerName,
+	            false,
+	            false);
+
+//	    Thread in =
+//	        new Thread(
+//	            new Runnable() {
+//	              public void run() {
+//	                try {
+//	                  ByteStreams.copy(System.in, proc.getOutputStream());
+//	                } catch (IOException ex) {
+//	                  ex.printStackTrace();
+//	                }
+//	              }
+//	            });
+//	    in.start();
+
+	    Thread out =
+	        new Thread(
+	            new Runnable() {
+	              public void run() {
+	                try {
+	                  ByteStreams.copy(proc.getInputStream(), System.out);
+	                } catch (IOException ex) {
+	                  ex.printStackTrace();
+	                }
+	              }
+	            });
+	    out.start();
+
+	    proc.waitFor();
+	    // wait for any last output; no need to wait for input thread
+	    out.join();
+	    proc.destroy();
   }
 
   @Override

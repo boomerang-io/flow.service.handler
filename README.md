@@ -36,3 +36,29 @@ We currently use projected volumes however subpath was considered.
 - Projected Volumes: https://stackoverflow.com/questions/49287078/how-to-merge-two-configmaps-using-volume-mount-in-kubernetes
 - SubPath: https://blog.sebastian-daschner.com/entries/multiple-kubernetes-volumes-directory
 
+## Stash
+
+### Lifecycle Container Hooks
+
+The following code was written to interface with the container lifecycle hooks of postStart and preStop however there were two main issues:
+1. no guarantee that postStart would execute before the main container code -> we went with an initContainer
+2. preStop was not executing on jobs when the pod didn't get sent a SIG as it completed successfully so was technically never terminated.
+
+```
+V1Lifecycle lifecycle = new V1Lifecycle();
+V1Handler postStartHandler = new V1Handler();
+V1ExecAction postStartExec = new V1ExecAction();
+postStartExec.addCommandItem("/bin/sh");
+postStartExec.addCommandItem("-c");
+postStartExec.addCommandItem("touch /lifecycle/lock");
+postStartHandler.setExec(postStartExec);
+lifecycle.setPostStart(postStartHandler);
+V1Handler preStopHandler = new V1Handler();
+V1ExecAction preStopExec = new V1ExecAction();
+preStopExec.addCommandItem("/bin/sh");
+preStopExec.addCommandItem("-c");
+preStopExec.addCommandItem("rm -f /lifecycle/lock");
+preStopHandler.setExec(preStopExec);
+lifecycle.setPreStop(preStopHandler);
+container.lifecycle(lifecycle);
+```
