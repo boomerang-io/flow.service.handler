@@ -12,6 +12,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
@@ -20,6 +21,7 @@ import io.kubernetes.client.ApiException;
 import io.kubernetes.client.PodLogs;
 import io.kubernetes.client.models.V1ConfigMap;
 import io.kubernetes.client.models.V1Container;
+import io.kubernetes.client.models.V1EmptyDirVolumeSource;
 import io.kubernetes.client.models.V1EnvVar;
 import io.kubernetes.client.models.V1Job;
 import io.kubernetes.client.models.V1JobSpec;
@@ -60,6 +62,12 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
 
   private static final Logger LOGGER = LogManager.getLogger(FlowKubeServiceImpl.class);
 
+  @Value("${kube.lifecycle.image}")
+  private String kubeLifecycleImage;
+
+  @Value("${kube.api.timeout}")
+  private Integer kubeApiTimeOut;
+
   @Override
   public String getPrefixJob() {
     return PREFIX_JOB;
@@ -85,12 +93,13 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
     V1PodTemplateSpec templateSpec = new V1PodTemplateSpec();
     V1PodSpec podSpec = new V1PodSpec();
     V1Container container = getContainer(image, command);
+    List<V1Container> containerList = new ArrayList<>();
 
     List<V1EnvVar> envVars = new ArrayList<>();
     if (proxyEnabled) {
       envVars.addAll(createProxyEnvVars());
     }
-    envVars.add(createEnvVar("DEBUG", kubeWorkerDebug.toString()));
+    envVars.addAll(createEnvVars(workflowId,activityId,taskName,taskId));
     container.env(envVars);
     container.args(arguments);
     if (!getPVCName(workflowId, activityId).isEmpty()) {
@@ -102,7 +111,35 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
           workerVolumePVCSource.claimName(getPVCName(workflowId, activityId)));
       podSpec.addVolumesItem(workerVolume);
     }
-
+    
+    /*
+     * The following code is for custom tasks only
+     */
+    if (Optional.ofNullable(image).isPresent()) {
+      List<V1Container> initContainers = new ArrayList<>();
+      V1Container initContainer =
+          getContainer(kubeLifecycleImage, null)
+              .name("init-cntr")
+              .addVolumeMountsItem(getVolumeMount("lifecycle", "/lifecycle"))
+              .addArgsItem("lifecycle")
+              .addArgsItem("init");
+      initContainers.add(initContainer);
+      podSpec.setInitContainers(initContainers);
+      V1Container lifecycleContainer =
+          getContainer(kubeLifecycleImage, null)
+              .name("lifecycle-cntr")
+              .addVolumeMountsItem(getVolumeMount("lifecycle", "/lifecycle"))
+              .addArgsItem("lifecycle")
+              .addArgsItem("wait");
+    	lifecycleContainer.env(createEnvVars(workflowId,activityId,taskName,taskId));
+    	containerList.add(lifecycleContainer);
+    	container.addVolumeMountsItem(getVolumeMount("lifecycle", "/lifecycle"));
+        V1Volume lifecycleVol = getVolume("lifecycle");
+        V1EmptyDirVolumeSource emptyDir = new V1EmptyDirVolumeSource();
+        lifecycleVol.emptyDir(emptyDir);
+        podSpec.addVolumesItem(lifecycleVol);
+    }
+    
     container.addVolumeMountsItem(getVolumeMount(PREFIX_VOL_PROPS, "/props"));
 
     // Creation of Projected Volume with multiple ConfigMaps
@@ -131,7 +168,6 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
       podSpec.serviceAccountName(kubeWorkerServiceAccount);
     }
 
-    List<V1Container> containerList = new ArrayList<>();
     containerList.add(container);
     podSpec.containers(containerList);
     V1LocalObjectReference imagePullSecret = new V1LocalObjectReference();
@@ -281,6 +317,16 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
     }
 
     return responseBody;
+  }
+  
+  protected List<V1EnvVar> createEnvVars(String workflowId,String activityId,String taskName,String taskId){
+	  List<V1EnvVar> envVars = new ArrayList<>();
+	  envVars.add(createEnvVar("DEBUG", kubeWorkerDebug.toString()));
+	  envVars.add(createEnvVar("BMRG_WORKFLOW_ID", workflowId));
+	  envVars.add(createEnvVar("BMRG_ACTIVITY_ID", activityId));
+	  envVars.add(createEnvVar("BMRG_TASK_ID", taskId));
+	  envVars.add(createEnvVar("BMRG_TASK_NAME", taskName.replace(" ", "")));
+	  return envVars;
   }
   
 }

@@ -16,8 +16,6 @@ import io.kubernetes.client.models.V1Status;
 
 public interface AbstractKubeService {
 
-  V1Job watchJob(String workflowId, String workflowActivityId, String taskId);
-
   V1PersistentVolumeClaim createPVC(
       String workflowName, String workflowId, String workflowActivityId, String pvcSize)
       throws ApiException;
@@ -77,5 +75,7 @@ public interface AbstractKubeService {
       String taskId,
       String taskName,
       Map<String, String> properties);
+
+V1Status deleteJob(String workflowId,String workflowActivityId,String taskId);
 
 }

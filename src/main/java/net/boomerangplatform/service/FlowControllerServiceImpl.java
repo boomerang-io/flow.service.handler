@@ -81,7 +81,7 @@ public class FlowControllerServiceImpl implements ControllerService {
       kubeService.createJob(task.getWorkflowName(), task.getWorkflowId(),
           task.getWorkflowActivityId(), task.getTaskActivityId(),task.getTaskName(), task.getTaskId(), task.getArguments(),
           task.getProperties());
-      kubeService.watchJob(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
+      kubeService.watchJob(false, task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
     } catch (KubeRuntimeException e) {
       LOGGER.error(EXCEPTION, e);
       response.setCode("1");
@@ -106,7 +106,7 @@ public class FlowControllerServiceImpl implements ControllerService {
       kubeService.createJob(task.getWorkflowName(), task.getWorkflowId(),
           task.getWorkflowActivityId(),task.getTaskActivityId(), task.getTaskName(), task.getTaskId(), task.getArguments(),
           task.getProperties(), task.getImage(), task.getCommand());
-      kubeService.watchJob(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
+      kubeService.watchJob(true, task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
     } catch (KubeRuntimeException e) {
       LOGGER.error(EXCEPTION, e);
       response.setCode("1");

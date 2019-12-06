@@ -9,14 +9,17 @@ import java.util.Optional;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
+import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.models.V1ConfigMap;
 import io.kubernetes.client.models.V1Container;
+import io.kubernetes.client.models.V1EmptyDirVolumeSource;
 import io.kubernetes.client.models.V1EnvVar;
 import io.kubernetes.client.models.V1HostAlias;
 import io.kubernetes.client.models.V1Job;
@@ -27,6 +30,7 @@ import io.kubernetes.client.models.V1PersistentVolumeClaimVolumeSource;
 import io.kubernetes.client.models.V1PodSpec;
 import io.kubernetes.client.models.V1PodTemplateSpec;
 import io.kubernetes.client.models.V1ProjectedVolumeSource;
+import io.kubernetes.client.models.V1ResourceRequirements;
 import io.kubernetes.client.models.V1Volume;
 import io.kubernetes.client.models.V1VolumeProjection;
 
@@ -49,12 +53,29 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
   protected static final String PREFIX_VOL = PREFIX + "-vol";
 
   protected static final String PREFIX_VOL_DATA = PREFIX_VOL + "-data";
+  
+  protected static final String PREFIX_VOL_CACHE = PREFIX_VOL + "-cache";
 
   protected static final String PREFIX_VOL_PROPS = PREFIX_VOL + "-props";
 
   private static final String PREFIX_PVC = PREFIX + "-pvc";
 
   private static final Logger LOGGER = LogManager.getLogger(CICDKubeServiceImpl.class);
+
+  @Value("${kube.api.timeout}")
+  private Integer kubeApiTimeOut;
+  
+  @Value("${kube.resource.limit.ephemeral-storage}")
+  private String kubeResourceLimitEphemeralStorage;
+  
+  @Value("${kube.resource.request.ephemeral-storage}")
+  private String kubeResourceRequestEphemeralStorage;
+  
+  @Value("${kube.worker.storage.data.memory}")
+  private Boolean kubeWorkerStorageDataMemory;
+  
+  @Value("${kube.worker.storage.data.size}")
+  private String kubeWorkerStorageDataSize;
 
   @Override
   public String getPrefixJob() {
@@ -66,7 +87,10 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
     return PREFIX_PVC;
   }
 
-  @Override
+  /**
+ *
+ */
+@Override
   protected V1Job createJobBody(String componentName, String componentId, String activityId, String taskActivityId,
       String taskName, String taskId, List<String> arguments,
       Map<String, String> taskProperties, String image, String command) {
@@ -90,9 +114,13 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
     envVars.add(createEnvVar("CI", "true"));
     container.env(envVars);
     container.args(arguments);
+    V1ResourceRequirements resources = new V1ResourceRequirements();
+    resources.putLimitsItem("ephemeral-storage", new Quantity(kubeResourceLimitEphemeralStorage));
+//    resources.putRequestsItem("ephemeral-storage", new Quantity(kubeResourceRequestEphemeralStorage));
+    container.setResources(resources);
     if (checkPVCExists(componentId, null, null, true)) {
-      container.addVolumeMountsItem(getVolumeMount(PREFIX_VOL_DATA, "/cache"));
-      V1Volume workerVolume = getVolume(PREFIX_VOL_DATA);
+      container.addVolumeMountsItem(getVolumeMount(PREFIX_VOL_CACHE, "/cache"));
+      V1Volume workerVolume = getVolume(PREFIX_VOL_CACHE);
       V1PersistentVolumeClaimVolumeSource workerVolumePVCSource =
           new V1PersistentVolumeClaimVolumeSource();
       workerVolume
@@ -100,6 +128,21 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
       podSpec.addVolumesItem(workerVolume);
     }
     container.addVolumeMountsItem(getVolumeMount(PREFIX_VOL_PROPS, "/props"));
+
+    /*  The following code is integrated to the helm chart and CICD properties
+    * 	It allows for containers that breach the standard ephemeral-storage size by off-loading to memory
+    * 	See: https://kubernetes.io/docs/concepts/storage/volumes/#emptydir
+    */
+    container.addVolumeMountsItem(getVolumeMount(PREFIX_VOL_DATA, "/data"));
+	V1Volume dataVolume = getVolume(PREFIX_VOL_DATA);
+	V1EmptyDirVolumeSource emptyDir = new V1EmptyDirVolumeSource();
+    if (kubeWorkerStorageDataMemory && Boolean.valueOf(taskProperties.get("worker.storage.data.memory"))) {
+    	LOGGER.info("Setting /data to in memory storage...");
+    	emptyDir.setMedium("Memory");
+    }
+	emptyDir.setSizeLimit(kubeWorkerStorageDataSize);
+	dataVolume.emptyDir(emptyDir);
+	podSpec.addVolumesItem(dataVolume);
 
     // Creation of Projected Volume for multiple ConfigMaps
     V1Volume volumeProps = getVolume(PREFIX_VOL_PROPS);

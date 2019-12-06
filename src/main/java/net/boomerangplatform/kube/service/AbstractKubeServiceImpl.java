@@ -8,6 +8,7 @@ import java.io.StringWriter;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,6 +48,8 @@ import com.google.gson.reflect.TypeToken;
 
 import io.kubernetes.client.ApiClient;
 import io.kubernetes.client.ApiException;
+import io.kubernetes.client.Configuration;
+import io.kubernetes.client.Exec;
 import io.kubernetes.client.PodLogs;
 import io.kubernetes.client.apis.BatchV1Api;
 import io.kubernetes.client.apis.CoreV1Api;
@@ -59,6 +62,7 @@ import io.kubernetes.client.models.V1ContainerStatus;
 import io.kubernetes.client.models.V1DeleteOptions;
 import io.kubernetes.client.models.V1EnvVar;
 import io.kubernetes.client.models.V1Job;
+import io.kubernetes.client.models.V1JobList;
 import io.kubernetes.client.models.V1JobStatus;
 import io.kubernetes.client.models.V1ObjectMeta;
 import io.kubernetes.client.models.V1PersistentVolumeClaim;
@@ -257,36 +261,128 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
 
     return jobResult;
   }
+  
+  public V1Job watchJob(boolean watchLifecycle, String workflowId, String workflowActivityId, String taskId) {
+	    String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
+	    V1Job jobResult = null;
 
-  @Override
-  public V1Job watchJob(String workflowId, String workflowActivityId, String taskId) {
-    String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
-    Watch<V1Job> watch;
-    V1Job jobResult = null;
+	    // Since upgrade to Java11 the watcher stops listening for events (irrespective of timeout) and
+	    // does not throw exception.
+	    // Loop will restart watcher based on our own timer
+	    Integer loopCount = 1;
+	    long endTime = System.nanoTime()
+	        + TimeUnit.NANOSECONDS.convert(kubeApiTimeOut.longValue(), TimeUnit.SECONDS);
+	    do {
+	      LOGGER.info("Starting Job Watcher #" + loopCount + " for Task (" + taskId + ")...");
+	      try {
+	    	Watch<V1Job> watch = createJobWatch(getBatchApi(), labelSelector);
+	    	if (watchLifecycle) {
+	            Watch<V1Pod> podWatch = createPodWatch(labelSelector, getCoreApi());
+	            getJobPod(podWatch);
+	    	}
+	        jobResult = getJobResult(taskId, watch);
+	      } catch (ApiException | IOException e) {
+	        LOGGER.error("getWatch Exception: ", e);
+	        throw new KubeRuntimeException("Error createWatch", e);
+	      }
+	      loopCount++;
+	    } while (System.nanoTime() < endTime && jobResult == null);
+	    if (jobResult == null) {
+	      // Final catch for a timeout and job still not complete.
+	      throw new KubeRuntimeException(
+	          "Task (" + taskId + ") has exceeded the maximum duration triggering failure.");
+	    } 
+	    return jobResult;
+	  }
 
-    // Since upgrade to Java11 the watcher stops listening for events (irrespective of timeout) and
-    // does not throw exception.
-    // Loop will restart watcher based on our own timer
-    Integer loopCount = 1;
-    long endTime = System.nanoTime()
-        + TimeUnit.NANOSECONDS.convert(kubeApiTimeOut.longValue(), TimeUnit.SECONDS);
-    do {
-      LOGGER.info("Starting Job Watcher #" + loopCount + " for Task (" + taskId + ")...");
-      try {
-        watch = createJobWatch(getBatchApi(), labelSelector);
-        jobResult = getJobResult(taskId, watch);
-      } catch (ApiException | IOException e) {
-        LOGGER.error("getWatch Exception: ", e);
-        throw new KubeRuntimeException("Error createWatch", e);
+  private void getJobPod(Watch<V1Pod> watch) throws IOException {
+    V1Pod pod = null;
+    try {
+      for (Watch.Response<V1Pod> item : watch) {
+
+        String name = item.object.getMetadata().getName();
+        LOGGER.info("Pod: " + name + ", started: " + item.object.getStatus().getStartTime() + "...");
+        String phase = item.object.getStatus().getPhase();
+        LOGGER.info("Pod Phase: " + phase + "...");
+        if (item.object.getStatus().getConditions() != null) {
+	        for (V1PodCondition condition : item.object.getStatus().getConditions()) {
+	          LOGGER.info("Pod Condition: " + condition.toString() + "...");
+	        }
+        }
+        if (item.object.getStatus().getContainerStatuses() != null) {
+	        for (V1ContainerStatus containerStatus : item.object.getStatus().getContainerStatuses()) {
+	          LOGGER.info("Container Status: " + containerStatus.toString() + "...");
+	          if ("worker-cntr".equalsIgnoreCase(containerStatus.getName()) && containerStatus.getState().getTerminated() != null) {
+	        	  LOGGER.info("-----------------------------------------------");
+	        	  LOGGER.info("------- Executing Lifecycle Termination -------");
+	        	  LOGGER.info("-----------------------------------------------");
+	        	  try {
+        			  execJobLifecycle(name, "lifecycle-cntr");
+	        	  } catch (Exception e) {
+	        		  LOGGER.error("Lifecycle Execution Exception: ", e);
+	        	        throw new KubeRuntimeException("Lifecycle Execution Exception", e);
+	        	  }
+	        	  pod = item.object;
+	        	  break;
+	          }
+	        }
+        }
+        if (pod != null) {
+        	LOGGER.info("Exiting Lifecycle Termination");
+        	break;
+        }
       }
-      loopCount++;
-    } while (System.nanoTime() < endTime && jobResult == null);
-    if (jobResult == null) {
-      // Final catch for a timeout and job still not complete.
-      throw new KubeRuntimeException(
-          "Task (" + taskId + ") has exceeded the maximum duration triggering failure.");
+    } finally {
+      watch.close();
     }
-    return jobResult;
+  }
+  
+  private void execJobLifecycle(String podName, String containerName) throws ApiException, IOException, InterruptedException {
+	    Exec exec = new Exec();
+	    exec.setApiClient(Configuration.getDefaultApiClient());
+//	    boolean tty = System.console() != null;
+//	    String[] commands = new String[] {"node", "cli", "lifecycle", "terminate"};
+	    String[] commands = new String[] {"/bin/sh", "-c", "rm -f /lifecycle/lock && ls -ltr /lifecycle"};
+	    LOGGER.info("Pod: " + podName + ", Container: " + containerName + ", Commands: " + Arrays.toString(commands));
+	    final Process proc =
+	        exec.exec(
+	        	kubeNamespace,
+	            podName,
+	            commands,
+	            containerName,
+	            false,
+	            false);
+
+//	    Thread in =
+//	        new Thread(
+//	            new Runnable() {
+//	              public void run() {
+//	                try {
+//	                  ByteStreams.copy(System.in, proc.getOutputStream());
+//	                } catch (IOException ex) {
+//	                  ex.printStackTrace();
+//	                }
+//	              }
+//	            });
+//	    in.start();
+
+	    Thread out =
+	        new Thread(
+	            new Runnable() {
+	              public void run() {
+	                try {
+	                  ByteStreams.copy(proc.getInputStream(), System.out);
+	                } catch (IOException ex) {
+	                  ex.printStackTrace();
+	                }
+	              }
+	            });
+	    out.start();
+
+	    proc.waitFor();
+	    // wait for any last output; no need to wait for input thread
+	    out.join();
+	    proc.destroy();
   }
 
   @Override
@@ -485,11 +581,60 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
               && ise.getMessage().contains("Expected a string but was BEGIN_OBJECT")) {
             LOGGER.error(
                 "Catching exception because of issue https://github.com/kubernetes-client/java/issues/86");
+          } else {
+        	  LOGGER.error("Exception when running deleteJob()", e);
           }
-          LOGGER.error("Exception when running deletePVC()", e);
         }
       } catch (ApiException e) {
         LOGGER.error("Exception when running deletePVC()", e);
+      }
+    }
+    return result;
+  }
+  
+  protected String getJobName(boolean onlyOnSuccess, String workflowId, String workflowActivityId, String taskId) {
+	    String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
+
+	    try {
+	    	V1JobList listOfJobs =
+	    	          getBatchApi().listNamespacedJob(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty,
+	    	              null, null, labelSelector, null, null, TIMEOUT_ONE_MINUTE, false);
+	      if (!listOfJobs.getItems().isEmpty()) {
+		    	Optional<V1Job> job = listOfJobs.getItems().stream()
+	    		.filter(item -> (onlyOnSuccess && item.getStatus().getSucceeded() != null) || !onlyOnSuccess)
+	    		.findFirst();
+		    	String jobName = job.isPresent() ? job.get().getMetadata().getName() : "";
+		    	LOGGER.info(" Job Name: " + jobName);
+		    	return jobName;
+	      }
+	    } catch (ApiException e) {
+	      LOGGER.error(EXCEPTION, e);
+	    }
+	    return "";
+	  }
+  
+  @Override
+  public V1Status deleteJob(String workflowId, String workflowActivityId, String taskId) {
+    V1DeleteOptions deleteOptions = new V1DeleteOptions();
+    deleteOptions.setPropagationPolicy("Background");
+    V1Status result = new V1Status();
+    String jobName = getJobName(true, workflowId, workflowActivityId, taskId);
+    if (!jobName.isEmpty()) {
+      try {
+        result = getBatchApi().deleteNamespacedJob(jobName, kubeNamespace, kubeApiPretty, deleteOptions, null, null, null, null);
+      } catch (JsonSyntaxException e) {
+    	if (e.getCause() instanceof IllegalStateException) {
+          IllegalStateException ise = (IllegalStateException) e.getCause();
+          if (ise.getMessage() != null
+              && ise.getMessage().contains("Expected a string but was BEGIN_OBJECT")) {
+            LOGGER.error(
+                "Catching exception because of issue https://github.com/kubernetes-client/java/issues/86");
+          } else {
+        	  LOGGER.error("Exception when running deleteJob()", e);
+          }
+        }
+      } catch (ApiException e) {
+        LOGGER.error("Exception when running deleteJob()", e);
       }
     }
     return result;
@@ -775,7 +920,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
 
   }
 
-  private Watch<V1Job> createJobWatch(BatchV1Api api, String labelSelector) throws ApiException {
+  protected Watch<V1Job> createJobWatch(BatchV1Api api, String labelSelector) throws ApiException {
     return Watch.createWatch(createWatcherApiClient(),
         api.listNamespacedJobCall(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null,
             null, labelSelector, null, null, null, true, null, null),
@@ -790,7 +935,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   }
 
 
-  private V1Job getJobResult(String taskId, Watch<V1Job> watch) throws IOException {
+  protected V1Job getJobResult(String taskId, Watch<V1Job> watch) throws IOException {
     V1Job jobResult = null;
     try {
       jobResult = getJob(taskId, watch);
@@ -991,5 +1136,9 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
 
   void setApiClient(ApiClient apiClient) {
     this.apiClient = apiClient;
+  }
+  
+  public ApiClient getApiClient() {
+    return this.apiClient;
   }
 }
