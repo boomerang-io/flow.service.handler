@@ -812,11 +812,13 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     	DateTime configMapDateTime = new DateTime();
     	for (int i=0; i < configMapList.getItems().size(); i++) {
     		DateTime configMapDateTimeIter = configMapList.getItems().get(i).getMetadata().getCreationTimestamp();
-    		if (configMapDateTimeIter != null && configMapDateTime.compareTo(configMapDateTimeIter) > 0) {
+//    		if (configMapDateTimeIter != null) && configMapDateTime.compareTo(configMapDateTimeIter) > 0) {
+    		if (configMapDateTimeIter != null) {
+    			LOGGER.info("Comparison: " + configMapDateTime.compareTo(configMapDateTimeIter));
     			configMap = configMapList.getItems().get(i);
     		}
     	}
-    	LOGGER.info(" getConfigMap() - chosen configmap: " + configMap.getMetadata().getName() + "(" + configMap.getMetadata().getCreationTimestamp() + ")");
+//    	LOGGER.info(" getConfigMap() - chosen configmap: " + configMap.getMetadata().getName() + "(" + configMap.getMetadata().getCreationTimestamp() + ")");
       }
     } catch (ApiException e) {
       LOGGER.error("Error: ", e);
