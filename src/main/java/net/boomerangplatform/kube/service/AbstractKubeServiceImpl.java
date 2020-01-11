@@ -810,10 +810,12 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
       if (!configMapList.getItems().isEmpty()) {
         LOGGER.info(" getConfigMap() - Found " + configMapList.getItems().size() + " configmaps: " + configMapList.getItems().stream().reduce("", (configMapNames, cm) -> configMapNames += cm.getMetadata().getName() + "(" + cm.getMetadata().getCreationTimestamp() + ")", String::concat));
         if (!Optional.ofNullable(taskId).isPresent()) {
-        	configMapList.getItems().stream().filter(cm -> !cm.getMetadata().getLabels().containsKey("task-id"));
+        	Optional<V1ConfigMap> configMapOptional = configMapList.getItems().stream().filter(cm -> !cm.getMetadata().getLabels().containsKey("task-id")).findFirst();
+        	configMap = configMapOptional.isPresent() ? configMapOptional.get() : configMapList.getItems().get(0);
+        } else {
+        	configMap = configMapList.getItems().get(0);
         }
-        configMap = configMapList.getItems().get(0);
-        
+
 //        DateTime configMapDateTime = configMap.getMetadata().getCreationTimestamp();
 //    	for (int i=0; i < configMapList.getItems().size(); i++) {
 //    		DateTime configMapDateTimeIter = configMapList.getItems().get(i).getMetadata().getCreationTimestamp();
