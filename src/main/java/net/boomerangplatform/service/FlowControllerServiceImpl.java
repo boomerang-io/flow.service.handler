@@ -97,6 +97,7 @@ public class FlowControllerServiceImpl implements ControllerService {
       if (kubeWorkerJobDeletion) {
 	      kubeService.deleteJob(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
       }
+      LOGGER.info(response.toString());
     }
     return response;
   }
@@ -122,6 +123,7 @@ public class FlowControllerServiceImpl implements ControllerService {
       response.setOutput(kubeService.getTaskOutPutConfigMapData(task.getWorkflowId(),
           task.getWorkflowActivityId(), task.getTaskId(), task.getTaskName()));
       kubeService.deleteConfigMap(null, task.getWorkflowActivityId(), task.getTaskId());
+      LOGGER.info(response.toString());
     }
     return response;
   }
