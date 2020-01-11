@@ -33,6 +33,7 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.Scroll;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
@@ -807,14 +808,15 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
           getCoreApi().listNamespacedConfigMap(kubeNamespace, kubeApiIncludeuninitialized,
               kubeApiPretty, null, null, labelSelector, null, null, TIMEOUT_ONE_MINUTE, false);
       if (!configMapList.getItems().isEmpty()) {
-        LOGGER.info(" getConfigMap() - Found " + configMapList.getItems().size() + " configmaps: " + configMapList.getItems().stream().reduce("", (configMapNames, cm) -> configMapNames += cm.getMetadata().getName(), String::concat));
-//    	DateTime configMapDateTime = null;
+        LOGGER.info(" getConfigMap() - Found " + configMapList.getItems().size() + " configmaps: " + configMapList.getItems().stream().reduce("", (configMapNames, cm) -> configMapNames += cm.getMetadata().getName() + "(" + cm.getMetadata().getCreationTimestamp() + ")", String::concat));
+    	DateTime configMapDateTime = null;
     	for (int i=0; i < configMapList.getItems().size(); i++) {
-//    		configMapDateTime = configMapList.getItems().get(i).getMetadata().getCreationTimestamp();
-    		LOGGER.info(" Configmap: " + configMapList.getItems().get(i).getMetadata().getName() + ", created: " + configMapList.getItems().get(i).getMetadata().getCreationTimestamp());
-    		configMap = configMapList.getItems().get(i);
+    		DateTime configMapDateTimeIter = configMapList.getItems().get(i).getMetadata().getCreationTimestamp();
+    		if (configMapDateTime != null && configMapDateTimeIter != null && configMapDateTime.compareTo(configMapDateTimeIter) > 0) {
+    			configMap = configMapList.getItems().get(i);
+    		}
     	}
-//        	configMap = configMapList.getItems().get(0);
+    	LOGGER.info(" getConfigMap() - chosen configmap: " + configMap.getMetadata().getName() + "(" + configMap.getMetadata().getCreationTimestamp() + ")");
       }
     } catch (ApiException e) {
       LOGGER.error("Error: ", e);
