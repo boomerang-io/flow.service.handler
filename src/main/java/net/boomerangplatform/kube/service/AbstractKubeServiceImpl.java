@@ -622,6 +622,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     String jobName = getJobName(true, workflowId, workflowActivityId, taskId);
     if (!jobName.isEmpty()) {
       try {
+    	  LOGGER.info("Deleting Job ( " + jobName + ")...");
         result = getBatchApi().deleteNamespacedJob(jobName, kubeNamespace, kubeApiPretty, deleteOptions, null, null, null, null);
       } catch (JsonSyntaxException e) {
     	if (e.getCause() instanceof IllegalStateException) {
@@ -716,8 +717,9 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     V1Status result = new V1Status();
 
     try {
-      result = getCoreApi().deleteNamespacedConfigMap(
-          getConfigMapName(getConfigMap(workflowId, workflowActivityId, taskId)), kubeNamespace,
+      String configMapName = getConfigMapName(getConfigMap(workflowId, workflowActivityId, taskId));
+      LOGGER.info("Deleting ConfigMap (" + configMapName + ")...");
+      result = getCoreApi().deleteNamespacedConfigMap(configMapName, kubeNamespace,
           kubeApiPretty, deleteOptions, null, null, null, null);
     } catch (JsonSyntaxException e) {
       if (e.getCause() instanceof IllegalStateException) {
