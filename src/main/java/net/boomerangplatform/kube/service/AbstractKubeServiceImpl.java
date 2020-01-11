@@ -807,7 +807,14 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
           getCoreApi().listNamespacedConfigMap(kubeNamespace, kubeApiIncludeuninitialized,
               kubeApiPretty, null, null, labelSelector, null, null, TIMEOUT_ONE_MINUTE, false);
       if (!configMapList.getItems().isEmpty()) {
-        configMap = configMapList.getItems().get(0);
+        LOGGER.info(" getConfigMap() - Found " + configMapList.getItems().size() + " configmaps: " + configMapList.getItems().stream().reduce("", (configMapNames, cm) -> configMapNames += cm.getMetadata().getName(), String::concat));
+//    	DateTime configMapDateTime = null;
+    	for (int i=0; i < configMapList.getItems().size(); i++) {
+//    		configMapDateTime = configMapList.getItems().get(i).getMetadata().getCreationTimestamp();
+    		LOGGER.info(" Configmap: " + configMapList.getItems().get(i).getMetadata().getName() + ", created: " + configMapList.getItems().get(i).getMetadata().getCreationTimestamp());
+    		configMap = configMapList.getItems().get(i);
+    	}
+//        	configMap = configMapList.getItems().get(0);
       }
     } catch (ApiException e) {
       LOGGER.error("Error: ", e);
