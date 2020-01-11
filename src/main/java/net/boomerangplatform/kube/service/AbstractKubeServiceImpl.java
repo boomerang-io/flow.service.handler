@@ -809,10 +809,10 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
               kubeApiPretty, null, null, labelSelector, null, null, TIMEOUT_ONE_MINUTE, false);
       if (!configMapList.getItems().isEmpty()) {
         LOGGER.info(" getConfigMap() - Found " + configMapList.getItems().size() + " configmaps: " + configMapList.getItems().stream().reduce("", (configMapNames, cm) -> configMapNames += cm.getMetadata().getName() + "(" + cm.getMetadata().getCreationTimestamp() + ")", String::concat));
-    	DateTime configMapDateTime = null;
+    	DateTime configMapDateTime = new DateTime();
     	for (int i=0; i < configMapList.getItems().size(); i++) {
     		DateTime configMapDateTimeIter = configMapList.getItems().get(i).getMetadata().getCreationTimestamp();
-    		if (configMapDateTime != null && configMapDateTimeIter != null && configMapDateTime.compareTo(configMapDateTimeIter) > 0) {
+    		if (configMapDateTimeIter != null && configMapDateTime.compareTo(configMapDateTimeIter) > 0) {
     			configMap = configMapList.getItems().get(i);
     		}
     	}
