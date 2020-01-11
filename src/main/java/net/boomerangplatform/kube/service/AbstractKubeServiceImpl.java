@@ -809,19 +809,23 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
               kubeApiPretty, null, null, labelSelector, null, null, TIMEOUT_ONE_MINUTE, false);
       if (!configMapList.getItems().isEmpty()) {
         LOGGER.info(" getConfigMap() - Found " + configMapList.getItems().size() + " configmaps: " + configMapList.getItems().stream().reduce("", (configMapNames, cm) -> configMapNames += cm.getMetadata().getName() + "(" + cm.getMetadata().getCreationTimestamp() + ")", String::concat));
+        if (!Optional.ofNullable(taskId).isPresent()) {
+        	configMapList.getItems().stream().filter(cm -> !cm.getMetadata().getLabels().containsKey("task-id"));
+        }
         configMap = configMapList.getItems().get(0);
-        DateTime configMapDateTime = configMap.getMetadata().getCreationTimestamp();
-    	for (int i=0; i < configMapList.getItems().size(); i++) {
-    		DateTime configMapDateTimeIter = configMapList.getItems().get(i).getMetadata().getCreationTimestamp();
-//    		if (configMapDateTimeIter != null) && configMapDateTime.compareTo(configMapDateTimeIter) > 0) {
-    		if (configMapDateTimeIter != null) {
-    			LOGGER.info("Comparing " + configMapDateTime + " to " + configMapDateTimeIter + " = " + configMapDateTime.compareTo(configMapDateTimeIter));
-    			if (configMapDateTime.compareTo(configMapDateTimeIter) > 0) {
-    				configMap = configMapList.getItems().get(i);
-    				configMapDateTime = configMap.getMetadata().getCreationTimestamp();
-    			}
-    		}
-    	}
+        
+//        DateTime configMapDateTime = configMap.getMetadata().getCreationTimestamp();
+//    	for (int i=0; i < configMapList.getItems().size(); i++) {
+//    		DateTime configMapDateTimeIter = configMapList.getItems().get(i).getMetadata().getCreationTimestamp();
+////    		if (configMapDateTimeIter != null) && configMapDateTime.compareTo(configMapDateTimeIter) > 0) {
+//    		if (configMapDateTimeIter != null) {
+//    			LOGGER.info("Comparing " + configMapDateTime + " to " + configMapDateTimeIter + " = " + configMapDateTime.compareTo(configMapDateTimeIter));
+//    			if (configMapDateTime.compareTo(configMapDateTimeIter) > 0) {
+//    				configMap = configMapList.getItems().get(i);
+//    				configMapDateTime = configMap.getMetadata().getCreationTimestamp();
+//    			}
+//    		}
+//    	}
     	LOGGER.info(" getConfigMap() - chosen configmap: " + configMap.getMetadata().getName() + "(" + configMap.getMetadata().getCreationTimestamp() + ")");
       }
     } catch (ApiException e) {
