@@ -115,7 +115,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
     /*
      * The following code is for custom tasks only
      */
-    if (Optional.ofNullable(image).isPresent()) {
+    if (createLifecycle) {
       List<V1Container> initContainers = new ArrayList<>();
       V1Container initContainer =
           getContainer(kubeLifecycleImage, null)
