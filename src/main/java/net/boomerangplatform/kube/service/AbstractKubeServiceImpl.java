@@ -569,6 +569,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     V1DeleteOptions deleteOptions = new V1DeleteOptions();
     V1Status result = new V1Status();
     String pvcName = getPVCName(workflowId, workflowActivityId);
+    LOGGER.info("Deleting PVC (" + pvcName + ")...");
     if (!pvcName.isEmpty()) {
       try {
         result =
@@ -583,7 +584,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
             LOGGER.error(
                 "Catching exception because of issue https://github.com/kubernetes-client/java/issues/86");
           } else {
-        	  LOGGER.error("Exception when running deleteJob()", e);
+        	  LOGGER.error("Exception when running deletePVC()", e);
           }
         }
       } catch (ApiException e) {
