@@ -91,7 +91,7 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
  *
  */
 @Override
-  protected V1Job createJobBody(String componentName, String componentId, String activityId, String taskActivityId,
+  protected V1Job createJobBody(boolean createLifecycle, String componentName, String componentId, String activityId, String taskActivityId,
       String taskName, String taskId, List<String> arguments,
       Map<String, String> taskProperties, String image, String command) {
 

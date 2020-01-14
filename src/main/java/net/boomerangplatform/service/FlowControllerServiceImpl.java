@@ -82,10 +82,11 @@ public class FlowControllerServiceImpl implements ControllerService {
           task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(),
           task.getProperties());
       kubeService.watchConfigMap(null, task.getWorkflowActivityId(), task.getTaskId());
-      kubeService.createJob(task.getWorkflowName(), task.getWorkflowId(),
+      boolean createWatchLifecycle = task.getArguments().contains("shell") ? Boolean.TRUE : Boolean.FALSE;
+      kubeService.createJob(createWatchLifecycle, task.getWorkflowName(), task.getWorkflowId(),
           task.getWorkflowActivityId(), task.getTaskActivityId(),task.getTaskName(), task.getTaskId(), task.getArguments(),
           task.getProperties());
-      kubeService.watchJob(false, task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
+      kubeService.watchJob(createWatchLifecycle, task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
     } catch (KubeRuntimeException e) {
       LOGGER.error(EXCEPTION, e);
       response.setCode("1");
@@ -111,7 +112,7 @@ public class FlowControllerServiceImpl implements ControllerService {
           task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(),
           task.getProperties());
       kubeService.watchConfigMap(null, task.getWorkflowActivityId(), task.getTaskId());
-      kubeService.createJob(task.getWorkflowName(), task.getWorkflowId(),
+      kubeService.createJob(true, task.getWorkflowName(), task.getWorkflowId(),
           task.getWorkflowActivityId(),task.getTaskActivityId(), task.getTaskName(), task.getTaskId(), task.getArguments(),
           task.getProperties(), task.getImage(), task.getCommand());
       kubeService.watchJob(true, task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());

@@ -183,7 +183,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   protected abstract String getLabelSelector(String workflowId, String workflowActivityId,
       String taskId);
 
-  protected abstract V1Job createJobBody(String workflowName, String workflowId,
+  protected abstract V1Job createJobBody(boolean createLifecycle, String workflowName, String workflowId,
       String workflowActivityId,String taskActivityId, String taskName, String taskId, List<String> arguments,
       Map<String, String> taskInputProperties, String image, String command);
 
@@ -204,10 +204,10 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   public abstract String getPrefixPVC();
 
   @Override
-  public V1Job createJob(String workflowName, String workflowId, String workflowActivityId, String taskActivityId,
+  public V1Job createJob(boolean createLifecycle, String workflowName, String workflowId, String workflowActivityId, String taskActivityId,
       String taskName, String taskId, List<String> arguments,
       Map<String, String> taskProperties) {
-    V1Job body = createJobBody(workflowName, workflowId, workflowActivityId, taskActivityId, taskName, taskId,
+    V1Job body = createJobBody(createLifecycle, workflowName, workflowId, workflowActivityId, taskActivityId, taskName, taskId,
         arguments, taskProperties, null, null);
     
     LOGGER.info(body);
@@ -234,10 +234,10 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   }
   
   @Override
-  public V1Job createJob(String workflowName, String workflowId, String workflowActivityId,  String taskActivityId,
+  public V1Job createJob(boolean createLifecycle, String workflowName, String workflowId, String workflowActivityId,  String taskActivityId,
       String taskName, String taskId, List<String> arguments,
       Map<String, String> taskProperties, String image, String command) {
-    V1Job body = createJobBody(workflowName, workflowId, workflowActivityId,taskActivityId, taskName, taskId,
+    V1Job body = createJobBody(createLifecycle, workflowName, workflowId, workflowActivityId,taskActivityId, taskName, taskId,
         arguments, taskProperties, image, command);
     
     LOGGER.info(body);
@@ -567,6 +567,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   @Override
   public V1Status deletePVC(String workflowId, String workflowActivityId) {
     V1DeleteOptions deleteOptions = new V1DeleteOptions();
+//    deleteOptions.setPropagationPolicy("Background");
     V1Status result = new V1Status();
     String pvcName = getPVCName(workflowId, workflowActivityId);
     LOGGER.info("Deleting PVC (" + pvcName + ")...");

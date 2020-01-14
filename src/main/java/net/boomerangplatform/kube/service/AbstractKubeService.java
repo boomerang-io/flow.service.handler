@@ -28,6 +28,7 @@ public interface AbstractKubeService {
       String workflowName, String workflowId, String workflowActivityId, Map<String, String> data);
 
   V1Job createJob(
+	  boolean createLifecycle,
       String workflowName,
       String workflowId,
       String workflowActivityId,
@@ -35,9 +36,10 @@ public interface AbstractKubeService {
       String taskName,
       String taskId,
       List<String> arguments,
-      Map<String, String> taskInputProperties);
+      Map<String, String> taskProperties);
 
   V1Job createJob(
+	  boolean createLifecycle,
       String workflowName,
       String workflowId,
       String workflowActivityId,
