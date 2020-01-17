@@ -62,3 +62,16 @@ preStopHandler.setExec(preStopExec);
 lifecycle.setPreStop(preStopHandler);
 container.lifecycle(lifecycle);
 ```
+
+### Sidecars
+
+- Sidecar Containers in Jobs: https://github.com/kubernetes/kubernetes/issues/25908
+- Sidecar Containers in Jobs 2: https://stackoverflow.com/questions/36208211/sidecar-containers-in-kubernetes-jobs
+- Terminating a sidecar container: https://medium.com/@cotton_ori/how-to-terminate-a-side-car-container-in-kubernetes-job-2468f435ca99
+- Sidecar Container Design Patterns: https://www.weave.works/blog/container-design-patterns-for-kubernetes/
+- KEP (Kubernetes Enhancement Proposal for Sidecars: https://github.com/kubernetes/enhancements/blob/master/keps/sig-apps/sidecarcontainers.md#upgrade--downgrade-strategy
+
+### Output Properties
+- Argo Variables: https://github.com/argoproj/argo/blob/master/docs/variables.md
+- Argo Output Parameters: https://github.com/argoproj/argo/blob/master/examples/README.md#output-parameters
+- Container Namespace Sharing: google it
