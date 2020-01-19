@@ -63,6 +63,11 @@ lifecycle.setPreStop(preStopHandler);
 container.lifecycle(lifecycle);
 ```
 
+- PreStop Hooks arent called on Successful Job: https://github.com/kubernetes/kubernetes/issues/55807
+- https://kubernetes.io/docs/concepts/workloads/pods/pod/#termination-of-pods
+- https://v1-13.docs.kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/
+- https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/
+
 ### Sidecars
 
 - Sidecar Containers in Jobs: https://github.com/kubernetes/kubernetes/issues/25908
