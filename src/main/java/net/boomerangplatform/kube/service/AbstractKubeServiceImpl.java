@@ -401,7 +401,11 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
 
       if (!listOfPods.isEmpty()) {
         pod = listOfPods.get(0);
-        InputStream is = logs.streamNamespacedPodLog(pod);
+        InputStream is = logs.streamNamespacedPodLog(
+            pod.getMetadata().getNamespace(),
+            pod.getMetadata().getName(),
+            "worker-cntr");
+       
         ByteStreams.copy(is, baos);
       }
     } catch (ApiException | IOException e) {
@@ -457,7 +461,10 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
       }
   
       PodLogs logs = new PodLogs();
-      InputStream inputStream = logs.streamNamespacedPodLog(pod);
+      InputStream inputStream = logs.streamNamespacedPodLog(
+          pod.getMetadata().getNamespace(),
+          pod.getMetadata().getName(),
+          "worker-cntr");
 
       responseBody = getPodLog(inputStream, pod.getMetadata().getName());
     } catch (ApiException | IOException e) {
