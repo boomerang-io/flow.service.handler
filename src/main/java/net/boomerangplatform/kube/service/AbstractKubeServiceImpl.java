@@ -29,7 +29,10 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.MatchPhraseQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.search.MultiMatchQuery.QueryBuilder;
 import org.elasticsearch.search.Scroll;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -1111,8 +1114,18 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
       searchSourceBuilder.from(0);
       searchSourceBuilder.size(1000);
       searchSourceBuilder.sort("offset");
-      searchSourceBuilder.query(QueryBuilders.matchPhraseQuery("kubernetes.pod",
-    		  getPrefixJob() + "-" + activityId + "-*"));
+      
+      
+      MatchPhraseQueryBuilder podName = QueryBuilders.matchPhraseQuery("kubernetes.pod",
+          getPrefixJob() + "-" + activityId + "-*");
+
+      MatchPhraseQueryBuilder containerName  = QueryBuilders.matchPhraseQuery("kubernetes.container_name",
+          "worker-cntr");
+      
+      BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().should(podName).should(containerName);
+      
+      
+      searchSourceBuilder.query(queryBuilder);
       searchRequest.source(searchSourceBuilder);
 
       SearchResponse searchResponse = elasticRestClient.search(searchRequest);
