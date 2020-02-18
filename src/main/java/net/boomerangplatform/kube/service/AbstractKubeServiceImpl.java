@@ -1120,11 +1120,9 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
           getPrefixJob() + "-" + activityId + "-*");
 
       MatchPhraseQueryBuilder containerName  = QueryBuilders.matchPhraseQuery("kubernetes.container_name",
-          "worker-cntr");
-      
-      BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().should(podName).should(containerName);
-      
-      
+          "worker-cntr"); 
+      BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(podName).must(containerName);
+     
       searchSourceBuilder.query(queryBuilder);
       searchRequest.source(searchSourceBuilder);
 
