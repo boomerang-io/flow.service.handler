@@ -67,6 +67,8 @@ container.lifecycle(lifecycle);
 - https://kubernetes.io/docs/concepts/workloads/pods/pod/#termination-of-pods
 - https://v1-13.docs.kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/
 - https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/
+- https://www.alibabacloud.com/blog/pod-lifecycle-container-lifecycle-hooks-and-restartpolicy_594727
+- https://www.magalix.com/blog/kubernetes-patterns-application-process-management-1
 
 ### Sidecars
 
@@ -75,8 +77,17 @@ container.lifecycle(lifecycle);
 - Terminating a sidecar container: https://medium.com/@cotton_ori/how-to-terminate-a-side-car-container-in-kubernetes-job-2468f435ca99
 - Sidecar Container Design Patterns: https://www.weave.works/blog/container-design-patterns-for-kubernetes/
 - KEP (Kubernetes Enhancement Proposal for Sidecars: https://github.com/kubernetes/enhancements/blob/master/keps/sig-apps/sidecarcontainers.md#upgrade--downgrade-strategy
+- https://blog.bryantluk.com/post/2018/05/13/terminating-sidecar-containers-in-kubernetes-job-specs/
 
 ### Output Properties
 - Argo Variables: https://github.com/argoproj/argo/blob/master/docs/variables.md
 - Argo Output Parameters: https://github.com/argoproj/argo/blob/master/examples/README.md#output-parameters
 - Container Namespace Sharing: google it
+
+### Process Namespace Sharing
+- https://github.com/kubernetes/kubernetes/issues/1615
+- https://github.com/kubernetes/enhancements/issues/495
+- https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/
+- https://hackernoon.com/the-curious-case-of-pid-namespaces-1ce86b6bc900
+- https://www.mirantis.com/blog/multi-container-pods-and-container-communication-in-kubernetes/
+
