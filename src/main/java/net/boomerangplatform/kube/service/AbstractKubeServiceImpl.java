@@ -149,6 +149,9 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
 
   @Value("${kube.worker.hostaliases}")
   protected String kubeWorkerHostAliases;
+  
+  @Value("${kube.worker.node.dedicated}")
+  protected Boolean kubeWorkerDedicatedNodes;
 
   @Value("${kube.worker.serviceaccount}")
   protected String kubeWorkerServiceAccount;

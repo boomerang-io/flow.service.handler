@@ -31,6 +31,7 @@ import io.kubernetes.client.models.V1PodSpec;
 import io.kubernetes.client.models.V1PodTemplateSpec;
 import io.kubernetes.client.models.V1ProjectedVolumeSource;
 import io.kubernetes.client.models.V1ResourceRequirements;
+import io.kubernetes.client.models.V1Toleration;
 import io.kubernetes.client.models.V1Volume;
 import io.kubernetes.client.models.V1VolumeProjection;
 
@@ -168,6 +169,15 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
     List<V1Container> containerList = new ArrayList<>();
     containerList.add(container);
     podSpec.containers(containerList);
+    
+    if (kubeWorkerDedicatedNodes) {
+	    V1Toleration nodeTolerationItem = new V1Toleration();
+	    nodeTolerationItem.key("dedicated");
+	    nodeTolerationItem.value("bmrg-cicd-workers");
+	    nodeTolerationItem.effect("NoSchedule");
+	    nodeTolerationItem.operator("Equal");
+	    podSpec.addTolerationsItem(nodeTolerationItem);
+    }
 
     if (!kubeWorkerHostAliases.isEmpty()) {
       Type listHostAliasType = new TypeToken<List<V1HostAlias>>() {}.getType();
