@@ -116,7 +116,7 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
     container.args(arguments);
     V1ResourceRequirements resources = new V1ResourceRequirements();
     resources.putLimitsItem("ephemeral-storage", new Quantity(kubeResourceLimitEphemeralStorage));
-//    resources.putRequestsItem("ephemeral-storage", new Quantity(kubeResourceRequestEphemeralStorage));
+    resources.putRequestsItem("ephemeral-storage", new Quantity(kubeResourceRequestEphemeralStorage));
     container.setResources(resources);
     if (checkPVCExists(componentId, null, null, true)) {
       container.addVolumeMountsItem(getVolumeMount(PREFIX_VOL_CACHE, "/cache"));
