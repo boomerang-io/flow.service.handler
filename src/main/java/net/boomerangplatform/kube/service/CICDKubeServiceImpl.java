@@ -173,10 +173,11 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
     if (kubeWorkerDedicatedNodes) {
 	    V1Toleration nodeTolerationItem = new V1Toleration();
 	    nodeTolerationItem.key("dedicated");
-	    nodeTolerationItem.value("bmrg-cicd-workers");
+	    nodeTolerationItem.value("bmrg-cicd-worker");
 	    nodeTolerationItem.effect("NoSchedule");
 	    nodeTolerationItem.operator("Equal");
 	    podSpec.addTolerationsItem(nodeTolerationItem);
+	    podSpec.putNodeSelectorItem("node-role.kubernetes.io/bmrg-cicd-worker", "true");
     }
 
     if (!kubeWorkerHostAliases.isEmpty()) {
