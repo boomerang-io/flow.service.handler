@@ -168,6 +168,10 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
     List<V1Container> containerList = new ArrayList<>();
     containerList.add(container);
     podSpec.containers(containerList);
+    
+    if (kubeWorkerDedicatedNodes) {
+    	getTolerationAndSelector(podSpec);
+    }
 
     if (!kubeWorkerHostAliases.isEmpty()) {
       Type listHostAliasType = new TypeToken<List<V1HostAlias>>() {}.getType();

@@ -163,6 +163,10 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
     projectedVolPropsSource.sources(projectPropsVolumeList);
     volumeProps.projected(projectedVolPropsSource);
     podSpec.addVolumesItem(volumeProps);
+    
+    if (kubeWorkerDedicatedNodes) {
+    	getTolerationAndSelector(podSpec);
+    }
 
     if (!kubeWorkerServiceAccount.isEmpty()) {
       podSpec.serviceAccountName(kubeWorkerServiceAccount);

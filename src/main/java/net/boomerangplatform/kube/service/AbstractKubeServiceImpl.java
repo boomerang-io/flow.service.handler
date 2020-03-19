@@ -32,7 +32,6 @@ import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.MatchPhraseQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.search.MultiMatchQuery.QueryBuilder;
 import org.elasticsearch.search.Scroll;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -75,9 +74,11 @@ import io.kubernetes.client.models.V1PersistentVolumeClaimSpec;
 import io.kubernetes.client.models.V1PersistentVolumeClaimStatus;
 import io.kubernetes.client.models.V1Pod;
 import io.kubernetes.client.models.V1PodCondition;
+import io.kubernetes.client.models.V1PodSpec;
 import io.kubernetes.client.models.V1ResourceRequirements;
 import io.kubernetes.client.models.V1SecurityContext;
 import io.kubernetes.client.models.V1Status;
+import io.kubernetes.client.models.V1Toleration;
 import io.kubernetes.client.models.V1Volume;
 import io.kubernetes.client.models.V1VolumeMount;
 import io.kubernetes.client.models.V1VolumeProjection;
@@ -149,6 +150,9 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
 
   @Value("${kube.worker.hostaliases}")
   protected String kubeWorkerHostAliases;
+  
+  @Value("${kube.worker.node.dedicated}")
+  protected Boolean kubeWorkerDedicatedNodes;
 
   @Value("${kube.worker.serviceaccount}")
   protected String kubeWorkerServiceAccount;
@@ -938,6 +942,21 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     }
     return metadata;
   }
+  
+  /*
+   * Sets the tolerations and nodeSelector to match the dedicated node
+   * taints and node-role label
+   */
+    protected V1PodSpec getTolerationAndSelector(V1PodSpec podSpec) {
+	    V1Toleration nodeTolerationItem = new V1Toleration();
+	    nodeTolerationItem.key("dedicated");
+	    nodeTolerationItem.value("bmrg-worker");
+	    nodeTolerationItem.effect("NoSchedule");
+	    nodeTolerationItem.operator("Equal");
+	    podSpec.addTolerationsItem(nodeTolerationItem);
+	    podSpec.putNodeSelectorItem("node-role.kubernetes.io/bmrg-worker", "true");
+      return podSpec;
+    }
 
   private boolean isPVCAvailable(boolean failIfNotBound,
       V1PersistentVolumeClaimList persistentVolumeClaimList) {
