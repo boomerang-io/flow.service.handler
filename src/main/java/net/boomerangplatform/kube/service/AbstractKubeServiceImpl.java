@@ -209,36 +209,6 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   public abstract String getPrefixJob();
 
   public abstract String getPrefixPVC();
-
-  @Override
-  public V1Job createJob(boolean createLifecycle, String workflowName, String workflowId, String workflowActivityId, String taskActivityId,
-      String taskName, String taskId, List<String> arguments,
-      Map<String, String> taskProperties) {
-    V1Job body = createJobBody(createLifecycle, workflowName, workflowId, workflowActivityId, taskActivityId, taskName, taskId,
-        arguments, taskProperties, null, null);
-    
-    LOGGER.info(body);
-
-    V1Job jobResult = new V1Job();
-    try {
-      jobResult = getBatchApi().createNamespacedJob(kubeNamespace, body,
-          kubeApiIncludeuninitialized, kubeApiPretty, null);
-      LOGGER.info(jobResult);
-    } catch (ApiException e) {
-      if (e.getCause() instanceof SocketTimeoutException) {
-        SocketTimeoutException ste = (SocketTimeoutException) e.getCause();
-        if (ste.getMessage() != null && ste.getMessage().contains("timeout")) {
-          LOGGER.warn("Catching timeout and return as task error");
-          V1JobStatus badStatus = new V1JobStatus();
-          return body.status(badStatus.failed(1));
-        }
-      } else {
-          throw new KubeRuntimeException("Error createJob", e);
-      }
-    }
-
-    return jobResult;
-  }
   
   @Override
   public V1Job createJob(boolean createLifecycle, String workflowName, String workflowId, String workflowActivityId,  String taskActivityId,
@@ -947,7 +917,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
    * Sets the tolerations and nodeSelector to match the dedicated node
    * taints and node-role label
    */
-    protected V1PodSpec getTolerationAndSelector(V1PodSpec podSpec) {
+    protected void getTolerationAndSelector(V1PodSpec podSpec) {
 	    V1Toleration nodeTolerationItem = new V1Toleration();
 	    nodeTolerationItem.key("dedicated");
 	    nodeTolerationItem.value("bmrg-worker");
@@ -955,7 +925,6 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
 	    nodeTolerationItem.operator("Equal");
 	    podSpec.addTolerationsItem(nodeTolerationItem);
 	    podSpec.putNodeSelectorItem("node-role.kubernetes.io/bmrg-worker", "true");
-      return podSpec;
     }
 
   private boolean isPVCAvailable(boolean failIfNotBound,

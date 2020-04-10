@@ -16,9 +16,9 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 import io.kubernetes.client.ApiException;
 import net.boomerangplatform.kube.exception.KubeRuntimeException;
 import net.boomerangplatform.kube.service.CICDKubeServiceImpl;
-import net.boomerangplatform.model.CustomTask;
 import net.boomerangplatform.model.Response;
 import net.boomerangplatform.model.Task;
+import net.boomerangplatform.model.TaskCICD;
 import net.boomerangplatform.model.TaskResponse;
 import net.boomerangplatform.model.Workflow;
 
@@ -67,9 +67,21 @@ public class CICDControllerServiceImpl implements ControllerService {
     }
     return response;
   }
+  
+
 
   @Override
   public TaskResponse executeTask(Task task) {
+	  if (task instanceof TaskCICD) {
+		  return executeTaskCICD((TaskCICD)task);
+	  } else {
+		  TaskResponse response = new TaskResponse("1", "Cannot execute unknown task type.", null);
+		  LOGGER.error(EXCEPTION, response.getMessage());
+	      return response;
+	  }
+  }
+
+  private TaskResponse executeTaskCICD(TaskCICD task) {
     TaskResponse response = new TaskResponse("0",
         "Task (" + task.getTaskId() + ") has been executed successfully.", null);
     try {
@@ -91,7 +103,7 @@ public class CICDControllerServiceImpl implements ControllerService {
           task.getTaskId());
       kubeService.createJob(false, task.getWorkflowName(), task.getWorkflowId(),
               task.getWorkflowActivityId(), task.getTaskActivityId(),task.getTaskName(), task.getTaskId(), task.getArguments(),
-              task.getProperties());
+              task.getProperties(), null, null);
       kubeService.watchJob(false, task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
     } catch (ApiException | KubeRuntimeException e) {
       LOGGER.error(EXCEPTION, e);
@@ -105,13 +117,6 @@ public class CICDControllerServiceImpl implements ControllerService {
       }
     }
     return response;
-  }
-
-
-  @Override
-  public TaskResponse executeTask(CustomTask task) {   
-    return new TaskResponse("1",
-            "CICD does not support Custom Tasks at this time.", null);
   }
   
   @Override
