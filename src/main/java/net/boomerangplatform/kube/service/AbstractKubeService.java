@@ -36,17 +36,6 @@ public interface AbstractKubeService {
       String taskName,
       String taskId,
       List<String> arguments,
-      Map<String, String> taskProperties);
-
-  V1Job createJob(
-	  boolean createLifecycle,
-      String workflowName,
-      String workflowId,
-      String workflowActivityId,
-      String taskActivityId,
-      String taskName,
-      String taskId,
-      List<String> arguments,
       Map<String, String> taskProperties,
       String image,
       String command);

@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
-import net.boomerangplatform.model.CustomTask;
+import net.boomerangplatform.model.TaskCustom;
 import net.boomerangplatform.model.Response;
 import net.boomerangplatform.model.Task;
 import net.boomerangplatform.model.TaskResponse;
@@ -25,7 +25,7 @@ public class MockControllerService implements ControllerService {
 	}
 
 	@Override
-	public TaskResponse executeTask(CustomTask task) {
+	public TaskResponse executeTask(TaskCustom task) {
 		return null;
 	}
 
