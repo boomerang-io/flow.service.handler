@@ -21,9 +21,4 @@ public class TaskController {
   public TaskResponse executeTask(@RequestBody Task task) {
     return controllerService.executeTask(task);
   }
-
-//  @PostMapping(value = "/custom/execute")
-//  public TaskResponse executeCustomTask(@RequestBody TaskCustom task) {
-//    return controllerService.executeTask(task);
-//  }
 }
