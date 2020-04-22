@@ -16,10 +16,11 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 import io.kubernetes.client.ApiException;
 import net.boomerangplatform.kube.exception.KubeRuntimeException;
 import net.boomerangplatform.kube.service.FlowKubeServiceImpl;
-import net.boomerangplatform.model.CustomTask;
 import net.boomerangplatform.model.Response;
 import net.boomerangplatform.model.Task;
+import net.boomerangplatform.model.TaskCustom;
 import net.boomerangplatform.model.TaskResponse;
+import net.boomerangplatform.model.TaskTemplate;
 import net.boomerangplatform.model.Workflow;
 
 @Service
@@ -75,6 +76,18 @@ public class FlowControllerServiceImpl implements ControllerService {
 
   @Override
   public TaskResponse executeTask(Task task) {
+	  if (task instanceof TaskTemplate) {
+		  return executeTaskTemplate((TaskTemplate)task);
+	  } else if (task instanceof TaskCustom) {
+		  return executeTaskCustom((TaskCustom)task);
+	  } else {
+		  TaskResponse response = new TaskResponse("1", "Cannot execute unknown task type.", null);
+		  LOGGER.error(EXCEPTION, response.getMessage());
+	      return response;
+	  }
+  }
+
+  private TaskResponse executeTaskTemplate(TaskTemplate task) {
     TaskResponse response = new TaskResponse("0",
         "Task (" + task.getTaskId() + ") has been executed successfully.", null);
     try {
@@ -85,7 +98,7 @@ public class FlowControllerServiceImpl implements ControllerService {
       boolean createWatchLifecycle = task.getArguments().contains("shell") ? Boolean.TRUE : Boolean.FALSE;
       kubeService.createJob(createWatchLifecycle, task.getWorkflowName(), task.getWorkflowId(),
           task.getWorkflowActivityId(), task.getTaskActivityId(),task.getTaskName(), task.getTaskId(), task.getArguments(),
-          task.getProperties());
+          task.getProperties(), task.getImage(), task.getCommand());
       kubeService.watchJob(createWatchLifecycle, task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
     } catch (KubeRuntimeException e) {
       LOGGER.error(EXCEPTION, e);
@@ -103,8 +116,7 @@ public class FlowControllerServiceImpl implements ControllerService {
     return response;
   }
 
-  @Override
-  public TaskResponse executeTask(CustomTask task) {
+  private TaskResponse executeTaskCustom(TaskCustom task) {
     TaskResponse response = new TaskResponse("0",
         "Task (" + task.getTaskId() + ") has been executed successfully.", null);
     try {
