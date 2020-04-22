@@ -139,8 +139,8 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
     if (kubeWorkerStorageDataMemory && Boolean.valueOf(taskProperties.get("worker.storage.data.memory"))) {
     	LOGGER.info("Setting /data to in memory storage...");
     	emptyDir.setMedium("Memory");
+    	emptyDir.setSizeLimit(kubeWorkerStorageDataSize);
     }
-	emptyDir.setSizeLimit(kubeWorkerStorageDataSize);
 	dataVolume.emptyDir(emptyDir);
 	podSpec.addVolumesItem(dataVolume);
 
