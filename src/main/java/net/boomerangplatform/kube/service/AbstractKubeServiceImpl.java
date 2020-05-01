@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -887,7 +888,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   protected V1Container getContainer(String image, String command) {
     V1Container container = new V1Container();
     LOGGER.info("Container Image: " + Optional.ofNullable(image).orElse(kubeImage));
-    container.image(Optional.ofNullable(image).orElse(kubeImage));
+    container.image(Optional.ofNullable(image).filter(Predicate.not(String::isEmpty)).orElse(kubeImage));
     Optional.ofNullable(command).ifPresent(str -> container.addCommandItem(str));
     container.name("worker-cntr");
     container.imagePullPolicy(kubeImagePullPolicy);
