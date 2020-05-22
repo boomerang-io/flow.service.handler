@@ -85,6 +85,7 @@ import io.kubernetes.client.models.V1VolumeMount;
 import io.kubernetes.client.models.V1VolumeProjection;
 import io.kubernetes.client.util.Watch;
 import net.boomerangplatform.kube.exception.KubeRuntimeException;
+import net.boomerangplatform.model.TaskDeletion;
 
 public abstract class AbstractKubeServiceImpl implements AbstractKubeService { // NOSONAR
 
@@ -602,11 +603,11 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
 	  }
   
   @Override
-  public V1Status deleteJob(String workflowId, String workflowActivityId, String taskId) {
+  public V1Status deleteJob(TaskDeletion taskDeletion, String workflowId, String workflowActivityId, String taskId) {
     V1DeleteOptions deleteOptions = new V1DeleteOptions();
     deleteOptions.setPropagationPolicy("Background");
     V1Status result = new V1Status();
-    String jobName = getJobName(true, workflowId, workflowActivityId, taskId);
+    String jobName = getJobName(TaskDeletion.OnSuccess.equals(taskDeletion) ? true : false, workflowId, workflowActivityId, taskId);
     if (!jobName.isEmpty()) {
       try {
     	  LOGGER.info("Deleting Job ( " + jobName + ")...");
