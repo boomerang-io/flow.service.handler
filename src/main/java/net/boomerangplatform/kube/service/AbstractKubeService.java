@@ -13,6 +13,7 @@ import io.kubernetes.client.models.V1Job;
 import io.kubernetes.client.models.V1PersistentVolumeClaim;
 import io.kubernetes.client.models.V1PersistentVolumeClaimStatus;
 import io.kubernetes.client.models.V1Status;
+import net.boomerangplatform.model.TaskDeletion;
 
 public interface AbstractKubeService {
 
@@ -28,7 +29,7 @@ public interface AbstractKubeService {
       String workflowName, String workflowId, String workflowActivityId, Map<String, String> data);
 
   V1Job createJob(
-	  boolean createLifecycle,
+      boolean createLifecycle,
       String workflowName,
       String workflowId,
       String workflowActivityId,
@@ -55,10 +56,15 @@ public interface AbstractKubeService {
   Map<String, String> getTaskOutPutConfigMapData(
       String workflowId, String workflowActivityId, String taskId, String taskName);
 
-  String getPodLog(String workflowId, String workflowActivityId, String taskId,  String taskActivityId);
+  String getPodLog(
+      String workflowId, String workflowActivityId, String taskId, String taskActivityId);
 
   StreamingResponseBody streamPodLog(
-      HttpServletResponse response, String workflowId, String workflowActivityId, String taskId, String taskActivityId);
+      HttpServletResponse response,
+      String workflowId,
+      String workflowActivityId,
+      String taskId,
+      String taskActivityId);
 
   void patchTaskConfigMap(
       String workflowId,
@@ -67,6 +73,6 @@ public interface AbstractKubeService {
       String taskName,
       Map<String, String> properties);
 
-V1Status deleteJob(String workflowId,String workflowActivityId,String taskId);
-
+  V1Status deleteJob(
+      TaskDeletion taskDeletion, String workflowId, String workflowActivityId, String taskId);
 }

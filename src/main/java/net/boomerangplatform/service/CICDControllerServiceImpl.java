@@ -19,6 +19,7 @@ import net.boomerangplatform.kube.service.CICDKubeServiceImpl;
 import net.boomerangplatform.model.Response;
 import net.boomerangplatform.model.Task;
 import net.boomerangplatform.model.TaskCICD;
+import net.boomerangplatform.model.TaskDeletion;
 import net.boomerangplatform.model.TaskResponse;
 import net.boomerangplatform.model.Workflow;
 
@@ -31,7 +32,7 @@ public class CICDControllerServiceImpl implements ControllerService {
   private static final Logger LOGGER = LogManager.getLogger(CICDControllerServiceImpl.class);
 
   @Value("${kube.worker.job.deletion}")
-  protected Boolean kubeWorkerJobDeletion;
+  protected TaskDeletion kubeWorkerJobDeletion;
 
   @Autowired
   private CICDKubeServiceImpl kubeService;
@@ -112,9 +113,10 @@ public class CICDControllerServiceImpl implements ControllerService {
       LOGGER.info("DEBUG::Task Is Being Set as Failed");
     } finally {
       kubeService.deleteConfigMap(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
-      if (kubeWorkerJobDeletion) {
-	      kubeService.deleteJob(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
+      if (!TaskDeletion.Never.equals(kubeWorkerJobDeletion)) {
+    	  kubeService.deleteJob(kubeWorkerJobDeletion, task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
       }
+      LOGGER.info("Task (" + task.getTaskId() + ") has completed with code " + response.getCode());
     }
     return response;
   }

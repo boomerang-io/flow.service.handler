@@ -19,6 +19,7 @@ import net.boomerangplatform.kube.service.FlowKubeServiceImpl;
 import net.boomerangplatform.model.Response;
 import net.boomerangplatform.model.Task;
 import net.boomerangplatform.model.TaskCustom;
+import net.boomerangplatform.model.TaskDeletion;
 import net.boomerangplatform.model.TaskResponse;
 import net.boomerangplatform.model.TaskTemplate;
 import net.boomerangplatform.model.Workflow;
@@ -32,7 +33,7 @@ public class FlowControllerServiceImpl implements ControllerService {
   private static final Logger LOGGER = LogManager.getLogger(FlowControllerServiceImpl.class);
 
   @Value("${kube.worker.job.deletion}")
-  protected Boolean kubeWorkerJobDeletion;
+  protected TaskDeletion kubeWorkerJobDeletion;
 
   @Autowired
   private FlowKubeServiceImpl kubeService;
@@ -108,8 +109,8 @@ public class FlowControllerServiceImpl implements ControllerService {
       response.setOutput(kubeService.getTaskOutPutConfigMapData(task.getWorkflowId(),
           task.getWorkflowActivityId(), task.getTaskId(), task.getTaskName()));
       kubeService.deleteConfigMap(null, task.getWorkflowActivityId(), task.getTaskId());
-      if (kubeWorkerJobDeletion) {
-	      kubeService.deleteJob(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
+      if (!TaskDeletion.Never.equals(kubeWorkerJobDeletion)) {
+    	  kubeService.deleteJob(kubeWorkerJobDeletion, task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
       }
       LOGGER.info("Task (" + task.getTaskId() + ") has completed with code " + response.getCode());
     }
