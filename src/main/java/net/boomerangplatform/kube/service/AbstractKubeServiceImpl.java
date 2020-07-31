@@ -84,6 +84,7 @@ import io.kubernetes.client.models.V1VolumeMount;
 import io.kubernetes.client.models.V1VolumeProjection;
 import io.kubernetes.client.util.Watch;
 import net.boomerangplatform.kube.exception.KubeRuntimeException;
+import net.boomerangplatform.model.TaskConfiguration;
 import net.boomerangplatform.model.TaskDeletion;
 
 public abstract class AbstractKubeServiceImpl implements AbstractKubeService { // NOSONAR
@@ -146,9 +147,6 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   @Value("${kube.worker.job.ttlDays}")
   protected Integer kubeWorkerJobTTLDays;
 
-  @Value("${kube.worker.debug}")
-  protected Boolean kubeWorkerDebug;
-
   @Value("${kube.worker.hostaliases}")
   protected String kubeWorkerHostAliases;
   
@@ -190,7 +188,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
 
   protected abstract V1Job createJobBody(boolean createLifecycle, String workflowName, String workflowId,
       String workflowActivityId,String taskActivityId, String taskName, String taskId, List<String> arguments,
-      Map<String, String> taskInputProperties, String image, String command);
+      Map<String, String> taskProperties, String image, String command, TaskConfiguration taskConfiguration);
 
   protected abstract V1ConfigMap createTaskConfigMapBody(String workflowName, String workflowId,
       String workflowActivityId, String taskName, String taskId, Map<String, String> inputProps);
@@ -211,9 +209,9 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   @Override
   public V1Job createJob(boolean createLifecycle, String workflowName, String workflowId, String workflowActivityId,  String taskActivityId,
       String taskName, String taskId, List<String> arguments,
-      Map<String, String> taskProperties, String image, String command) {
+      Map<String, String> taskProperties, String image, String command, TaskConfiguration taskConfiguration) {
     V1Job body = createJobBody(createLifecycle, workflowName, workflowId, workflowActivityId,taskActivityId, taskName, taskId,
-        arguments, taskProperties, image, command);
+        arguments, taskProperties, image, command, taskConfiguration);
     
     LOGGER.info(body);
 

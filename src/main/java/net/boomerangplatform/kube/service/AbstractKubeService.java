@@ -13,6 +13,7 @@ import io.kubernetes.client.models.V1Job;
 import io.kubernetes.client.models.V1PersistentVolumeClaim;
 import io.kubernetes.client.models.V1PersistentVolumeClaimStatus;
 import io.kubernetes.client.models.V1Status;
+import net.boomerangplatform.model.TaskConfiguration;
 import net.boomerangplatform.model.TaskDeletion;
 
 public interface AbstractKubeService {
@@ -37,9 +38,10 @@ public interface AbstractKubeService {
       String taskName,
       String taskId,
       List<String> arguments,
-      Map<String, String> taskProperties,
+      Map<String, String> properties,
       String image,
-      String command);
+      String command,
+      TaskConfiguration configuration);
 
   V1ConfigMap watchConfigMap(String workflowId, String workflowActivityId, String taskId);
 
