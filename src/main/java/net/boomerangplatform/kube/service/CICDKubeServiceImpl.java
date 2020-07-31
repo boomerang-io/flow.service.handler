@@ -33,6 +33,7 @@ import io.kubernetes.client.models.V1ProjectedVolumeSource;
 import io.kubernetes.client.models.V1ResourceRequirements;
 import io.kubernetes.client.models.V1Volume;
 import io.kubernetes.client.models.V1VolumeProjection;
+import net.boomerangplatform.model.TaskConfiguration;
 
 @Service
 @Profile("cicd")
@@ -93,7 +94,7 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
 @Override
   protected V1Job createJobBody(boolean createLifecycle, String componentName, String componentId, String activityId, String taskActivityId,
       String taskName, String taskId, List<String> arguments,
-      Map<String, String> taskProperties, String image, String command) {
+      Map<String, String> taskProperties, String image, String command, TaskConfiguration taskConfiguration) {
 
     // Initialize Job Body
     V1Job body = new V1Job();
@@ -110,7 +111,7 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
     if (proxyEnabled) {
       envVars.addAll(createProxyEnvVars());
     }
-    envVars.add(createEnvVar("DEBUG", kubeWorkerDebug.toString()));
+    envVars.add(createEnvVar("DEBUG", String.valueOf(taskConfiguration.getDebug())));
     envVars.add(createEnvVar("CI", "true"));
     container.env(envVars);
     container.args(arguments);
@@ -226,7 +227,6 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
     sysProps.put("activity.id", activityId);
     sysProps.put("workflow.name", componentName);
     sysProps.put("workflow.id", componentId);
-    sysProps.put("worker.debug", kubeWorkerDebug.toString());
     sysProps.put("controller.service.url", bmrgControllerServiceURL);
     inputsWithFixedKeys.put("workflow.input.properties", createConfigMapProp(inputProps));
     inputsWithFixedKeys.put("workflow.system.properties", createConfigMapProp(sysProps));

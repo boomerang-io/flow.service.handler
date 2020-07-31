@@ -30,9 +30,6 @@ public class KubeServiceImpl implements KubeService {
 
   private static final Logger LOGGER = LogManager.getLogger(KubeServiceImpl.class);
 
-  @Value("${kube.image}")
-  private String kubeImage;
-
   @Value("${kube.namespace}")
   protected String kubeNamespace;
 

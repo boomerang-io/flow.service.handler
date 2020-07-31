@@ -8,7 +8,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
@@ -30,10 +29,7 @@ public class CICDControllerServiceImpl implements ControllerService {
   private static final String EXCEPTION = "Exception: ";
 
   private static final Logger LOGGER = LogManager.getLogger(CICDControllerServiceImpl.class);
-
-  @Value("${kube.worker.job.deletion}")
-  protected TaskDeletion kubeWorkerJobDeletion;
-
+  
   @Autowired
   private CICDKubeServiceImpl kubeService;
 
@@ -88,8 +84,7 @@ public class CICDControllerServiceImpl implements ControllerService {
 			response = new TaskResponse("1", "No task image specified. Cannot execute.", null);
 			LOGGER.error(EXCEPTION, response.getMessage());
 		} else {
-			response = new TaskResponse("0",
-					"Task (" + task.getTaskId() + ") has been executed successfully.", null);
+			response = new TaskResponse("0", "Task (" + task.getTaskId() + ") has been executed successfully.", null);
 			try {
 				// TODO separate out cache handling to separate try catch to handle failure and
 				// continue.
@@ -107,7 +102,7 @@ public class CICDControllerServiceImpl implements ControllerService {
 				kubeService.watchConfigMap(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
 				kubeService.createJob(false, task.getWorkflowName(), task.getWorkflowId(), task.getWorkflowActivityId(),
 						task.getTaskActivityId(), task.getTaskName(), task.getTaskId(), task.getArguments(),
-						task.getProperties(), null, null);
+						task.getProperties(), task.getImage(), task.getCommand(), task.getConfiguration());
 				kubeService.watchJob(false, task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
 			} catch (ApiException | KubeRuntimeException e) {
 				LOGGER.error(EXCEPTION, e);
@@ -116,9 +111,9 @@ public class CICDControllerServiceImpl implements ControllerService {
 				LOGGER.info("DEBUG::Task Is Being Set as Failed");
 			} finally {
 				kubeService.deleteConfigMap(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
-				if (!TaskDeletion.Never.equals(kubeWorkerJobDeletion)) {
-					kubeService.deleteJob(kubeWorkerJobDeletion, task.getWorkflowId(), task.getWorkflowActivityId(),
-							task.getTaskId());
+				if (!TaskDeletion.Never.equals(task.getConfiguration().getDeletion())) {
+					kubeService.deleteJob(task.getConfiguration().getDeletion(), task.getWorkflowId(),
+							task.getWorkflowActivityId(), task.getTaskId());
 				}
 				LOGGER.info("Task (" + task.getTaskId() + ") has completed with code " + response.getCode());
 			}
