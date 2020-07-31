@@ -46,6 +46,9 @@ public abstract class Task {
 
   private List<String> arguments;
 
+  @JsonProperty("configuration")
+  private TaskConfiguration configuration;
+
   public String getWorkflowName() {
     return workflowName;
   }

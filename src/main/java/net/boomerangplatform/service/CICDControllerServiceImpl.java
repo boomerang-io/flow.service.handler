@@ -82,44 +82,49 @@ public class CICDControllerServiceImpl implements ControllerService {
 	  }
   }
 
-  private TaskResponse executeTaskCICD(TaskCICD task) {
-    TaskResponse response = new TaskResponse("0",
-        "Task (" + task.getTaskId() + ") has been executed successfully.", null);
-    try {
-      // TODO separate out cache handling to separate try catch to handle failure and continue.
-      boolean cacheEnable =
-          "true".equals(task.getProperties().get("component/cache.enabled"));
-      boolean cacheExists = kubeService.checkPVCExists(task.getWorkflowId(), null, null, true);
-      if (cacheEnable && !cacheExists) {
-        kubeService.createPVC(task.getWorkflowName(), task.getWorkflowId(),
-            task.getWorkflowActivityId(), null);
-        kubeService.watchPVC(task.getWorkflowId(), task.getWorkflowActivityId());
-      } else if (!cacheEnable && cacheExists) {
-        kubeService.deletePVC(task.getWorkflowId(), null);
-      }
-      kubeService.createTaskConfigMap(task.getWorkflowName(), task.getWorkflowId(),
-          task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(),
-          task.getProperties());
-      kubeService.watchConfigMap(task.getWorkflowId(), task.getWorkflowActivityId(),
-          task.getTaskId());
-      kubeService.createJob(false, task.getWorkflowName(), task.getWorkflowId(),
-              task.getWorkflowActivityId(), task.getTaskActivityId(),task.getTaskName(), task.getTaskId(), task.getArguments(),
-              task.getProperties(), null, null);
-      kubeService.watchJob(false, task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
-    } catch (ApiException | KubeRuntimeException e) {
-      LOGGER.error(EXCEPTION, e);
-      response.setCode("1");
-      response.setMessage(e.toString());
-      LOGGER.info("DEBUG::Task Is Being Set as Failed");
-    } finally {
-      kubeService.deleteConfigMap(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
-      if (!TaskDeletion.Never.equals(kubeWorkerJobDeletion)) {
-    	  kubeService.deleteJob(kubeWorkerJobDeletion, task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
-      }
-      LOGGER.info("Task (" + task.getTaskId() + ") has completed with code " + response.getCode());
-    }
-    return response;
-  }
+	private TaskResponse executeTaskCICD(TaskCICD task) {
+		TaskResponse response = new TaskResponse("1", "Unknown error occurred.", null);
+		if (task.getImage() != null) {
+			response = new TaskResponse("1", "No task image specified. Cannot execute.", null);
+			LOGGER.error(EXCEPTION, response.getMessage());
+		} else {
+			response = new TaskResponse("0",
+					"Task (" + task.getTaskId() + ") has been executed successfully.", null);
+			try {
+				// TODO separate out cache handling to separate try catch to handle failure and
+				// continue.
+				boolean cacheEnable = "true".equals(task.getProperties().get("component/cache.enabled"));
+				boolean cacheExists = kubeService.checkPVCExists(task.getWorkflowId(), null, null, true);
+				if (cacheEnable && !cacheExists) {
+					kubeService.createPVC(task.getWorkflowName(), task.getWorkflowId(), task.getWorkflowActivityId(),
+							null);
+					kubeService.watchPVC(task.getWorkflowId(), task.getWorkflowActivityId());
+				} else if (!cacheEnable && cacheExists) {
+					kubeService.deletePVC(task.getWorkflowId(), null);
+				}
+				kubeService.createTaskConfigMap(task.getWorkflowName(), task.getWorkflowId(),
+						task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(), task.getProperties());
+				kubeService.watchConfigMap(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
+				kubeService.createJob(false, task.getWorkflowName(), task.getWorkflowId(), task.getWorkflowActivityId(),
+						task.getTaskActivityId(), task.getTaskName(), task.getTaskId(), task.getArguments(),
+						task.getProperties(), null, null);
+				kubeService.watchJob(false, task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
+			} catch (ApiException | KubeRuntimeException e) {
+				LOGGER.error(EXCEPTION, e);
+				response.setCode("1");
+				response.setMessage(e.toString());
+				LOGGER.info("DEBUG::Task Is Being Set as Failed");
+			} finally {
+				kubeService.deleteConfigMap(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
+				if (!TaskDeletion.Never.equals(kubeWorkerJobDeletion)) {
+					kubeService.deleteJob(kubeWorkerJobDeletion, task.getWorkflowId(), task.getWorkflowActivityId(),
+							task.getTaskId());
+				}
+				LOGGER.info("Task (" + task.getTaskId() + ") has completed with code " + response.getCode());
+			}
+		}
+		return response;
+	}
   
   @Override
   public Response setJobOutputProperty(String workflowId, String workflowActivityId, String taskId,
