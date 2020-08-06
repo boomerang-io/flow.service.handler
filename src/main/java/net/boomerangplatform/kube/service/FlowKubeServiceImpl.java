@@ -101,7 +101,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
       envVars.addAll(createProxyEnvVars());
     }
     envVars.addAll(createEnvVars(workflowId,activityId,taskName,taskId));
-    envVars.add(createEnvVar("DEBUG", String.valueOf(taskConfiguration.getDebug())));
+    envVars.add(createEnvVar("DEBUG", getTaskDebug(taskConfiguration)));
     container.env(envVars);
     container.args(arguments);
     if (!getPVCName(workflowId, activityId).isEmpty()) {

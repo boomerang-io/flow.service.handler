@@ -18,14 +18,13 @@ import net.boomerangplatform.kube.service.FlowKubeServiceImpl;
 import net.boomerangplatform.model.Response;
 import net.boomerangplatform.model.Task;
 import net.boomerangplatform.model.TaskCustom;
-import net.boomerangplatform.model.TaskDeletion;
 import net.boomerangplatform.model.TaskResponse;
 import net.boomerangplatform.model.TaskTemplate;
 import net.boomerangplatform.model.Workflow;
 
 @Service
 @Profile({"live", "local"})
-public class FlowControllerServiceImpl implements ControllerService {
+public class FlowControllerServiceImpl extends AbstractControllerServiceImpl {
 
   private static final String EXCEPTION = "Exception: ";
 
@@ -105,8 +104,8 @@ public class FlowControllerServiceImpl implements ControllerService {
       response.setOutput(kubeService.getTaskOutPutConfigMapData(task.getWorkflowId(),
           task.getWorkflowActivityId(), task.getTaskId(), task.getTaskName()));
       kubeService.deleteConfigMap(null, task.getWorkflowActivityId(), task.getTaskId());
-      if (!TaskDeletion.Never.equals(task.getConfiguration().getDeletion())) {
-    	  kubeService.deleteJob(task.getConfiguration().getDeletion(), task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
+      if (isTaskDeletionNever(task.getConfiguration().getDeletion())) {
+    	  kubeService.deleteJob(getTaskDeletion(task.getConfiguration().getDeletion()), task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
       }
       LOGGER.info("Task (" + task.getTaskId() + ") has completed with code " + response.getCode());
     }
@@ -133,8 +132,8 @@ public class FlowControllerServiceImpl implements ControllerService {
       response.setOutput(kubeService.getTaskOutPutConfigMapData(task.getWorkflowId(),
           task.getWorkflowActivityId(), task.getTaskId(), task.getTaskName()));
       kubeService.deleteConfigMap(null, task.getWorkflowActivityId(), task.getTaskId());
-      if (!TaskDeletion.Never.equals(task.getConfiguration().getDeletion())) {
-    	  kubeService.deleteJob(task.getConfiguration().getDeletion(), task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
+      if (isTaskDeletionNever(task.getConfiguration().getDeletion())) {
+    	  kubeService.deleteJob(getTaskDeletion(task.getConfiguration().getDeletion()), task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
       }
       LOGGER.info("Task (" + task.getTaskId() + ") has completed with code " + response.getCode());
     }
