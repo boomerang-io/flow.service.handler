@@ -1,10 +1,6 @@
 package net.boomerangplatform.model;
 
-import org.springframework.beans.factory.annotation.Autowired;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-
-import net.boomerangplatform.service.ConfigurationServiceImpl;
 
 
 @JsonIgnoreProperties
@@ -13,12 +9,8 @@ public class TaskConfiguration {
   private Boolean debug;
 
   private TaskDeletion deletion;
-  
-  @Autowired
-  private ConfigurationServiceImpl configurationService;
 
-//  Defaults to false
-	public boolean getDebug() {
+	public Boolean getDebug() {
 		return debug ;
 	}
 
@@ -27,7 +19,7 @@ public class TaskConfiguration {
 	}
 
 	public TaskDeletion getDeletion() {
-		return deletion != null ? deletion : configurationService.getTaskDeletion();
+		return deletion ;
 	}
 
 	public void setDeletion(TaskDeletion deletion) {

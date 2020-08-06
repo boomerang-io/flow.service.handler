@@ -1,5 +1,9 @@
 package net.boomerangplatform.service;
 
-public interface ConfigurationService {
+import net.boomerangplatform.model.TaskDeletion;
 
+public interface ConfigurationService {
+	  public TaskDeletion getTaskDeletion();
+	  
+	  public Boolean getTaskDebug();
 }

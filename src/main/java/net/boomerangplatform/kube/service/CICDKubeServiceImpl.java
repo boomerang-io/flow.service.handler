@@ -111,7 +111,7 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
     if (proxyEnabled) {
       envVars.addAll(createProxyEnvVars());
     }
-    envVars.add(createEnvVar("DEBUG", String.valueOf(taskConfiguration.getDebug())));
+    envVars.add(createEnvVar("DEBUG", getTaskDebug(taskConfiguration)));
     envVars.add(createEnvVar("CI", "true"));
     container.env(envVars);
     container.args(arguments);

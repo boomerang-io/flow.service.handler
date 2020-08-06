@@ -10,14 +10,14 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import net.boomerangplatform.model.Response;
-import net.boomerangplatform.service.ControllerService;
+import net.boomerangplatform.service.AbstractControllerService;
 
 @RestController
 @RequestMapping("/controller/log")
 public class LogController {
 
   @Autowired
-  private ControllerService controllerService;
+  private AbstractControllerService controllerService;
 
   @GetMapping(value = "/get")
   public Response getLogForTask(

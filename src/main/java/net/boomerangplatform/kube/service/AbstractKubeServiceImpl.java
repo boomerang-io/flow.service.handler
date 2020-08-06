@@ -86,6 +86,7 @@ import io.kubernetes.client.util.Watch;
 import net.boomerangplatform.kube.exception.KubeRuntimeException;
 import net.boomerangplatform.model.TaskConfiguration;
 import net.boomerangplatform.model.TaskDeletion;
+import net.boomerangplatform.service.ConfigurationService;
 
 public abstract class AbstractKubeServiceImpl implements AbstractKubeService { // NOSONAR
 
@@ -179,6 +180,9 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
 
   @Autowired(required = false)
   private RestHighLevelClient elasticRestClient;
+  
+  @Autowired
+  private ConfigurationService configurationService;
 
 
   private ApiClient apiClient; // NOSONAR
@@ -1182,5 +1186,9 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   
   public ApiClient getApiClient() {
     return this.apiClient;
+  }
+  
+  protected String getTaskDebug(TaskConfiguration taskConfiguration) {
+	  return taskConfiguration.getDebug() != null ? taskConfiguration.getDebug().toString() : configurationService.getTaskDebug().toString();
   }
 }

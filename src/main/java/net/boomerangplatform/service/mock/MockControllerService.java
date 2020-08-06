@@ -12,11 +12,11 @@ import net.boomerangplatform.model.Response;
 import net.boomerangplatform.model.Task;
 import net.boomerangplatform.model.TaskResponse;
 import net.boomerangplatform.model.Workflow;
-import net.boomerangplatform.service.ControllerService;
+import net.boomerangplatform.service.AbstractControllerService;
 
 @Service
 @Profile("mock")
-public class MockControllerService implements ControllerService {
+public class MockControllerService implements AbstractControllerService {
 
 	@Override
 	public TaskResponse executeTask(Task task) {

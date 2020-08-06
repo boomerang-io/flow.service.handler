@@ -10,8 +10,15 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 
 	  @Value("${kube.worker.job.deletion}")
 	  private TaskDeletion workerDeletion;
+
+	  @Value("${kube.worker.debug}")
+	  private Boolean workerDebug;
 	  
 	  public TaskDeletion getTaskDeletion() {
 		  return workerDeletion;
+	  }
+	  
+	  public Boolean getTaskDebug() {
+		  return workerDebug;
 	  }
 }
