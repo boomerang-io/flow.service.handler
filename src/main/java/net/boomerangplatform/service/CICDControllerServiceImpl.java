@@ -72,11 +72,10 @@ public class CICDControllerServiceImpl extends AbstractControllerServiceImpl {
   }
 
 	private TaskResponse executeTaskCICD(TaskCICD task) {
-		TaskResponse response = new TaskResponse("1", "Unknown error occurred.", null);
+		TaskResponse response = new TaskResponse("0", "Task (" + task.getTaskId() + ") has been executed successfully.", null);
 		if (task.getImage() != null) {
 			  throw new BoomerangException(1,"NO_TASK_IMAGE",HttpStatus.BAD_REQUEST, task.getClass().toString());
 		} else {
-			response = new TaskResponse("0", "Task (" + task.getTaskId() + ") has been executed successfully.", null);
 			try {
 				// TODO separate out cache handling to separate try catch to handle failure and
 				// continue.
