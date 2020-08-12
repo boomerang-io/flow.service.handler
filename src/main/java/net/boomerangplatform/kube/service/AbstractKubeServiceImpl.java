@@ -1169,7 +1169,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
 
   private String getErrorMessage() {
     MessageSourceAccessor accessor = new MessageSourceAccessor(messageSource);
-    return accessor.getMessage("logs.error");
+    return accessor.getMessage("UNABLE_RETRIEVE_LOGS");
   }
 
   protected CoreV1Api getCoreApi() {
