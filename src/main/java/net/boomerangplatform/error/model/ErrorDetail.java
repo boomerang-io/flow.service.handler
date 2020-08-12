@@ -1,4 +1,4 @@
-package net.boomerangplatform.errors.model;
+package net.boomerangplatform.error.model;
 
 public class ErrorDetail {
   

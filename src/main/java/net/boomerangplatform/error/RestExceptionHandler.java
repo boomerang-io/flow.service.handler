@@ -16,8 +16,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
-import net.boomerangplatform.errors.model.BoomerangError;
-import net.boomerangplatform.errors.model.ErrorDetail;
+import net.boomerangplatform.error.model.BoomerangError;
+import net.boomerangplatform.error.model.ErrorDetail;
 
 @Order(Ordered.HIGHEST_PRECEDENCE)
 @ControllerAdvice
