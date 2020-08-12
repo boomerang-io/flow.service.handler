@@ -9,10 +9,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import io.kubernetes.client.ApiException;
+import net.boomerangplatform.error.BoomerangException;
 import net.boomerangplatform.kube.exception.KubeRuntimeException;
 import net.boomerangplatform.kube.service.FlowKubeServiceImpl;
 import net.boomerangplatform.model.Response;
@@ -25,8 +27,6 @@ import net.boomerangplatform.model.Workflow;
 @Service
 @Profile({"live", "local"})
 public class FlowControllerServiceImpl extends AbstractControllerServiceImpl {
-
-  private static final String EXCEPTION = "Exception: ";
 
   private static final Logger LOGGER = LogManager.getLogger(FlowControllerServiceImpl.class);
 
@@ -48,9 +48,7 @@ public class FlowControllerServiceImpl extends AbstractControllerServiceImpl {
           workflow.getWorkflowActivityId(), workflow.getProperties());
       kubeService.watchConfigMap(workflow.getWorkflowId(), workflow.getWorkflowActivityId(), null);
     } catch (ApiException | KubeRuntimeException e) {
-      LOGGER.error(EXCEPTION, e);
-      response.setCode("1");
-      response.setMessage(e.toString());
+    	  throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
     }
     return response;
   }
@@ -63,9 +61,7 @@ public class FlowControllerServiceImpl extends AbstractControllerServiceImpl {
       kubeService.deletePVC(workflow.getWorkflowId(), workflow.getWorkflowActivityId());
       kubeService.deleteConfigMap(workflow.getWorkflowId(), workflow.getWorkflowActivityId(), null);
     } catch (KubeRuntimeException e) {
-      LOGGER.error(EXCEPTION, e);
-      response.setCode("1");
-      response.setMessage(e.toString());
+    	  throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
     }
     return response;
   }
@@ -77,67 +73,73 @@ public class FlowControllerServiceImpl extends AbstractControllerServiceImpl {
 	  } else if (task instanceof TaskCustom) {
 		  return executeTaskCustom((TaskCustom)task);
 	  } else {
-		  TaskResponse response = new TaskResponse("1", "Cannot execute unknown task type.", null);
-		  LOGGER.error(EXCEPTION, response.getMessage());
-	      return response;
+		  throw new BoomerangException(1,"UNKOWN_TASK_TYPE",HttpStatus.BAD_REQUEST, task.getClass().toString());
 	  }
   }
 
-  private TaskResponse executeTaskTemplate(TaskTemplate task) {
-    TaskResponse response = new TaskResponse("0",
-        "Task (" + task.getTaskId() + ") has been executed successfully.", null);
-    try {
-      kubeService.createTaskConfigMap(task.getWorkflowName(), task.getWorkflowId(),
-          task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(),
-          task.getProperties());
-      kubeService.watchConfigMap(null, task.getWorkflowActivityId(), task.getTaskId());
-      boolean createWatchLifecycle = task.getArguments().contains("shell") ? Boolean.TRUE : Boolean.FALSE;
-      kubeService.createJob(createWatchLifecycle, task.getWorkflowName(), task.getWorkflowId(),
-          task.getWorkflowActivityId(), task.getTaskActivityId(),task.getTaskName(), task.getTaskId(), task.getArguments(),
-          task.getProperties(), task.getImage(), task.getCommand(), task.getConfiguration());
-      kubeService.watchJob(createWatchLifecycle, task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
-    } catch (KubeRuntimeException e) {
-      LOGGER.error(EXCEPTION, e);
-      response.setCode("1");
-      response.setMessage(e.toString());
-    } finally {
-      response.setOutput(kubeService.getTaskOutPutConfigMapData(task.getWorkflowId(),
-          task.getWorkflowActivityId(), task.getTaskId(), task.getTaskName()));
-      kubeService.deleteConfigMap(null, task.getWorkflowActivityId(), task.getTaskId());
-      if (isTaskDeletionNever(task.getConfiguration().getDeletion())) {
-    	  kubeService.deleteJob(getTaskDeletion(task.getConfiguration().getDeletion()), task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
-      }
-      LOGGER.info("Task (" + task.getTaskId() + ") has completed with code " + response.getCode());
-    }
-    return response;
-  }
+	private TaskResponse executeTaskTemplate(TaskTemplate task) {
+		TaskResponse response = new TaskResponse("0", "Task (" + task.getTaskId() + ") has been executed successfully.",
+				null);
+		if (task.getImage() != null) {
+			throw new BoomerangException(1, "NO_TASK_IMAGE", HttpStatus.BAD_REQUEST, task.getClass().toString());
+		} else {
+			try {
+				kubeService.createTaskConfigMap(task.getWorkflowName(), task.getWorkflowId(),
+						task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(), task.getProperties());
+				kubeService.watchConfigMap(null, task.getWorkflowActivityId(), task.getTaskId());
+				boolean createWatchLifecycle = task.getArguments().contains("shell") ? Boolean.TRUE : Boolean.FALSE;
+				kubeService.createJob(createWatchLifecycle, task.getWorkflowName(), task.getWorkflowId(),
+						task.getWorkflowActivityId(), task.getTaskActivityId(), task.getTaskName(), task.getTaskId(),
+						task.getArguments(), task.getProperties(), task.getImage(), task.getCommand(),
+						task.getConfiguration());
+				kubeService.watchJob(createWatchLifecycle, task.getWorkflowId(), task.getWorkflowActivityId(),
+						task.getTaskId());
+			} catch (KubeRuntimeException e) {
+				LOGGER.info("DEBUG::Task Is Being Set as Failed");
+				  throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
+			} finally {
+				response.setOutput(kubeService.getTaskOutPutConfigMapData(task.getWorkflowId(),
+						task.getWorkflowActivityId(), task.getTaskId(), task.getTaskName()));
+				kubeService.deleteConfigMap(null, task.getWorkflowActivityId(), task.getTaskId());
+				if (isTaskDeletionNever(task.getConfiguration().getDeletion())) {
+					kubeService.deleteJob(getTaskDeletion(task.getConfiguration().getDeletion()), task.getWorkflowId(),
+							task.getWorkflowActivityId(), task.getTaskId());
+				}
+				LOGGER.info("Task (" + task.getTaskId() + ") has completed with code " + response.getCode());
+			}
+		}
+		return response;
+	}
 
   private TaskResponse executeTaskCustom(TaskCustom task) {
-    TaskResponse response = new TaskResponse("0",
-        "Task (" + task.getTaskId() + ") has been executed successfully.", null);
-    try {
-      kubeService.createTaskConfigMap(task.getWorkflowName(), task.getWorkflowId(),
-          task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(),
-          task.getProperties());
-      kubeService.watchConfigMap(null, task.getWorkflowActivityId(), task.getTaskId());
-      kubeService.createJob(true, task.getWorkflowName(), task.getWorkflowId(),
-          task.getWorkflowActivityId(),task.getTaskActivityId(), task.getTaskName(), task.getTaskId(), task.getArguments(),
-          task.getProperties(), task.getImage(), task.getCommand(), task.getConfiguration());
-      kubeService.watchJob(true, task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
-    } catch (KubeRuntimeException e) {
-      LOGGER.error(EXCEPTION, e);
-      response.setCode("1");
-      response.setMessage(e.toString());
-    } finally {
-      response.setOutput(kubeService.getTaskOutPutConfigMapData(task.getWorkflowId(),
-          task.getWorkflowActivityId(), task.getTaskId(), task.getTaskName()));
-      kubeService.deleteConfigMap(null, task.getWorkflowActivityId(), task.getTaskId());
-      if (isTaskDeletionNever(task.getConfiguration().getDeletion())) {
-    	  kubeService.deleteJob(getTaskDeletion(task.getConfiguration().getDeletion()), task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
-      }
-      LOGGER.info("Task (" + task.getTaskId() + ") has completed with code " + response.getCode());
-    }
-    return response;
+		TaskResponse response = new TaskResponse("0", "Task (" + task.getTaskId() + ") has been executed successfully.",
+				null);
+		if (task.getImage() != null) {
+			throw new BoomerangException(1, "NO_TASK_IMAGE", HttpStatus.BAD_REQUEST, task.getClass().toString());
+		} else {
+			try {
+				kubeService.createTaskConfigMap(task.getWorkflowName(), task.getWorkflowId(),
+						task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(), task.getProperties());
+				kubeService.watchConfigMap(null, task.getWorkflowActivityId(), task.getTaskId());
+				kubeService.createJob(true, task.getWorkflowName(), task.getWorkflowId(), task.getWorkflowActivityId(),
+						task.getTaskActivityId(), task.getTaskName(), task.getTaskId(), task.getArguments(),
+						task.getProperties(), task.getImage(), task.getCommand(), task.getConfiguration());
+				kubeService.watchJob(true, task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
+			} catch (KubeRuntimeException e) {
+				LOGGER.info("DEBUG::Task Is Being Set as Failed");
+				throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
+			} finally {
+				response.setOutput(kubeService.getTaskOutPutConfigMapData(task.getWorkflowId(),
+						task.getWorkflowActivityId(), task.getTaskId(), task.getTaskName()));
+				kubeService.deleteConfigMap(null, task.getWorkflowActivityId(), task.getTaskId());
+				if (isTaskDeletionNever(task.getConfiguration().getDeletion())) {
+					kubeService.deleteJob(getTaskDeletion(task.getConfiguration().getDeletion()), task.getWorkflowId(),
+							task.getWorkflowActivityId(), task.getTaskId());
+				}
+				LOGGER.info("Task (" + task.getTaskId() + ") has completed with code " + response.getCode());
+			}
+		}
+		return response;
   }
 
   @Override
@@ -150,9 +152,7 @@ public class FlowControllerServiceImpl extends AbstractControllerServiceImpl {
       properties.put(key, value);
       kubeService.patchTaskConfigMap(workflowId, workflowActivityId, taskId, taskName, properties);
     } catch (KubeRuntimeException e) {
-      LOGGER.error(EXCEPTION, e);
-      response.setCode("1");
-      response.setMessage(e.toString());
+  	  throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
     }
     return response;
   }
@@ -167,9 +167,7 @@ public class FlowControllerServiceImpl extends AbstractControllerServiceImpl {
     try {
       kubeService.patchTaskConfigMap(workflowId, workflowActivityId, taskId, taskName, properties);
     } catch (KubeRuntimeException e) {
-      LOGGER.error(EXCEPTION, e);
-      response.setCode("1");
-      response.setMessage(e.toString());
+  	  throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
     }
     return response;
   }
@@ -180,9 +178,7 @@ public class FlowControllerServiceImpl extends AbstractControllerServiceImpl {
     try {
       response.setMessage(kubeService.getPodLog(workflowId, workflowActivityId, taskId, taskActivityId));
     } catch (KubeRuntimeException e) {
-      LOGGER.error(EXCEPTION, e);
-      response.setCode("1");
-      response.setMessage(e.toString());
+  	  throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
     }
     return response;
   }
@@ -194,7 +190,7 @@ public class FlowControllerServiceImpl extends AbstractControllerServiceImpl {
     try {
       srb = kubeService.streamPodLog(response, workflowId, workflowActivityId, taskId, taskActivityId);
     } catch (KubeRuntimeException e) {
-      LOGGER.error(EXCEPTION, e);
+  	  throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
     }
     return srb;
   }

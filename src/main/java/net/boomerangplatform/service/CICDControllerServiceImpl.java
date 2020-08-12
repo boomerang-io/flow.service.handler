@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletResponse;
+import org.springframework.http.HttpStatus;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import io.kubernetes.client.ApiException;
+import net.boomerangplatform.error.BoomerangException;
 import net.boomerangplatform.kube.exception.KubeRuntimeException;
 import net.boomerangplatform.kube.service.CICDKubeServiceImpl;
 import net.boomerangplatform.model.Response;
@@ -24,8 +26,6 @@ import net.boomerangplatform.model.Workflow;
 @Service
 @Profile("cicd")
 public class CICDControllerServiceImpl extends AbstractControllerServiceImpl {
-
-  private static final String EXCEPTION = "Exception: ";
 
   private static final Logger LOGGER = LogManager.getLogger(CICDControllerServiceImpl.class);
   
@@ -43,9 +43,7 @@ public class CICDControllerServiceImpl extends AbstractControllerServiceImpl {
         kubeService.watchPVC(workflow.getWorkflowId(), workflow.getWorkflowActivityId()).getPhase();
       }
     } catch (ApiException | KubeRuntimeException e) {
-      LOGGER.error(EXCEPTION, e);
-      response.setCode("1");
-      response.setMessage(e.toString());
+  	  throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
     }
     return response;
   }
@@ -57,9 +55,7 @@ public class CICDControllerServiceImpl extends AbstractControllerServiceImpl {
     try {
       kubeService.deletePVC(workflow.getWorkflowId(), null);
     } catch (KubeRuntimeException e) {
-      LOGGER.error(EXCEPTION, e);
-      response.setCode("1");
-      response.setMessage(e.toString());
+	  throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
     }
     return response;
   }
@@ -71,19 +67,15 @@ public class CICDControllerServiceImpl extends AbstractControllerServiceImpl {
 	  if (task instanceof TaskCICD) {
 		  return executeTaskCICD((TaskCICD)task);
 	  } else {
-		  TaskResponse response = new TaskResponse("1", "Cannot execute unknown task type.", null);
-		  LOGGER.error(EXCEPTION, response.getMessage());
-	      return response;
+		  throw new BoomerangException(1,"UNKOWN_TASK_TYPE",HttpStatus.BAD_REQUEST, task.getClass().toString());
 	  }
   }
 
 	private TaskResponse executeTaskCICD(TaskCICD task) {
-		TaskResponse response = new TaskResponse("1", "Unknown error occurred.", null);
+		TaskResponse response = new TaskResponse("0", "Task (" + task.getTaskId() + ") has been executed successfully.", null);
 		if (task.getImage() != null) {
-			response = new TaskResponse("1", "No task image specified. Cannot execute.", null);
-			LOGGER.error(EXCEPTION, response.getMessage());
+			  throw new BoomerangException(1,"NO_TASK_IMAGE",HttpStatus.BAD_REQUEST, task.getClass().toString());
 		} else {
-			response = new TaskResponse("0", "Task (" + task.getTaskId() + ") has been executed successfully.", null);
 			try {
 				// TODO separate out cache handling to separate try catch to handle failure and
 				// continue.
@@ -104,10 +96,8 @@ public class CICDControllerServiceImpl extends AbstractControllerServiceImpl {
 						task.getProperties(), task.getImage(), task.getCommand(), task.getConfiguration());
 				kubeService.watchJob(false, task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
 			} catch (ApiException | KubeRuntimeException e) {
-				LOGGER.error(EXCEPTION, e);
-				response.setCode("1");
-				response.setMessage(e.toString());
 				LOGGER.info("DEBUG::Task Is Being Set as Failed");
+				  throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
 			} finally {
 				kubeService.deleteConfigMap(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
 			      if (isTaskDeletionNever(task.getConfiguration().getDeletion())) {
@@ -129,9 +119,7 @@ public class CICDControllerServiceImpl extends AbstractControllerServiceImpl {
       properties.put(key, value);
       kubeService.patchTaskConfigMap(workflowId, workflowActivityId, taskId, taskName, properties);
     } catch (KubeRuntimeException e) {
-      LOGGER.error(EXCEPTION, e);
-      response.setCode("1");
-      response.setMessage(e.toString());
+		  throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
     }
     return response;
   }
@@ -146,9 +134,7 @@ public class CICDControllerServiceImpl extends AbstractControllerServiceImpl {
     try {
       kubeService.patchTaskConfigMap(workflowId, workflowActivityId, taskId, taskName, properties);
     } catch (KubeRuntimeException e) {
-      LOGGER.error(EXCEPTION, e);
-      response.setCode("1");
-      response.setMessage(e.toString());
+		  throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
     }
     return response;
   }
@@ -159,9 +145,7 @@ public class CICDControllerServiceImpl extends AbstractControllerServiceImpl {
     try {
       response.setMessage(kubeService.getPodLog(workflowId, workflowActivityId, taskId, taskActivityId));
     } catch (KubeRuntimeException e) {
-      LOGGER.error(EXCEPTION, e);
-      response.setCode("1");
-      response.setMessage(e.toString());
+		  throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
     }
     return response;
   }
@@ -173,7 +157,7 @@ public class CICDControllerServiceImpl extends AbstractControllerServiceImpl {
     try {
       srb = kubeService.streamPodLog(response, workflowId, workflowActivityId, taskId, taskActivityId);
     } catch (KubeRuntimeException e) {
-      LOGGER.error(EXCEPTION, e);
+		  throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
     }
     return srb;
   }
