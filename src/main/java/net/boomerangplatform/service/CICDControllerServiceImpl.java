@@ -8,7 +8,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
@@ -19,21 +18,17 @@ import net.boomerangplatform.kube.service.CICDKubeServiceImpl;
 import net.boomerangplatform.model.Response;
 import net.boomerangplatform.model.Task;
 import net.boomerangplatform.model.TaskCICD;
-import net.boomerangplatform.model.TaskDeletion;
 import net.boomerangplatform.model.TaskResponse;
 import net.boomerangplatform.model.Workflow;
 
 @Service
 @Profile("cicd")
-public class CICDControllerServiceImpl implements ControllerService {
+public class CICDControllerServiceImpl extends AbstractControllerServiceImpl {
 
   private static final String EXCEPTION = "Exception: ";
 
   private static final Logger LOGGER = LogManager.getLogger(CICDControllerServiceImpl.class);
-
-  @Value("${kube.worker.job.deletion}")
-  protected TaskDeletion kubeWorkerJobDeletion;
-
+  
   @Autowired
   private CICDKubeServiceImpl kubeService;
 
@@ -82,44 +77,47 @@ public class CICDControllerServiceImpl implements ControllerService {
 	  }
   }
 
-  private TaskResponse executeTaskCICD(TaskCICD task) {
-    TaskResponse response = new TaskResponse("0",
-        "Task (" + task.getTaskId() + ") has been executed successfully.", null);
-    try {
-      // TODO separate out cache handling to separate try catch to handle failure and continue.
-      boolean cacheEnable =
-          "true".equals(task.getProperties().get("component/cache.enabled"));
-      boolean cacheExists = kubeService.checkPVCExists(task.getWorkflowId(), null, null, true);
-      if (cacheEnable && !cacheExists) {
-        kubeService.createPVC(task.getWorkflowName(), task.getWorkflowId(),
-            task.getWorkflowActivityId(), null);
-        kubeService.watchPVC(task.getWorkflowId(), task.getWorkflowActivityId());
-      } else if (!cacheEnable && cacheExists) {
-        kubeService.deletePVC(task.getWorkflowId(), null);
-      }
-      kubeService.createTaskConfigMap(task.getWorkflowName(), task.getWorkflowId(),
-          task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(),
-          task.getProperties());
-      kubeService.watchConfigMap(task.getWorkflowId(), task.getWorkflowActivityId(),
-          task.getTaskId());
-      kubeService.createJob(false, task.getWorkflowName(), task.getWorkflowId(),
-              task.getWorkflowActivityId(), task.getTaskActivityId(),task.getTaskName(), task.getTaskId(), task.getArguments(),
-              task.getProperties(), null, null);
-      kubeService.watchJob(false, task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
-    } catch (ApiException | KubeRuntimeException e) {
-      LOGGER.error(EXCEPTION, e);
-      response.setCode("1");
-      response.setMessage(e.toString());
-      LOGGER.info("DEBUG::Task Is Being Set as Failed");
-    } finally {
-      kubeService.deleteConfigMap(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
-      if (!TaskDeletion.Never.equals(kubeWorkerJobDeletion)) {
-    	  kubeService.deleteJob(kubeWorkerJobDeletion, task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
-      }
-      LOGGER.info("Task (" + task.getTaskId() + ") has completed with code " + response.getCode());
-    }
-    return response;
-  }
+	private TaskResponse executeTaskCICD(TaskCICD task) {
+		TaskResponse response = new TaskResponse("1", "Unknown error occurred.", null);
+		if (task.getImage() != null) {
+			response = new TaskResponse("1", "No task image specified. Cannot execute.", null);
+			LOGGER.error(EXCEPTION, response.getMessage());
+		} else {
+			response = new TaskResponse("0", "Task (" + task.getTaskId() + ") has been executed successfully.", null);
+			try {
+				// TODO separate out cache handling to separate try catch to handle failure and
+				// continue.
+				boolean cacheEnable = "true".equals(task.getProperties().get("component/cache.enabled"));
+				boolean cacheExists = kubeService.checkPVCExists(task.getWorkflowId(), null, null, true);
+				if (cacheEnable && !cacheExists) {
+					kubeService.createPVC(task.getWorkflowName(), task.getWorkflowId(), task.getWorkflowActivityId(),
+							null);
+					kubeService.watchPVC(task.getWorkflowId(), task.getWorkflowActivityId());
+				} else if (!cacheEnable && cacheExists) {
+					kubeService.deletePVC(task.getWorkflowId(), null);
+				}
+				kubeService.createTaskConfigMap(task.getWorkflowName(), task.getWorkflowId(),
+						task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(), task.getProperties());
+				kubeService.watchConfigMap(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
+				kubeService.createJob(false, task.getWorkflowName(), task.getWorkflowId(), task.getWorkflowActivityId(),
+						task.getTaskActivityId(), task.getTaskName(), task.getTaskId(), task.getArguments(),
+						task.getProperties(), task.getImage(), task.getCommand(), task.getConfiguration());
+				kubeService.watchJob(false, task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
+			} catch (ApiException | KubeRuntimeException e) {
+				LOGGER.error(EXCEPTION, e);
+				response.setCode("1");
+				response.setMessage(e.toString());
+				LOGGER.info("DEBUG::Task Is Being Set as Failed");
+			} finally {
+				kubeService.deleteConfigMap(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
+			      if (isTaskDeletionNever(task.getConfiguration().getDeletion())) {
+			    	  kubeService.deleteJob(getTaskDeletion(task.getConfiguration().getDeletion()), task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
+			      }
+				LOGGER.info("Task (" + task.getTaskId() + ") has completed with code " + response.getCode());
+			}
+		}
+		return response;
+	}
   
   @Override
   public Response setJobOutputProperty(String workflowId, String workflowActivityId, String taskId,

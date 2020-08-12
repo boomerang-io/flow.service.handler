@@ -35,6 +35,7 @@ import io.kubernetes.client.models.V1Volume;
 import io.kubernetes.client.models.V1VolumeProjection;
 import io.kubernetes.client.util.Watch;
 import net.boomerangplatform.kube.exception.KubeRuntimeException;
+import net.boomerangplatform.model.TaskConfiguration;
 
 @Service
 @Profile({"live", "local"})
@@ -81,7 +82,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
   @Override
   protected V1Job createJobBody(boolean createLifecycle, String workflowName, String workflowId, String activityId, String taskActivityId,
       String taskName, String taskId, List<String> arguments,
-      Map<String, String> taskProperties, String image, String command) {
+      Map<String, String> taskProperties, String image, String command, TaskConfiguration taskConfiguration) {
 
     // Initialize Job Body
     V1Job body = new V1Job();
@@ -100,6 +101,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
       envVars.addAll(createProxyEnvVars());
     }
     envVars.addAll(createEnvVars(workflowId,activityId,taskName,taskId));
+    envVars.add(createEnvVar("DEBUG", getTaskDebug(taskConfiguration)));
     container.env(envVars);
     container.args(arguments);
     if (!getPVCName(workflowId, activityId).isEmpty()) {
@@ -224,7 +226,6 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
     sysProps.put("activity.id", workflowActivityId);
     sysProps.put("workflow.name", workflowName);
     sysProps.put("workflow.id", workflowId);
-    sysProps.put("worker.debug", kubeWorkerDebug.toString());
     sysProps.put("controller.service.url", bmrgControllerServiceURL);
     inputsWithFixedKeys.put("workflow.input.properties", createConfigMapProp(inputProps));
     inputsWithFixedKeys.put("workflow.system.properties", createConfigMapProp(sysProps));
@@ -246,16 +247,16 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
   protected Map<String, String> createAnnotations(String workflowName, String workflowId,
       String activityId, String taskId) {
     Map<String, String> annotations = new HashMap<>();
-    annotations.put("boomerangplatform.net/platform", ORG);
-    annotations.put("boomerangplatform.net/product", PRODUCT);
-    annotations.put("boomerangplatform.net/tier", TIER);
-    annotations.put("boomerangplatform.net/workflow-name", workflowName);
+    annotations.put("boomerang.io/platform", ORG);
+    annotations.put("boomerang.io/product", PRODUCT);
+    annotations.put("boomerang.io/tier", TIER);
+    annotations.put("boomerang.io/workflow-name", workflowName);
     Optional.ofNullable(workflowId)
-    .ifPresent(str -> annotations.put("boomerangplatform.net/workflow-id", str));
+    .ifPresent(str -> annotations.put("boomerang.io/workflow-id", str));
     Optional.ofNullable(activityId)
-    .ifPresent(str -> annotations.put("boomerangplatform.net/activity-id", str));
+    .ifPresent(str -> annotations.put("boomerang.io/activity-id", str));
     Optional.ofNullable(taskId)
-        .ifPresent(str -> annotations.put("boomerangplatform.net/task-id", str));
+        .ifPresent(str -> annotations.put("boomerang.io/task-id", str));
 
     return annotations;
   }
@@ -325,7 +326,6 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
   
   protected List<V1EnvVar> createEnvVars(String workflowId,String activityId,String taskName,String taskId){
 	  List<V1EnvVar> envVars = new ArrayList<>();
-	  envVars.add(createEnvVar("DEBUG", kubeWorkerDebug.toString()));
 	  envVars.add(createEnvVar("BMRG_WORKFLOW_ID", workflowId));
 	  envVars.add(createEnvVar("BMRG_ACTIVITY_ID", activityId));
 	  envVars.add(createEnvVar("BMRG_TASK_ID", taskId));

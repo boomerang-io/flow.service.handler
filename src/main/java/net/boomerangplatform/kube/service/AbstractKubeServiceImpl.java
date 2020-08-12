@@ -15,7 +15,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -85,7 +84,9 @@ import io.kubernetes.client.models.V1VolumeMount;
 import io.kubernetes.client.models.V1VolumeProjection;
 import io.kubernetes.client.util.Watch;
 import net.boomerangplatform.kube.exception.KubeRuntimeException;
+import net.boomerangplatform.model.TaskConfiguration;
 import net.boomerangplatform.model.TaskDeletion;
+import net.boomerangplatform.service.ConfigurationService;
 
 public abstract class AbstractKubeServiceImpl implements AbstractKubeService { // NOSONAR
 
@@ -147,9 +148,6 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   @Value("${kube.worker.job.ttlDays}")
   protected Integer kubeWorkerJobTTLDays;
 
-  @Value("${kube.worker.debug}")
-  protected Boolean kubeWorkerDebug;
-
   @Value("${kube.worker.hostaliases}")
   protected String kubeWorkerHostAliases;
   
@@ -174,9 +172,6 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   @Value("${controller.service.host}")
   protected String bmrgControllerServiceURL;
 
-  @Value("${kube.image}")
-  private String kubeImage;
-
   @Value("${kube.worker.logging.type}")
   protected String loggingType;
 
@@ -185,6 +180,9 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
 
   @Autowired(required = false)
   private RestHighLevelClient elasticRestClient;
+  
+  @Autowired
+  private ConfigurationService configurationService;
 
 
   private ApiClient apiClient; // NOSONAR
@@ -194,7 +192,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
 
   protected abstract V1Job createJobBody(boolean createLifecycle, String workflowName, String workflowId,
       String workflowActivityId,String taskActivityId, String taskName, String taskId, List<String> arguments,
-      Map<String, String> taskInputProperties, String image, String command);
+      Map<String, String> taskProperties, String image, String command, TaskConfiguration taskConfiguration);
 
   protected abstract V1ConfigMap createTaskConfigMapBody(String workflowName, String workflowId,
       String workflowActivityId, String taskName, String taskId, Map<String, String> inputProps);
@@ -215,9 +213,9 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   @Override
   public V1Job createJob(boolean createLifecycle, String workflowName, String workflowId, String workflowActivityId,  String taskActivityId,
       String taskName, String taskId, List<String> arguments,
-      Map<String, String> taskProperties, String image, String command) {
+      Map<String, String> taskProperties, String image, String command, TaskConfiguration taskConfiguration) {
     V1Job body = createJobBody(createLifecycle, workflowName, workflowId, workflowActivityId,taskActivityId, taskName, taskId,
-        arguments, taskProperties, image, command);
+        arguments, taskProperties, image, command, taskConfiguration);
     
     LOGGER.info(body);
 
@@ -888,8 +886,8 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
 
   protected V1Container getContainer(String image, String command) {
     V1Container container = new V1Container();
-    LOGGER.info("Container Image: " + Optional.ofNullable(image).orElse(kubeImage));
-    container.image(Optional.ofNullable(image).filter(Predicate.not(String::isEmpty)).orElse(kubeImage));
+    LOGGER.info("Container Image: " + image);
+    container.image(image);
     Optional.ofNullable(command).ifPresent(str -> container.addCommandItem(str));
     container.name("worker-cntr");
     container.imagePullPolicy(kubeImagePullPolicy);
@@ -1188,5 +1186,9 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   
   public ApiClient getApiClient() {
     return this.apiClient;
+  }
+  
+  protected String getTaskDebug(TaskConfiguration taskConfiguration) {
+	  return taskConfiguration.getDebug() != null ? taskConfiguration.getDebug().toString() : configurationService.getTaskDebug().toString();
   }
 }

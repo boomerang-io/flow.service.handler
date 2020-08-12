@@ -42,9 +42,14 @@ public abstract class Task {
   @JsonProperty("command")
   private String command;
 
-  @JsonProperty private Map<String, String> properties = new HashMap<>();
+  @JsonProperty("properties")
+  private Map<String, String> properties = new HashMap<>();
 
+  @JsonProperty("arguments")
   private List<String> arguments;
+
+  @JsonProperty("configuration")
+  private TaskConfiguration configuration;
 
   public String getWorkflowName() {
     return workflowName;
@@ -133,4 +138,13 @@ public abstract class Task {
   public void setCommand(String command) {
     this.command = command;
   }
+
+  public TaskConfiguration getConfiguration() {
+	return configuration;
+  }
+
+  public void setConfiguration(TaskConfiguration configuration) {
+	this.configuration = configuration;
+  }
+
 }

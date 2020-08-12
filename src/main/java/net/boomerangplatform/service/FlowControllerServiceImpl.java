@@ -8,7 +8,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
@@ -19,21 +18,17 @@ import net.boomerangplatform.kube.service.FlowKubeServiceImpl;
 import net.boomerangplatform.model.Response;
 import net.boomerangplatform.model.Task;
 import net.boomerangplatform.model.TaskCustom;
-import net.boomerangplatform.model.TaskDeletion;
 import net.boomerangplatform.model.TaskResponse;
 import net.boomerangplatform.model.TaskTemplate;
 import net.boomerangplatform.model.Workflow;
 
 @Service
 @Profile({"live", "local"})
-public class FlowControllerServiceImpl implements ControllerService {
+public class FlowControllerServiceImpl extends AbstractControllerServiceImpl {
 
   private static final String EXCEPTION = "Exception: ";
 
   private static final Logger LOGGER = LogManager.getLogger(FlowControllerServiceImpl.class);
-
-  @Value("${kube.worker.job.deletion}")
-  protected TaskDeletion kubeWorkerJobDeletion;
 
   @Autowired
   private FlowKubeServiceImpl kubeService;
@@ -99,7 +94,7 @@ public class FlowControllerServiceImpl implements ControllerService {
       boolean createWatchLifecycle = task.getArguments().contains("shell") ? Boolean.TRUE : Boolean.FALSE;
       kubeService.createJob(createWatchLifecycle, task.getWorkflowName(), task.getWorkflowId(),
           task.getWorkflowActivityId(), task.getTaskActivityId(),task.getTaskName(), task.getTaskId(), task.getArguments(),
-          task.getProperties(), task.getImage(), task.getCommand());
+          task.getProperties(), task.getImage(), task.getCommand(), task.getConfiguration());
       kubeService.watchJob(createWatchLifecycle, task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
     } catch (KubeRuntimeException e) {
       LOGGER.error(EXCEPTION, e);
@@ -109,8 +104,8 @@ public class FlowControllerServiceImpl implements ControllerService {
       response.setOutput(kubeService.getTaskOutPutConfigMapData(task.getWorkflowId(),
           task.getWorkflowActivityId(), task.getTaskId(), task.getTaskName()));
       kubeService.deleteConfigMap(null, task.getWorkflowActivityId(), task.getTaskId());
-      if (!TaskDeletion.Never.equals(kubeWorkerJobDeletion)) {
-    	  kubeService.deleteJob(kubeWorkerJobDeletion, task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
+      if (isTaskDeletionNever(task.getConfiguration().getDeletion())) {
+    	  kubeService.deleteJob(getTaskDeletion(task.getConfiguration().getDeletion()), task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
       }
       LOGGER.info("Task (" + task.getTaskId() + ") has completed with code " + response.getCode());
     }
@@ -127,7 +122,7 @@ public class FlowControllerServiceImpl implements ControllerService {
       kubeService.watchConfigMap(null, task.getWorkflowActivityId(), task.getTaskId());
       kubeService.createJob(true, task.getWorkflowName(), task.getWorkflowId(),
           task.getWorkflowActivityId(),task.getTaskActivityId(), task.getTaskName(), task.getTaskId(), task.getArguments(),
-          task.getProperties(), task.getImage(), task.getCommand());
+          task.getProperties(), task.getImage(), task.getCommand(), task.getConfiguration());
       kubeService.watchJob(true, task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
     } catch (KubeRuntimeException e) {
       LOGGER.error(EXCEPTION, e);
@@ -137,6 +132,9 @@ public class FlowControllerServiceImpl implements ControllerService {
       response.setOutput(kubeService.getTaskOutPutConfigMapData(task.getWorkflowId(),
           task.getWorkflowActivityId(), task.getTaskId(), task.getTaskName()));
       kubeService.deleteConfigMap(null, task.getWorkflowActivityId(), task.getTaskId());
+      if (isTaskDeletionNever(task.getConfiguration().getDeletion())) {
+    	  kubeService.deleteJob(getTaskDeletion(task.getConfiguration().getDeletion()), task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
+      }
       LOGGER.info("Task (" + task.getTaskId() + ") has completed with code " + response.getCode());
     }
     return response;
