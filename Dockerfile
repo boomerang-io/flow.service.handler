@@ -4,7 +4,8 @@ ENV JAVA_OPTS=""
 ENV BMRG_HOME=/opt/boomerang
 ENV BMRG_SVC=service-controller-$BMRG_TAG
 
-RUN apk del wget
+RUN apk del --purge --no-cache wget; \
+    rm -rf /var/cache/apk/*;
 
 WORKDIR $BMRG_HOME
 ADD target/$BMRG_SVC.jar service.jar
