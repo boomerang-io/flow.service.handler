@@ -153,7 +153,7 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
     container.addVolumeMountsItem(getVolumeMount(PREFIX_VOL_DATA, "/data"));
 	V1Volume dataVolume = getVolume(PREFIX_VOL_DATA);
 	V1EmptyDirVolumeSource emptyDir = new V1EmptyDirVolumeSource();
-    if (kubeWorkerStorageDataMemory && Boolean.valueOf(taskProperties.get("worker.storage.data.memory.enable"))) {
+    if (kubeWorkerStorageDataMemory && Boolean.valueOf(taskProperties.get("worker.storage.data.memory"))) {
     	LOGGER.info("Setting /data to in memory storage...");
     	emptyDir.setMedium("Memory");
     }
