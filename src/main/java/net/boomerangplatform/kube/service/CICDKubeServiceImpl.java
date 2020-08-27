@@ -72,11 +72,14 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
   @Value("${kube.resource.request.ephemeral-storage}")
   private String kubeResourceRequestEphemeralStorage;
   
+  @Value("${kube.resource.limit.memory}")
+  private String kubeResourceLimitMemory;
+  
+  @Value("${kube.resource.request.memory}")
+  private String kubeResourceRequestMemory;
+  
   @Value("${kube.worker.storage.data.memory}")
   private Boolean kubeWorkerStorageDataMemory;
-  
-  @Value("${kube.worker.storage.data.size}")
-  private String kubeWorkerStorageDataSize;
 
   @Override
   public String getPrefixJob() {
@@ -116,8 +119,21 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
     container.env(envVars);
     container.args(arguments);
     V1ResourceRequirements resources = new V1ResourceRequirements();
-    resources.putLimitsItem("ephemeral-storage", new Quantity(kubeResourceLimitEphemeralStorage));
     resources.putRequestsItem("ephemeral-storage", new Quantity(kubeResourceRequestEphemeralStorage));
+    resources.putLimitsItem("ephemeral-storage", new Quantity(kubeResourceLimitEphemeralStorage));
+    /*
+     * Create a resource request and limit for memory
+     * Defaults to application.properties, can be overridden by user property. Maximum of 32Gi.
+     */
+	resources.putRequestsItem("memory", new Quantity(kubeResourceRequestMemory));
+	String kubeResourceLimitMemoryProp = taskProperties.get("worker.resource.memory.size");
+	if (kubeResourceLimitMemoryProp != null && !(Integer.valueOf(kubeResourceLimitMemoryProp.replace("Gi", "")) > 32)) {
+		LOGGER.info("Setting Resource Memory Limit to " + kubeResourceLimitMemoryProp + "...");
+	    resources.putLimitsItem("memory", new Quantity(kubeResourceLimitMemoryProp));
+	} else {
+		LOGGER.info("Setting Resource Memory Limit to default of: " + kubeResourceLimitMemory + " ...");
+	    resources.putLimitsItem("memory", new Quantity(kubeResourceLimitMemory));
+	}
     container.setResources(resources);
     if (checkPVCExists(componentId, null, null, true)) {
       container.addVolumeMountsItem(getVolumeMount(PREFIX_VOL_CACHE, "/cache"));
@@ -137,10 +153,9 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
     container.addVolumeMountsItem(getVolumeMount(PREFIX_VOL_DATA, "/data"));
 	V1Volume dataVolume = getVolume(PREFIX_VOL_DATA);
 	V1EmptyDirVolumeSource emptyDir = new V1EmptyDirVolumeSource();
-    if (kubeWorkerStorageDataMemory && Boolean.valueOf(taskProperties.get("worker.storage.data.memory"))) {
+    if (kubeWorkerStorageDataMemory && Boolean.valueOf(taskProperties.get("worker.storage.data.memory.enable"))) {
     	LOGGER.info("Setting /data to in memory storage...");
     	emptyDir.setMedium("Memory");
-    	emptyDir.setSizeLimit(kubeWorkerStorageDataSize);
     }
 	dataVolume.emptyDir(emptyDir);
 	podSpec.addVolumesItem(dataVolume);
