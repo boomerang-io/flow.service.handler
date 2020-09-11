@@ -114,7 +114,7 @@ public class FlowControllerServiceImpl extends AbstractControllerServiceImpl {
   private TaskResponse executeTaskCustom(TaskCustom task) {
 		TaskResponse response = new TaskResponse("0", "Task (" + task.getTaskId() + ") has been executed successfully.",
 				null);
-		if (task.getImage() != null) {
+		if (task.getImage() == null) {
 			throw new BoomerangException(1, "NO_TASK_IMAGE", HttpStatus.BAD_REQUEST, task.getClass().toString());
 		} else {
 			try {
