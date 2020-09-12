@@ -2,10 +2,7 @@ package net.boomerangplatform.service;
 
 import java.util.Map;
 
-import javax.servlet.http.HttpServletResponse;
-
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import net.boomerangplatform.model.Response;
 import net.boomerangplatform.model.Task;
@@ -30,13 +27,6 @@ public abstract class AbstractControllerServiceImpl implements AbstractControlle
 	@Override
 	public abstract Response setJobOutputProperty(String workflowId, String workflowActivityId, String taskId, String taskName,
 			String key, String value);
-
-	@Override
-	public abstract Response getLogForTask(String workflowId, String workflowActivityId, String taskId, String taskActivityId);
-
-	@Override
-	public abstract StreamingResponseBody streamLogForTask(HttpServletResponse response, String workflowId,
-			String workflowActivityId, String taskId, String taskActivityId);
 
 	@Override
 	public abstract Response setJobOutputProperties(String workflowId, String workflowActivityId, String taskId, String taskName,
