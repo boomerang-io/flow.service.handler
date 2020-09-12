@@ -83,6 +83,7 @@ public class LogServiceImpl implements LogService {
 	          }
 	    } catch (KubeRuntimeException e) {
 			  throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
+//			  TODO: do we need to just return the defaultErrorMessage stream?
 	    }
 	    return srb;
 	  }

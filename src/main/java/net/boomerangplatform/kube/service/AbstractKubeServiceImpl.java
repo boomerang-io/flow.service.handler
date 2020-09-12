@@ -419,6 +419,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
 
       responseBody = getPodLog(inputStream, pod.getMetadata().getName());
     } catch (ApiException | IOException e) {
+//    	TODO: handle better throwing so that it can be caught in LogService and the default stream returned rather than failure.
       LOGGER.error("streamPodLog Exception: ", e);
       throw new KubeRuntimeException("Error streamPodLog", e);
     }
