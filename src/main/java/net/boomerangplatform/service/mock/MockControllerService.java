@@ -2,11 +2,8 @@ package net.boomerangplatform.service.mock;
 
 import java.util.Map;
 
-import javax.servlet.http.HttpServletResponse;
-
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
-import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import net.boomerangplatform.model.Response;
 import net.boomerangplatform.model.Task;
@@ -36,17 +33,6 @@ public class MockControllerService implements AbstractControllerService {
 	@Override
 	public Response setJobOutputProperty(String workflowId, String workflowActivityId, String taskId, String taskName,
 			String key, String value) {
-		return null;
-	}
-
-	@Override
-	public Response getLogForTask(String workflowId, String workflowActivityId, String taskId, String taskActivityId) {
-		return null;
-	}
-
-	@Override
-	public StreamingResponseBody streamLogForTask(HttpServletResponse response, String workflowId,
-			String workflowActivityId, String taskId, String taskActivityId) {
 		return null;
 	}
 
