@@ -20,15 +20,6 @@ public class LogController {
   @Autowired
   private LogService logService;
 
-//  @GetMapping(value = "/get")
-//  public Response getLogForTask(
-//      @RequestParam(value = "workflowId", required = true) String workflowId,
-//      @RequestParam(value = "workflowActivityId", required = true) String workflowActivityId,
-//      @RequestParam(value = "taskActivityId", required = false) String taskActivityId,
-//      @RequestParam(value = "taskId", required = true) String taskId) {
-//    return logService.getLogForTask(workflowId, workflowActivityId, taskId,taskActivityId);
-//  }
-
   @GetMapping(value = "/stream")
   public ResponseEntity<StreamingResponseBody> streamLogForTask(HttpServletResponse response,
       @RequestParam(value = "workflowId", required = true) String workflowId,

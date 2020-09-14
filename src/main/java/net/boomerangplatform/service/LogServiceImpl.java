@@ -2,9 +2,7 @@ package net.boomerangplatform.service;
 
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
-
 import javax.servlet.http.HttpServletResponse;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.elasticsearch.action.search.ClearScrollRequest;
@@ -23,10 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
 import org.springframework.context.support.MessageSourceAccessor;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
-
-import net.boomerangplatform.error.BoomerangException;
 import net.boomerangplatform.kube.exception.KubeRuntimeException;
 import net.boomerangplatform.kube.service.AbstractKubeServiceImpl;
 
@@ -46,30 +41,6 @@ public class LogServiceImpl implements LogService {
   @Autowired
   private AbstractKubeServiceImpl kubeService;
 
-  // TODO: Confirm if this is even used anywhere...
-  // @Override
-  // public Response getLogForTask(String workflowId, String workflowActivityId, String taskId,
-  // String taskActivityId) {
-  // Response response = new Response("0", "");
-  // try {
-  // if (kubeService.isKubePodAvailable(workflowId, workflowActivityId, taskId) &&
-  // !streamLogsFromElastic() && !streamLogsFromLoki()) {
-  // response.setMessage(kubeService.getPodLog(workflowId, workflowActivityId, taskId,
-  // taskActivityId));
-  //
-  // } else if (streamLogsFromElastic()) {
-  // return streamLogsFromElastic(workflowActivityId);
-  // } else if (streamLogsFromLoki()) {
-  // //TODO Loki Implementation
-  // } else {
-  // //TODO throw error that there is no log
-  // }
-  // } catch (KubeRuntimeException e) {
-  // throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
-  // }
-  // return response;
-  // }
-
   @Override
   public StreamingResponseBody streamLogForTask(HttpServletResponse response, String workflowId,
       String workflowActivityId, String taskId, String taskActivityId) {
@@ -82,7 +53,7 @@ public class LogServiceImpl implements LogService {
       } else if (streamLogsFromElastic()) {
         // TODO: double check WorkflowActivityId for CICD and TaskActivityId for Flow otherwise this
         // wont return flow
-        return streamLogsFromElastic(workflowActivityId);
+        return streamLogsFromElastic(taskActivityId);
       } else if (streamLogsFromLoki()) {
         // TODO Loki Implementation
       } else {
