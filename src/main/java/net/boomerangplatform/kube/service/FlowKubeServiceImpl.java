@@ -60,12 +60,12 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
   private Integer kubeApiTimeOut;
 
   @Override
-  public String getPrefixJob() {
+  public String getJobPrefix() {
     return PREFIX_JOB;
   }
   
   @Override
-  public String getPrefixPVC() {
+  public String getPVCPrefix() {
     return PREFIX_PVC;
   }
 
@@ -77,7 +77,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
     // Initialize Job Body
     V1Job body = new V1Job();
     body.metadata(
-        getMetadata(workflowName, workflowId, activityId, taskId, getPrefixJob() + "-" + taskActivityId));
+        getMetadata(workflowName, workflowId, activityId, taskId, getJobPrefix() + "-" + taskActivityId));
 
     // Create Spec
     V1JobSpec jobSpec = new V1JobSpec();

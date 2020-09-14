@@ -182,9 +182,9 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   protected abstract V1ConfigMap createWorkflowConfigMapBody(String workflowName, String workflowId,
       String workflowActivityId, Map<String, String> inputProps);
 
-  public abstract String getPrefixJob();
+  public abstract String getJobPrefix();
 
-  public abstract String getPrefixPVC();
+  public abstract String getPVCPrefix();
   
   @Override
   public V1Job createJob(boolean createLifecycle, String workflowName, String workflowId, String workflowActivityId,  String taskActivityId,
@@ -437,7 +437,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     V1ObjectMeta metadata = new V1ObjectMeta();
     metadata.annotations(createAnnotations(workflowName, workflowId, workflowActivityId, null));
     metadata.labels(createLabels(workflowId, workflowActivityId, null));
-    metadata.generateName(getPrefixPVC() + "-");
+    metadata.generateName(getPVCPrefix() + "-");
     body.metadata(metadata);
 
     // Create PVC Spec

@@ -75,15 +75,17 @@ public class LogServiceImpl implements LogService {
 	    	if (kubeService.isKubePodAvailable(workflowId, workflowActivityId, taskId) && !streamLogsFromElastic() && !streamLogsFromLoki()) {
 	    		srb = kubeService.streamPodLog(response, workflowId, workflowActivityId, taskId, taskActivityId);
 	          } else if (streamLogsFromElastic()) {
+//	        	  TODO: double check WorkflowActivityId for CICD and TaskActivityId for Flow otherwise this wont return flow
 	        	  return streamLogsFromElastic(workflowActivityId);
 	          } else if (streamLogsFromLoki()) {
 	        	  //TODO Loki Implementation
 	          } else {
-	        	  return getDefaultErrorMessage();
+	        	  return getDefaultErrorMessage(getMessageUnableToAccessLogs());
 	          }
 	    } catch (KubeRuntimeException e) {
-			  throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
+//			  throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
 //			  TODO: do we need to just return the defaultErrorMessage stream?
+	    	return getDefaultErrorMessage(getMessageServerError());
 	    }
 	    return srb;
 	  }
@@ -97,9 +99,9 @@ public class LogServiceImpl implements LogService {
 	  }
 
 	  private StreamingResponseBody streamLogsFromElastic(String activityId) {
-	    LOGGER.info("Streaming logs from elastic: " + kubeService.getPrefixJob() + "-" + activityId + "-*");
+	    LOGGER.info("Streaming logs from elastic: " + kubeService.getJobPrefix() + "-" + activityId + "-*");
 
-	    LOGGER.info("kubernetes.pod=", kubeService.getPrefixJob() + "-" + activityId + "-*");
+	    LOGGER.info("kubernetes.pod=", kubeService.getJobPrefix() + "-" + activityId + "-*");
 	    return outputStream -> {
 	    	
 	    	
@@ -117,7 +119,7 @@ public class LogServiceImpl implements LogService {
 	      
 	      
 	      MatchPhraseQueryBuilder podName = QueryBuilders.matchPhraseQuery("kubernetes.pod",
-	    		  kubeService.getPrefixJob() + "-" + activityId + "-*");
+	    		  kubeService.getJobPrefix() + "-" + activityId + "-*");
 
 	      MatchPhraseQueryBuilder containerName  = QueryBuilders.matchPhraseQuery("kubernetes.container_name",
 	          "worker-cntr"); 
@@ -131,7 +133,7 @@ public class LogServiceImpl implements LogService {
 	      LOGGER.info("Search returned back: " + searchHits.length);
 
 	      if (searchHits.length == 0) {
-	        printWriter.println(getErrorMessage());
+	        printWriter.println(getMessageUnableToAccessLogs());
 	        printWriter.flush();
 	        printWriter.close();
 	        return;
@@ -167,19 +169,23 @@ public class LogServiceImpl implements LogService {
 	  
 
 
-	  protected StreamingResponseBody getDefaultErrorMessage() {
+	  protected StreamingResponseBody getDefaultErrorMessage(String message) {
 	    LOGGER.info("Returning back default message.");
 
 	    return outputStream -> {
-	      outputStream.write(getErrorMessage().getBytes(StandardCharsets.UTF_8));
+	      outputStream.write(message.getBytes(StandardCharsets.UTF_8));
 	      outputStream.flush();
 	      outputStream.close();
 	    };
 	  }
-//
-	  private String getErrorMessage() {
+
+	  private String getMessageUnableToAccessLogs() {
 	    MessageSourceAccessor accessor = new MessageSourceAccessor(messageSource);
 	    return accessor.getMessage("UNABLE_RETRIEVE_LOGS");
 	  }
 
+	  private String getMessageServerError() {
+		    MessageSourceAccessor accessor = new MessageSourceAccessor(messageSource);
+		    return accessor.getMessage("INTERNAL_SERVER_ERROR_LOGS");
+		  }
 }

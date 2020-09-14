@@ -82,12 +82,12 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
   private Boolean kubeWorkerStorageDataMemory;
 
   @Override
-  public String getPrefixJob() {
+  public String getJobPrefix() {
     return PREFIX_JOB;
   }
   
   @Override
-  public String getPrefixPVC() {
+  public String getPVCPrefix() {
     return PREFIX_PVC;
   }
 
