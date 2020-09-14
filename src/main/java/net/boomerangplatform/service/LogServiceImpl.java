@@ -60,8 +60,6 @@ public class LogServiceImpl implements LogService {
         return getDefaultErrorMessage(getMessageUnableToAccessLogs());
       }
     } catch (KubeRuntimeException e) {
-      // throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
-      // TODO: do we need to just return the defaultErrorMessage stream?
       return getDefaultErrorMessage(getMessageServerError());
     }
     return srb;
