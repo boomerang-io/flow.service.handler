@@ -233,7 +233,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
           return body.status(badStatus.failed(1));
         }
       } else {
-        LOGGER.error("Create Job Exception Response Body: " + e.getResponseBody());
+        LOGGER.debug("Create Job Exception Response Body: " + e.getResponseBody());
           ObjectMapper objectMapper = new ObjectMapper();
           JsonNode jsonNode;
           try {
@@ -244,7 +244,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
             }
           } catch (IOException e1) {
             // TODO Auto-generated catch block
-            LOGGER.warn("Unable to parse ResponseBody as JSON. Ignoring");
+            LOGGER.warn("Unable to parse ResponseBody as JSON. Defaulting to standard exception.");
           }
           throw new KubeRuntimeException("Error createJob", e);
       }
