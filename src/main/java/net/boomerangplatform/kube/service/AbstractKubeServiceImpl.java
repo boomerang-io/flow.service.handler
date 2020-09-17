@@ -233,6 +233,10 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
           return body.status(badStatus.failed(1));
         }
       } else {
+          LOGGER.error("Create Job Exception Response Body:", e.getResponseBody());
+          LOGGER.error("Create Job Exception Code:", e.getCode());
+          LOGGER.error("Create Job Exception Cause:", e.getCause());
+          LOGGER.error("Create Job Exception Message:", e.getMessage());
           throw new KubeRuntimeException("Error createJob", e);
       }
     }
