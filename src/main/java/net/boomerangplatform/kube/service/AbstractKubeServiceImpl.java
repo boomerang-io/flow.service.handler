@@ -17,9 +17,7 @@ import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
 import javax.servlet.http.HttpServletResponse;
-
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -40,15 +38,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
 import org.springframework.context.support.MessageSourceAccessor;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
-
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.ByteStreams;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
-
 import io.kubernetes.client.ApiClient;
 import io.kubernetes.client.ApiException;
 import io.kubernetes.client.Configuration;
@@ -83,6 +82,7 @@ import io.kubernetes.client.models.V1Volume;
 import io.kubernetes.client.models.V1VolumeMount;
 import io.kubernetes.client.models.V1VolumeProjection;
 import io.kubernetes.client.util.Watch;
+import net.boomerangplatform.error.BoomerangException;
 import net.boomerangplatform.kube.exception.KubeRuntimeException;
 import net.boomerangplatform.model.TaskConfiguration;
 import net.boomerangplatform.model.TaskDeletion;
@@ -233,10 +233,19 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
           return body.status(badStatus.failed(1));
         }
       } else {
-          LOGGER.error("Create Job Exception Response Body: " + e.getResponseBody());
-          LOGGER.error("Create Job Exception Code: " + e.getCode());
-          LOGGER.error("Create Job Exception Cause: " + e.getCause());
-          LOGGER.error("Create Job Exception Message " + e.getMessage());
+        LOGGER.error("Create Job Exception Response Body: " + e.getResponseBody());
+          ObjectMapper objectMapper = new ObjectMapper();
+          JsonNode jsonNode;
+          try {
+            jsonNode = objectMapper.readTree(e.getResponseBody());
+            String exceptionMessage = jsonNode.get("message").asText();
+            if (exceptionMessage.contains("admission webhook")) {
+              throw new BoomerangException(1, "ADMISSION_WEBHOOK_DENIED", HttpStatus.BAD_REQUEST, exceptionMessage);
+            }
+          } catch (IOException e1) {
+            // TODO Auto-generated catch block
+            LOGGER.warn("Unable to parse ResponseBody as JSON. Ignoring");
+          }
           throw new KubeRuntimeException("Error createJob", e);
       }
     }
