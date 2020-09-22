@@ -118,7 +118,6 @@ public class LogServiceImpl implements LogService {
 
             // If no `end` argument defined, it will be automatically set to `now()` by server 
             HttpGet request = new HttpGet(uri + end);
-            JSONObject currentlogbatch;
             LOGGER.info("Request URI:" + request.getURI());
             
             CloseableHttpResponse response = httpClient.execute(request);
@@ -131,7 +130,7 @@ public class LogServiceImpl implements LogService {
                     
                     JSONArray queryResults = currentlogbatch.getJSONObject("data").getJSONArray("result");
                     JSONArray logBatch;
-                    String logEntry;
+                    String lonEntry;
                 
                     if(queryResults.length() > 0){
                          
@@ -151,6 +150,7 @@ public class LogServiceImpl implements LogService {
                           printWriter.println(logEntry);
                         
                         }
+                        
 
                     }else{
                         moreLogsAvailable = Boolean.FALSE;
