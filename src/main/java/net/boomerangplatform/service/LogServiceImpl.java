@@ -1,8 +1,16 @@
 package net.boomerangplatform.service;
 
 import java.io.PrintWriter;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import javax.servlet.http.HttpServletResponse;
+
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
+import org.apache.http.HttpEntity;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.elasticsearch.action.search.ClearScrollRequest;
@@ -17,6 +25,8 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.Scroll;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
@@ -71,6 +81,93 @@ public class LogServiceImpl implements LogService {
 
   protected boolean streamLogsFromLoki() {
     return "loki".equals(loggingType);
+  }
+
+  private StreamingResponseBody streamLogsFromLoki(String activityId) {
+
+    LOGGER.info(
+        "Streaming logs from loki: " + kubeService.getJobPrefix() + "-" + activityId + "-*");
+
+    LOGGER.info("kubernetes.pod=", kubeService.getJobPrefix() + "-" + activityId + "-*");
+    return outputStream -> {
+
+
+      PrintWriter printWriter = new PrintWriter(outputStream);
+
+      String filter = "{bmrg_activity=\"" + activityId + "\"}";
+      final String encodedQuery = URLEncoder.encode(filter, StandardCharsets.UTF_8);
+        
+      final Integer limit = 5000; // max chunk size set to 5000 by loki
+      final Integer start = 0; // Thursday, January 1, 1970 12:00:00 AM
+      final String direction = "backward"; 
+      String end = ""; // empty for first iteration
+      String lokiEndpoint = "http://loki:3100/";
+      
+      final String uri =  lokiEndpoint + 
+          "/loki/api/v1/query_range?start=" + Integer.toString(start) +
+          "&limit=" + Integer.toString(limit) +
+          "&direction=" + direction + 
+          "&query=" + encodedQuery;
+
+      Boolean moreLogsAvailable = Boolean.TRUE; 
+      CloseableHttpClient httpClient = HttpClients.createDefault();
+
+      
+      try {
+        while(moreLogsAvailable.equals(Boolean.TRUE)){
+
+            // If no `end` argument defined, it will be automatically set to `now()` by server 
+            HttpGet request = new HttpGet(uri + end);
+            JSONObject currentlogbatch;
+            LOGGER.info("Request URI:" + request.getURI());
+            
+            CloseableHttpResponse response = httpClient.execute(request);
+            try {
+                HttpEntity entity = response.getEntity();
+                if (entity != null) {
+                    
+                    //(todo) check if result is in JSON format
+                    currentlogbatch = new JSONObject(EntityUtils.toString(entity));
+                    
+                    JSONArray queryResults = currentlogbatch.getJSONObject("data").getJSONArray("result");
+                    JSONArray logBatch;
+                    String logEntry;
+                
+                    if(queryResults.length() > 0){
+                         
+                        logBatch = queryResults.getJSONObject(0).optJSONArray("values");
+                        if(logBatch.length() < limit){ //checking if the current iteration is the last one
+                            
+                          moreLogsAvailable = Boolean.FALSE;
+
+                        }else{
+
+                            JSONArray lastEntry = logBatch.getJSONArray(logBatch.length() - 1);
+                            end = "&end=" + lastEntry.get(0).toString(); //(todo) -1 nanoseconds to avoid overlapping                          
+                        }
+                        for (int i = logBatch.length() - 1 ; i >= 0; i--){
+                          
+                          logEntry = logBatch.getJSONArray(i).get(0).toString() + " " + logBatch.getJSONArray(i).get(1).toString();
+                          printWriter.println(logEntry);
+                        
+                        }
+
+                    }else{
+                        moreLogsAvailable = Boolean.FALSE;
+                    }
+                }
+
+            } finally {
+                response.close();
+            }
+        }
+
+    } finally {
+    httpClient.close();
+    }
+      printWriter.flush();
+      printWriter.close();
+    };
   }
 
   private StreamingResponseBody streamLogsFromElastic(String activityId) {
