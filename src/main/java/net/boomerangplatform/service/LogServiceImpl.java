@@ -119,7 +119,6 @@ public class LogServiceImpl implements LogService {
             // If no `end` argument defined, it will be automatically set to `now()` by server 
             HttpGet request = new HttpGet(uri + end);
             JSONObject currentlogbatch;
-            LOGGER.info("Request URI:" + request.getURI());
             
             CloseableHttpResponse response = httpClient.execute(request);
             try {
