@@ -90,80 +90,83 @@ public class LogServiceImpl implements LogService {
 
     LOGGER.info("kubernetes.pod=", kubeService.getJobPrefix() + "-" + activityId + "-*");
     return outputStream -> {
-
-
-      PrintWriter printWriter = new PrintWriter(outputStream);
-
-      String filter = "{bmrg_activity=\"" + activityId + "\"}";
-      final String encodedQuery = URLEncoder.encode(filter, StandardCharsets.UTF_8);
+  
+  
+        PrintWriter printWriter = new PrintWriter(outputStream);
+  
+        String filter = "{bmrg_activity=\"" + activityId + "\"}";
+        final String encodedQuery = URLEncoder.encode(filter, StandardCharsets.UTF_8);
+          
+        final Integer limit = 5000; // max chunk size set to 5000 by loki
+        final Integer start = 0; // Thursday, January 1, 1970 12:00:00 AM
+        final String direction = "backward"; 
+        String end = ""; // empty for first iteration
+        String lokiEndpoint = "http://loki:3100/";
         
-      final Integer limit = 5000; // max chunk size set to 5000 by loki
-      final Integer start = 0; // Thursday, January 1, 1970 12:00:00 AM
-      final String direction = "backward"; 
-      String end = ""; // empty for first iteration
-      String lokiEndpoint = "http://loki:3100/";
-      
-      final String uri =  lokiEndpoint + 
-          "/loki/api/v1/query_range?start=" + Integer.toString(start) +
-          "&limit=" + Integer.toString(limit) +
-          "&direction=" + direction + 
-          "&query=" + encodedQuery;
-
-      Boolean moreLogsAvailable = Boolean.TRUE; 
-      CloseableHttpClient httpClient = HttpClients.createDefault();
-
-      
-      try {
-        while(moreLogsAvailable.equals(Boolean.TRUE)){
-
+        final String uri =  lokiEndpoint + 
+            "/loki/api/v1/query_range?start=" + Integer.toString(start) +
+            "&limit=" + Integer.toString(limit) +
+            "&direction=" + direction + 
+            "&query=" + encodedQuery;
+  
+        Boolean moreLogsAvailable = Boolean.TRUE; 
+        CloseableHttpClient httpClient = HttpClients.createDefault();
+  
+        
+        try {
+          while(moreLogsAvailable.equals(Boolean.TRUE)){
+  
             // If no `end` argument defined, it will be automatically set to `now()` by server 
             HttpGet request = new HttpGet(uri + end);
             JSONObject currentlogbatch;
-            
+              
             CloseableHttpResponse response = httpClient.execute(request);
             try {
                 HttpEntity entity = response.getEntity();
                 if (entity != null) {
-                    
+                      
                     //(todo) check if result is in JSON format
                     currentlogbatch = new JSONObject(EntityUtils.toString(entity));
-                    
+                      
                     JSONArray queryResults = currentlogbatch.getJSONObject("data").getJSONArray("result");
                     JSONArray logBatch;
                     String logEntry;
-                
+                  
                     if(queryResults.length() > 0){
-                         
-                        logBatch = queryResults.getJSONObject(0).optJSONArray("values");
-                        if(logBatch.length() < limit){ //checking if the current iteration is the last one
-                            
-                          moreLogsAvailable = Boolean.FALSE;
-
-                        }else{
-
-                            JSONArray lastEntry = logBatch.getJSONArray(logBatch.length() - 1);
-                            end = "&end=" + lastEntry.get(0).toString(); //(todo) -1 nanoseconds to avoid overlapping                          
-                        }
-                        for (int i = logBatch.length() - 1 ; i >= 0; i--){
                           
-                          logEntry = logBatch.getJSONArray(i).get(0).toString() + " " + logBatch.getJSONArray(i).get(1).toString();
-                          printWriter.println(logEntry);
-                        
-                        }
-
-                    }else{
+                      logBatch = queryResults.getJSONObject(0).optJSONArray("values");
+                      if(logBatch.length() < limit){ //checking if the current iteration is the last one
+                              
                         moreLogsAvailable = Boolean.FALSE;
+  
+                      }else{
+  
+                        JSONArray lastEntry = logBatch.getJSONArray(logBatch.length() - 1);
+                        end = "&end=" + lastEntry.get(0).toString(); //(todo) -1 nanoseconds to avoid overlapping                          
+                      }
+                      for (int i = logBatch.length() - 1 ; i >= 0; i--){
+                            
+                        logEntry = logBatch.getJSONArray(i).get(0).toString() + " " + logBatch.getJSONArray(i).get(1).toString();
+                        printWriter.println(logEntry);
+                      
+                      }
+  
+                    }else{
+  
+                      moreLogsAvailable = Boolean.FALSE;
+  
                     }
-                }
-
-            } finally {
+                  }
+              } finally {
+                  
                 response.close();
-            }
-        }
-
-    } finally {
-    httpClient.close();
-    }
+              }
+          }
+      } finally {
+  
+      httpClient.close();
+  
+      }
       printWriter.flush();
       printWriter.close();
     };
