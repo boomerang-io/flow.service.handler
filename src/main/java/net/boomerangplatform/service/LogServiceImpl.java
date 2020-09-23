@@ -75,8 +75,7 @@ public class LogServiceImpl implements LogService {
         // wont return flow
         return streamLogsFromElastic(taskActivityId);
       } else if (streamLogsFromLoki()) {
-        // TODO Loki Implementation
-        return streamLogsFromLoki(taskActivityId);
+        return streamLogsFromLoki( workflowId, workflowActivityId, taskId, taskActivityId);
       } else {
         return getDefaultErrorMessage(getMessageUnableToAccessLogs());
       }
@@ -95,18 +94,21 @@ public class LogServiceImpl implements LogService {
   }
 
   // TODO: reduce complexity, refactor method
-  private StreamingResponseBody streamLogsFromLoki(String activityId) {
+  private StreamingResponseBody streamLogsFromLoki(String workflowId,
+      String workflowActivityId, String taskId, String taskActivityId) {
 
     LOGGER.info(
-        "Streaming logs from loki: " + kubeService.getJobPrefix() + "-" + activityId + "-*");
+        "Streaming logs from loki: " + taskActivityId);
 
-    LOGGER.info("kubernetes.pod=", kubeService.getJobPrefix() + "-" + activityId + "-*");
+
     return outputStream -> {
   
       PrintWriter printWriter = new PrintWriter(outputStream);
-
-      //TODO: avoid hardcoded values
-      final String filter = "{bmrg_activity=\""+ activityId + "\"}";
+      
+      final String filter =  createLokoFilter(workflowId, workflowActivityId, taskId, taskActivityId);
+      LOGGER.info(
+          "Loki filter: " + filter);
+      
       final String encodedQuery = URLEncoder.encode(filter, StandardCharsets.UTF_8);
       final Integer limit = 5000; // max chunk size supported by Loki
       final String direction = "forward";  //default backward
@@ -173,6 +175,16 @@ public class LogServiceImpl implements LogService {
       printWriter.flush();
       printWriter.close();
     };
+  }
+
+  private String createLokoFilter(String workflowId, String workflowActivityId, String taskId,
+      String taskActivityId) {
+    return "{bmrg_activity=\""
+        + workflowActivityId
+        + "\",bmrg_workflow=\"" + 
+        workflowId + "\",bmrg_task=\""
+            + taskId
+            + "\"}";
   }
 
   private StreamingResponseBody streamLogsFromElastic(String activityId) {
