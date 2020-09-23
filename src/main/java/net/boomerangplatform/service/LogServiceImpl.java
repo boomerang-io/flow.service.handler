@@ -118,7 +118,7 @@ public class LogServiceImpl implements LogService {
           // If no `end` argument is defined, it will be automatically set to `now()` by server 
 
       LOGGER.info(
-            "Loki endpoint: " + lokiEndpoint);
+            "Loki endpoint: " + uri);
             
       String start = "&start=0"; // Thursday, January 1, 1970 12:00:00 AM
       Boolean moreLogsAvailable = Boolean.TRUE; // TODO: create a method instead
