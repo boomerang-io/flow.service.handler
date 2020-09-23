@@ -1,8 +1,16 @@
 package net.boomerangplatform.service;
 
 import java.io.PrintWriter;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import javax.servlet.http.HttpServletResponse;
+
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
+import org.apache.http.HttpEntity;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.elasticsearch.action.search.ClearScrollRequest;
@@ -17,6 +25,8 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.Scroll;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
@@ -56,6 +66,7 @@ public class LogServiceImpl implements LogService {
         return streamLogsFromElastic(taskActivityId);
       } else if (streamLogsFromLoki()) {
         // TODO Loki Implementation
+        return streamLogsFromLoki(taskActivityId);
       } else {
         return getDefaultErrorMessage(getMessageUnableToAccessLogs());
       }
@@ -71,6 +82,84 @@ public class LogServiceImpl implements LogService {
 
   protected boolean streamLogsFromLoki() {
     return "loki".equals(loggingType);
+  }
+
+  // TODO: reduce complexity, refactor method
+  private StreamingResponseBody streamLogsFromLoki(String activityId) {
+
+    LOGGER.info(
+        "Streaming logs from loki: " + kubeService.getJobPrefix() + "-" + activityId + "-*");
+
+    LOGGER.info("kubernetes.pod=", kubeService.getJobPrefix() + "-" + activityId + "-*");
+    return outputStream -> {
+  
+      PrintWriter printWriter = new PrintWriter(outputStream);
+
+      //TODO: avoid hardcoded values
+      final String filter = "{bmrg_activity=\""+ activityId + "\"}";
+      final String encodedQuery = URLEncoder.encode(filter, StandardCharsets.UTF_8);
+      final Integer limit = 5000; // max chunk size supported by Loki
+      final String direction = "forward";  //default backward
+      final String lokiEndpoint = "http://loki:3100/";
+      final String uri =  lokiEndpoint + 
+          "/loki/api/v1/query_range?&limit=" + Integer.toString(limit) +
+          "&direction=" + direction + 
+          "&query=" + encodedQuery;
+          // If no `end` argument is defined, it will be automatically set to `now()` by server 
+
+      String start = "&start=0"; // Thursday, January 1, 1970 12:00:00 AM
+      Boolean moreLogsAvailable = Boolean.TRUE; // TODO: create a method instead
+      CloseableHttpClient httpClient = HttpClients.createDefault();
+      
+      try {
+        while(moreLogsAvailable.equals(Boolean.TRUE)){
+          HttpGet request = new HttpGet(uri + start);
+          JSONObject currentLogBatch;
+            
+          CloseableHttpResponse response = httpClient.execute(request);
+          try {
+            HttpEntity entity = response.getEntity();
+            if (entity != null) {
+
+              //TODO check if result is in JSON format
+              currentLogBatch = new JSONObject(EntityUtils.toString(entity));
+                  
+              JSONArray queryResults = currentLogBatch.getJSONObject("data").getJSONArray("result");
+              JSONArray logArray;
+              String logEntry;
+                
+              if(queryResults.length() > 0){
+                logArray = queryResults.getJSONObject(0).optJSONArray("values");
+
+                int index = 1;
+                if(start.equals("&start=0")) index = 0; //no prior log line to overlap
+
+                for(; index < logArray.length(); index++){//print line by line
+                  logEntry = logArray.getJSONArray(index).get(0).toString() + " " 
+                            + logArray.getJSONArray(index).get(1).toString();
+                  printWriter.println(logEntry); //TODO: can I generate multiline payloads?
+                }
+
+                if(logArray.length() < limit){ //check if the current iteration is the last one
+                  moreLogsAvailable = Boolean.FALSE;
+                }else{
+                  JSONArray lastEntry = logArray.getJSONArray(logArray.length() - 1);
+                  start = "&start=" + lastEntry.get(0).toString();                          
+                }
+              }else{
+                moreLogsAvailable = Boolean.FALSE;
+              }
+            }
+          } finally {
+              response.close();
+          }
+        }
+      } finally {
+        httpClient.close();
+      }
+      printWriter.flush();
+      printWriter.close();
+    };
   }
 
   private StreamingResponseBody streamLogsFromElastic(String activityId) {
