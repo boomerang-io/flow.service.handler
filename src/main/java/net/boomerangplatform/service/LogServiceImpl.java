@@ -31,10 +31,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
 import org.springframework.context.support.MessageSourceAccessor;
+import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import net.boomerangplatform.kube.exception.KubeRuntimeException;
 import net.boomerangplatform.kube.service.AbstractKubeServiceImpl;
 
+@Service
 public class LogServiceImpl implements LogService {
 
   private static final Logger LOGGER = LogManager.getLogger(LogServiceImpl.class);
