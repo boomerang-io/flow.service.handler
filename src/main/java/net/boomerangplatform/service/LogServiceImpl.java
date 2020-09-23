@@ -66,6 +66,7 @@ public class LogServiceImpl implements LogService {
         return streamLogsFromElastic(taskActivityId);
       } else if (streamLogsFromLoki()) {
         // TODO Loki Implementation
+        return streamLogsFromLoki(taskActivityId);
       } else {
         return getDefaultErrorMessage(getMessageUnableToAccessLogs());
       }
@@ -83,6 +84,7 @@ public class LogServiceImpl implements LogService {
     return "loki".equals(loggingType);
   }
 
+  // TODO: reduce complexity, refactor method
   private StreamingResponseBody streamLogsFromLoki(String activityId) {
 
     LOGGER.info(
@@ -91,81 +93,69 @@ public class LogServiceImpl implements LogService {
     LOGGER.info("kubernetes.pod=", kubeService.getJobPrefix() + "-" + activityId + "-*");
     return outputStream -> {
   
-  
-        PrintWriter printWriter = new PrintWriter(outputStream);
-  
-        String filter = "{bmrg_activity=\"" + activityId + "\"}";
-        final String encodedQuery = URLEncoder.encode(filter, StandardCharsets.UTF_8);
-          
-        final Integer limit = 5000; // max chunk size set to 5000 by loki
-        final Integer start = 0; // Thursday, January 1, 1970 12:00:00 AM
-        final String direction = "backward"; 
-        String end = ""; // empty for first iteration
-        String lokiEndpoint = "http://loki:3100/";
-        
-        final String uri =  lokiEndpoint + 
-            "/loki/api/v1/query_range?start=" + Integer.toString(start) +
-            "&limit=" + Integer.toString(limit) +
-            "&direction=" + direction + 
-            "&query=" + encodedQuery;
-  
-        Boolean moreLogsAvailable = Boolean.TRUE; 
-        CloseableHttpClient httpClient = HttpClients.createDefault();
-  
-        
-        try {
-          while(moreLogsAvailable.equals(Boolean.TRUE)){
-  
-            // If no `end` argument defined, it will be automatically set to `now()` by server 
-            HttpGet request = new HttpGet(uri + end);
-            JSONObject currentlogbatch;
-              
-            CloseableHttpResponse response = httpClient.execute(request);
-            try {
-                HttpEntity entity = response.getEntity();
-                if (entity != null) {
-                      
-                    //(todo) check if result is in JSON format
-                    currentlogbatch = new JSONObject(EntityUtils.toString(entity));
-                      
-                    JSONArray queryResults = currentlogbatch.getJSONObject("data").getJSONArray("result");
-                    JSONArray logBatch;
-                    String logEntry;
+      PrintWriter printWriter = new PrintWriter(outputStream);
+
+      //TODO: avoid hardcoded values
+      final String filter = "{bmrg_activity=\""+ activityId + "\"}";
+      final String encodedQuery = URLEncoder.encode(filter, StandardCharsets.UTF_8);
+      final Integer limit = 5000; // max chunk size supported by Loki
+      final String direction = "forward";  //default backward
+      final String lokiEndpoint = "http://loki:3100/";
+      final String uri =  lokiEndpoint + 
+          "/loki/api/v1/query_range?&limit=" + Integer.toString(limit) +
+          "&direction=" + direction + 
+          "&query=" + encodedQuery;
+          // If no `end` argument is defined, it will be automatically set to `now()` by server 
+
+      String start = "&start=0"; // Thursday, January 1, 1970 12:00:00 AM
+      Boolean moreLogsAvailable = Boolean.TRUE; // TODO: create a method instead
+      CloseableHttpClient httpClient = HttpClients.createDefault();
+      
+      try {
+        while(moreLogsAvailable.equals(Boolean.TRUE)){
+          HttpGet request = new HttpGet(uri + start);
+          JSONObject currentLogBatch;
+            
+          CloseableHttpResponse response = httpClient.execute(request);
+          try {
+            HttpEntity entity = response.getEntity();
+            if (entity != null) {
+
+              //TODO check if result is in JSON format
+              currentLogBatch = new JSONObject(EntityUtils.toString(entity));
                   
-                    if(queryResults.length() > 0){
-                          
-                      logBatch = queryResults.getJSONObject(0).optJSONArray("values");
-                      if(logBatch.length() < limit){ //checking if the current iteration is the last one
-                              
-                        moreLogsAvailable = Boolean.FALSE;
-  
-                      }else{
-  
-                        JSONArray lastEntry = logBatch.getJSONArray(logBatch.length() - 1);
-                        end = "&end=" + lastEntry.get(0).toString(); //(todo) -1 nanoseconds to avoid overlapping                          
-                      }
-                      for (int i = logBatch.length() - 1 ; i >= 0; i--){
-                            
-                        logEntry = logBatch.getJSONArray(i).get(0).toString() + " " + logBatch.getJSONArray(i).get(1).toString();
-                        printWriter.println(logEntry);
-                      
-                      }
-  
-                    }else{
-  
-                      moreLogsAvailable = Boolean.FALSE;
-  
-                    }
-                  }
-              } finally {
-                  
-                response.close();
+              JSONArray queryResults = currentLogBatch.getJSONObject("data").getJSONArray("result");
+              JSONArray logArray;
+              String logEntry;
+                
+              if(queryResults.length() > 0){
+                logArray = queryResults.getJSONObject(0).optJSONArray("values");
+
+                int index = 1;
+                if(start.equals("&start=0")) index = 0; //no prior log line to overlap
+
+                for(; index < logArray.length(); index++){//print line by line
+                  logEntry = logArray.getJSONArray(index).get(0).toString() + " " 
+                            + logArray.getJSONArray(index).get(1).toString();
+                  printWriter.println(logEntry); //TODO: can I generate multiline payloads?
+                }
+
+                if(logArray.length() < limit){ //check if the current iteration is the last one
+                  moreLogsAvailable = Boolean.FALSE;
+                }else{
+                  JSONArray lastEntry = logArray.getJSONArray(logArray.length() - 1);
+                  start = "&start=" + lastEntry.get(0).toString();                          
+                }
+              }else{
+                moreLogsAvailable = Boolean.FALSE;
               }
+            }
+          } finally {
+              response.close();
           }
+        }
       } finally {
-  
-      httpClient.close();
-  
+        httpClient.close();
       }
       printWriter.flush();
       printWriter.close();
