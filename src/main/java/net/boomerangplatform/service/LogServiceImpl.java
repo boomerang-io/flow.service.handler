@@ -150,8 +150,7 @@ public class LogServiceImpl implements LogService {
                 if(start.equals("&start=0")) index = 0; //no prior log line to overlap
 
                 for(; index < logArray.length(); index++){//print line by line
-                  logEntry = logArray.getJSONArray(index).get(0).toString() + " " 
-                            + logArray.getJSONArray(index).get(1).toString();
+                  logEntry = logArray.getJSONArray(index).get(1).toString();
                   printWriter.println(logEntry); //TODO: can I generate multiline payloads?
                 }
 
