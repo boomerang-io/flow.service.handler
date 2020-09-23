@@ -110,7 +110,7 @@ public class LogServiceImpl implements LogService {
       final String encodedQuery = URLEncoder.encode(filter, StandardCharsets.UTF_8);
       final Integer limit = 5000; // max chunk size supported by Loki
       final String direction = "forward";  //default backward
-      final String lokiEndpoint = "http://" + lokiHost + ": " + lokiPort + "/";
+      final String lokiEndpoint = "http://" + lokiHost + ":" + lokiPort;
       final String uri =  lokiEndpoint + 
           "/loki/api/v1/query_range?&limit=" + Integer.toString(limit) +
           "&direction=" + direction + 
