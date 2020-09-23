@@ -115,6 +115,9 @@ public class LogServiceImpl implements LogService {
           "&query=" + encodedQuery;
           // If no `end` argument is defined, it will be automatically set to `now()` by server 
 
+      LOGGER.info(
+            "Loki endpoint: " + lokiEndpoint);
+            
       String start = "&start=0"; // Thursday, January 1, 1970 12:00:00 AM
       Boolean moreLogsAvailable = Boolean.TRUE; // TODO: create a method instead
       CloseableHttpClient httpClient = HttpClients.createDefault();
