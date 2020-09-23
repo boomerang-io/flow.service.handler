@@ -50,6 +50,14 @@ public class LogServiceImpl implements LogService {
 
   @Autowired
   private AbstractKubeServiceImpl kubeService;
+  
+  
+  @Value("${kube.worker.logging.loki.host}")
+  protected String lokiHost;
+  
+  @Value("${kube.worker.logging.loki.port}")
+  protected String lokiPort;
+ 
 
   @Override
   public StreamingResponseBody streamLogForTask(HttpServletResponse response, String workflowId,
@@ -100,7 +108,7 @@ public class LogServiceImpl implements LogService {
       final String encodedQuery = URLEncoder.encode(filter, StandardCharsets.UTF_8);
       final Integer limit = 5000; // max chunk size supported by Loki
       final String direction = "forward";  //default backward
-      final String lokiEndpoint = "http://loki:3100/";
+      final String lokiEndpoint = "http://" + lokiHost + ": " + lokiPort + "/";
       final String uri =  lokiEndpoint + 
           "/loki/api/v1/query_range?&limit=" + Integer.toString(limit) +
           "&direction=" + direction + 
