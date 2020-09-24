@@ -187,6 +187,11 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
     
     if (kubeWorkerDedicatedNodes) {
     	getTolerationAndSelector(podSpec);
+        Map<String, String> labels = new HashMap<>();
+        labels.put("platform", ORG);
+        labels.put("product", PRODUCT);
+        labels.put("tier", TIER);
+        getPodAntiAffinity(podSpec, labels);
     }
 
     if (!kubeWorkerHostAliases.isEmpty()) {

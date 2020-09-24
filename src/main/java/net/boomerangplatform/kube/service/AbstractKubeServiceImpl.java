@@ -41,6 +41,7 @@ import io.kubernetes.client.PodLogs;
 import io.kubernetes.client.apis.BatchV1Api;
 import io.kubernetes.client.apis.CoreV1Api;
 import io.kubernetes.client.custom.Quantity;
+import io.kubernetes.client.models.V1Affinity;
 import io.kubernetes.client.models.V1ConfigMap;
 import io.kubernetes.client.models.V1ConfigMapList;
 import io.kubernetes.client.models.V1ConfigMapProjection;
@@ -51,12 +52,15 @@ import io.kubernetes.client.models.V1EnvVar;
 import io.kubernetes.client.models.V1Job;
 import io.kubernetes.client.models.V1JobList;
 import io.kubernetes.client.models.V1JobStatus;
+import io.kubernetes.client.models.V1LabelSelector;
 import io.kubernetes.client.models.V1ObjectMeta;
 import io.kubernetes.client.models.V1PersistentVolumeClaim;
 import io.kubernetes.client.models.V1PersistentVolumeClaimList;
 import io.kubernetes.client.models.V1PersistentVolumeClaimSpec;
 import io.kubernetes.client.models.V1PersistentVolumeClaimStatus;
 import io.kubernetes.client.models.V1Pod;
+import io.kubernetes.client.models.V1PodAffinityTerm;
+import io.kubernetes.client.models.V1PodAntiAffinity;
 import io.kubernetes.client.models.V1PodCondition;
 import io.kubernetes.client.models.V1PodSpec;
 import io.kubernetes.client.models.V1ResourceRequirements;
@@ -66,6 +70,7 @@ import io.kubernetes.client.models.V1Toleration;
 import io.kubernetes.client.models.V1Volume;
 import io.kubernetes.client.models.V1VolumeMount;
 import io.kubernetes.client.models.V1VolumeProjection;
+import io.kubernetes.client.models.V1WeightedPodAffinityTerm;
 import io.kubernetes.client.util.Watch;
 import net.boomerangplatform.error.BoomerangException;
 import net.boomerangplatform.kube.exception.KubeRuntimeException;
@@ -135,7 +140,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
 
   @Value("${kube.worker.hostaliases}")
   protected String kubeWorkerHostAliases;
-  
+
   @Value("${kube.worker.node.dedicated}")
   protected Boolean kubeWorkerDedicatedNodes;
 
@@ -156,7 +161,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
 
   @Value("${controller.service.host}")
   protected String bmrgControllerServiceURL;
-  
+
   @Autowired
   private ConfigurationService configurationService;
 
@@ -166,9 +171,10 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   protected abstract String getLabelSelector(String workflowId, String workflowActivityId,
       String taskId);
 
-  protected abstract V1Job createJobBody(boolean createLifecycle, String workflowName, String workflowId,
-      String workflowActivityId,String taskActivityId, String taskName, String taskId, List<String> arguments,
-      Map<String, String> taskProperties, String image, String command, TaskConfiguration taskConfiguration);
+  protected abstract V1Job createJobBody(boolean createLifecycle, String workflowName,
+      String workflowId, String workflowActivityId, String taskActivityId, String taskName,
+      String taskId, List<String> arguments, Map<String, String> taskProperties, String image,
+      String command, TaskConfiguration taskConfiguration);
 
   protected abstract V1ConfigMap createTaskConfigMapBody(String workflowName, String workflowId,
       String workflowActivityId, String taskName, String taskId, Map<String, String> inputProps);
@@ -185,14 +191,16 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   public abstract String getJobPrefix();
 
   public abstract String getPVCPrefix();
-  
+
   @Override
-  public V1Job createJob(boolean createLifecycle, String workflowName, String workflowId, String workflowActivityId,  String taskActivityId,
-      String taskName, String taskId, List<String> arguments,
-      Map<String, String> taskProperties, String image, String command, TaskConfiguration taskConfiguration) {
-    V1Job body = createJobBody(createLifecycle, workflowName, workflowId, workflowActivityId,taskActivityId, taskName, taskId,
-        arguments, taskProperties, image, command, taskConfiguration);
-    
+  public V1Job createJob(boolean createLifecycle, String workflowName, String workflowId,
+      String workflowActivityId, String taskActivityId, String taskName, String taskId,
+      List<String> arguments, Map<String, String> taskProperties, String image, String command,
+      TaskConfiguration taskConfiguration) {
+    V1Job body =
+        createJobBody(createLifecycle, workflowName, workflowId, workflowActivityId, taskActivityId,
+            taskName, taskId, arguments, taskProperties, image, command, taskConfiguration);
+
     LOGGER.info(body);
 
     V1Job jobResult = new V1Job();
@@ -210,57 +218,59 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
         }
       } else {
         LOGGER.debug("Create Job Exception Response Body: " + e.getResponseBody());
-          ObjectMapper objectMapper = new ObjectMapper();
-          JsonNode jsonNode;
-          try {
-            jsonNode = objectMapper.readTree(e.getResponseBody());
-            String exceptionMessage = jsonNode.get("message").asText();
-            if (exceptionMessage.contains("admission webhook")) {
-              throw new BoomerangException(1, "ADMISSION_WEBHOOK_DENIED", HttpStatus.BAD_REQUEST, exceptionMessage);
-            }
-          } catch (IOException e1) {
-            // TODO Auto-generated catch block
-            LOGGER.warn("Unable to parse ResponseBody as JSON. Defaulting to standard exception.");
+        ObjectMapper objectMapper = new ObjectMapper();
+        JsonNode jsonNode;
+        try {
+          jsonNode = objectMapper.readTree(e.getResponseBody());
+          String exceptionMessage = jsonNode.get("message").asText();
+          if (exceptionMessage.contains("admission webhook")) {
+            throw new BoomerangException(1, "ADMISSION_WEBHOOK_DENIED", HttpStatus.BAD_REQUEST,
+                exceptionMessage);
           }
-          throw new KubeRuntimeException("Error createJob", e);
+        } catch (IOException e1) {
+          // TODO Auto-generated catch block
+          LOGGER.warn("Unable to parse ResponseBody as JSON. Defaulting to standard exception.");
+        }
+        throw new KubeRuntimeException("Error createJob", e);
       }
     }
 
     return jobResult;
   }
-  
-  public V1Job watchJob(boolean watchLifecycle, String workflowId, String workflowActivityId, String taskId) {
-	    String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
-	    V1Job jobResult = null;
 
-	    // Since upgrade to Java11 the watcher stops listening for events (irrespective of timeout) and
-	    // does not throw exception.
-	    // Loop will restart watcher based on our own timer
-	    Integer loopCount = 1;
-	    long endTime = System.nanoTime()
-	        + TimeUnit.NANOSECONDS.convert(kubeApiTimeOut.longValue(), TimeUnit.SECONDS);
-	    do {
-	      LOGGER.info("Starting Job Watcher #" + loopCount + " for Task (" + taskId + ")...");
-	      try {
-	    	Watch<V1Job> watch = createJobWatch(getBatchApi(), labelSelector);
-	    	if (watchLifecycle) {
-	            Watch<V1Pod> podWatch = createPodWatch(labelSelector, getCoreApi());
-	            getJobPod(podWatch);
-	    	}
-	        jobResult = getJobResult(taskId, watch);
-	      } catch (ApiException | IOException e) {
-	        LOGGER.error("getWatch Exception: ", e);
-	        throw new KubeRuntimeException("Error createWatch", e);
-	      }
-	      loopCount++;
-	    } while (System.nanoTime() < endTime && jobResult == null);
-	    if (jobResult == null) {
-	      // Final catch for a timeout and job still not complete.
-	      throw new KubeRuntimeException(
-	          "Task (" + taskId + ") has exceeded the maximum duration triggering failure.");
-	    } 
-	    return jobResult;
-	  }
+  public V1Job watchJob(boolean watchLifecycle, String workflowId, String workflowActivityId,
+      String taskId) {
+    String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
+    V1Job jobResult = null;
+
+    // Since upgrade to Java11 the watcher stops listening for events (irrespective of timeout) and
+    // does not throw exception.
+    // Loop will restart watcher based on our own timer
+    Integer loopCount = 1;
+    long endTime = System.nanoTime()
+        + TimeUnit.NANOSECONDS.convert(kubeApiTimeOut.longValue(), TimeUnit.SECONDS);
+    do {
+      LOGGER.info("Starting Job Watcher #" + loopCount + " for Task (" + taskId + ")...");
+      try {
+        Watch<V1Job> watch = createJobWatch(getBatchApi(), labelSelector);
+        if (watchLifecycle) {
+          Watch<V1Pod> podWatch = createPodWatch(labelSelector, getCoreApi());
+          getJobPod(podWatch);
+        }
+        jobResult = getJobResult(taskId, watch);
+      } catch (ApiException | IOException e) {
+        LOGGER.error("getWatch Exception: ", e);
+        throw new KubeRuntimeException("Error createWatch", e);
+      }
+      loopCount++;
+    } while (System.nanoTime() < endTime && jobResult == null);
+    if (jobResult == null) {
+      // Final catch for a timeout and job still not complete.
+      throw new KubeRuntimeException(
+          "Task (" + taskId + ") has exceeded the maximum duration triggering failure.");
+    }
+    return jobResult;
+  }
 
   private void getJobPod(Watch<V1Pod> watch) throws IOException {
     V1Pod pod = null;
@@ -268,92 +278,89 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
       for (Watch.Response<V1Pod> item : watch) {
 
         String name = item.object.getMetadata().getName();
-        LOGGER.info("Pod: " + name + ", started: " + item.object.getStatus().getStartTime() + "...");
+        LOGGER
+            .info("Pod: " + name + ", started: " + item.object.getStatus().getStartTime() + "...");
         String phase = item.object.getStatus().getPhase();
         LOGGER.info("Pod Phase: " + phase + "...");
         if (item.object.getStatus().getConditions() != null) {
-	        for (V1PodCondition condition : item.object.getStatus().getConditions()) {
-	          LOGGER.info("Pod Condition: " + condition.toString() + "...");
-	        }
+          for (V1PodCondition condition : item.object.getStatus().getConditions()) {
+            LOGGER.info("Pod Condition: " + condition.toString() + "...");
+          }
         }
         if (item.object.getStatus().getContainerStatuses() != null) {
-	        for (V1ContainerStatus containerStatus : item.object.getStatus().getContainerStatuses()) {
-	          LOGGER.info("Container Status: " + containerStatus.toString() + "...");
-	          if ("worker-cntr".equalsIgnoreCase(containerStatus.getName()) && containerStatus.getState().getTerminated() != null) {
-	        	  LOGGER.info("-----------------------------------------------");
-	        	  LOGGER.info("------- Executing Lifecycle Termination -------");
-	        	  LOGGER.info("-----------------------------------------------");
-	        	  try {
-        			  execJobLifecycle(name, "lifecycle-cntr");
-	        	  } catch (Exception e) {
-	        		  LOGGER.error("Lifecycle Execution Exception: ", e);
-	        	        throw new KubeRuntimeException("Lifecycle Execution Exception", e);
-	        	  }
-	        	  pod = item.object;
-	        	  break;
-	          }
-	        }
+          for (V1ContainerStatus containerStatus : item.object.getStatus().getContainerStatuses()) {
+            LOGGER.info("Container Status: " + containerStatus.toString() + "...");
+            if ("worker-cntr".equalsIgnoreCase(containerStatus.getName())
+                && containerStatus.getState().getTerminated() != null) {
+              LOGGER.info("-----------------------------------------------");
+              LOGGER.info("------- Executing Lifecycle Termination -------");
+              LOGGER.info("-----------------------------------------------");
+              try {
+                execJobLifecycle(name, "lifecycle-cntr");
+              } catch (Exception e) {
+                LOGGER.error("Lifecycle Execution Exception: ", e);
+                throw new KubeRuntimeException("Lifecycle Execution Exception", e);
+              }
+              pod = item.object;
+              break;
+            }
+          }
         }
         if (pod != null) {
-        	LOGGER.info("Exiting Lifecycle Termination");
-        	break;
+          LOGGER.info("Exiting Lifecycle Termination");
+          break;
         }
       }
     } finally {
       watch.close();
     }
   }
-  
-  private void execJobLifecycle(String podName, String containerName) throws ApiException, IOException, InterruptedException {
-	    Exec exec = new Exec();
-	    exec.setApiClient(Configuration.getDefaultApiClient());
-//	    boolean tty = System.console() != null;
-//	    String[] commands = new String[] {"node", "cli", "lifecycle", "terminate"};
-	    String[] commands = new String[] {"/bin/sh", "-c", "rm -f /lifecycle/lock && ls -ltr /lifecycle"};
-	    LOGGER.info("Pod: " + podName + ", Container: " + containerName + ", Commands: " + Arrays.toString(commands));
-	    final Process proc =
-	        exec.exec(
-	        	kubeNamespace,
-	            podName,
-	            commands,
-	            containerName,
-	            false,
-	            false);
 
-//	    Thread in =
-//	        new Thread(
-//	            new Runnable() {
-//	              public void run() {
-//	                try {
-//	                  ByteStreams.copy(System.in, proc.getOutputStream());
-//	                } catch (IOException ex) {
-//	                  ex.printStackTrace();
-//	                }
-//	              }
-//	            });
-//	    in.start();
+  private void execJobLifecycle(String podName, String containerName)
+      throws ApiException, IOException, InterruptedException {
+    Exec exec = new Exec();
+    exec.setApiClient(Configuration.getDefaultApiClient());
+    // boolean tty = System.console() != null;
+    // String[] commands = new String[] {"node", "cli", "lifecycle", "terminate"};
+    String[] commands =
+        new String[] {"/bin/sh", "-c", "rm -f /lifecycle/lock && ls -ltr /lifecycle"};
+    LOGGER.info("Pod: " + podName + ", Container: " + containerName + ", Commands: "
+        + Arrays.toString(commands));
+    final Process proc = exec.exec(kubeNamespace, podName, commands, containerName, false, false);
 
-	    Thread out =
-	        new Thread(
-	            new Runnable() {
-	              public void run() {
-	                try {
-	                  ByteStreams.copy(proc.getInputStream(), System.out);
-	                } catch (IOException ex) {
-	                  ex.printStackTrace();
-	                }
-	              }
-	            });
-	    out.start();
+    // Thread in =
+    // new Thread(
+    // new Runnable() {
+    // public void run() {
+    // try {
+    // ByteStreams.copy(System.in, proc.getOutputStream());
+    // } catch (IOException ex) {
+    // ex.printStackTrace();
+    // }
+    // }
+    // });
+    // in.start();
 
-	    proc.waitFor();
-	    // wait for any last output; no need to wait for input thread
-	    out.join();
-	    proc.destroy();
+    Thread out = new Thread(new Runnable() {
+      public void run() {
+        try {
+          ByteStreams.copy(proc.getInputStream(), System.out);
+        } catch (IOException ex) {
+          ex.printStackTrace();
+        }
+      }
+    });
+    out.start();
+
+    proc.waitFor();
+    // wait for any last output; no need to wait for input thread
+    out.join();
+    proc.destroy();
   }
 
   @Override
-  public String getPodLog(String workflowId, String workflowActivityId, String taskId,  String taskActivityId) {
+  public String getPodLog(String workflowId, String workflowActivityId, String taskId,
+      String taskActivityId) {
     String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
 
     PodLogs logs = new PodLogs();
@@ -367,11 +374,9 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
 
       if (!listOfPods.isEmpty()) {
         pod = listOfPods.get(0);
-        InputStream is = logs.streamNamespacedPodLog(
-            pod.getMetadata().getNamespace(),
-            pod.getMetadata().getName(),
-            "worker-cntr");
-       
+        InputStream is = logs.streamNamespacedPodLog(pod.getMetadata().getNamespace(),
+            pod.getMetadata().getName(), "worker-cntr");
+
         ByteStreams.copy(is, baos);
       }
     } catch (ApiException | IOException e) {
@@ -381,66 +386,64 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
 
     return baos.toString(StandardCharsets.UTF_8);
   }
-  
-  public boolean isKubePodAvailable(String workflowId,
-      String workflowActivityId, String taskId) {
-	  String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
-	  
-	  try {
-	      List<V1Pod> allPods =
-	          getCoreApi().listNamespacedPod(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty,
-	              null, null, labelSelector, null, null, TIMEOUT_ONE_MINUTE, false).getItems();
 
-	      if (allPods.isEmpty() || "succeeded".equalsIgnoreCase(allPods.get(0).getStatus().getPhase())
-	              || "failed".equalsIgnoreCase(allPods.get(0).getStatus().getPhase())){
-	    	  LOGGER.info("isKubePodAvailable() - Not available");
-	      	return false;
-	      }
-	      LOGGER.info("isKubePodAvailable() - Available");
-	  } catch (ApiException e) {
-	      LOGGER.error("streamPodLog Exception: ", e);
-	      throw new KubeRuntimeException("Error streamPodLog", e);
-	    }
-	  return true;
+  public boolean isKubePodAvailable(String workflowId, String workflowActivityId, String taskId) {
+    String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
+
+    try {
+      List<V1Pod> allPods =
+          getCoreApi().listNamespacedPod(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty,
+              null, null, labelSelector, null, null, TIMEOUT_ONE_MINUTE, false).getItems();
+
+      if (allPods.isEmpty() || "succeeded".equalsIgnoreCase(allPods.get(0).getStatus().getPhase())
+          || "failed".equalsIgnoreCase(allPods.get(0).getStatus().getPhase())) {
+        LOGGER.info("isKubePodAvailable() - Not available");
+        return false;
+      }
+      LOGGER.info("isKubePodAvailable() - Available");
+    } catch (ApiException e) {
+      LOGGER.error("streamPodLog Exception: ", e);
+      throw new KubeRuntimeException("Error streamPodLog", e);
+    }
+    return true;
   }
-  
+
   @Override
   public StreamingResponseBody streamPodLog(HttpServletResponse response, String workflowId,
       String workflowActivityId, String taskId, String taskActivityId) {
-	  
-	LOGGER.info("Stream logs from Kubernetes");
+
+    LOGGER.info("Stream logs from Kubernetes");
 
     String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
     StreamingResponseBody responseBody = null;
     try {
       Watch<V1Pod> watch = createPodWatch(labelSelector, getCoreApi());
       V1Pod pod = getPod(watch);
-      
+
       if (pod == null) {
-    	  LOGGER.error("V1Pod is empty...");
+        LOGGER.error("V1Pod is empty...");
+      } else {
+        if (pod.getStatus() == null) {
+          LOGGER.error("Pod Status is empty");
+        } else {
+          LOGGER.info("Phase: " + pod.getStatus().getPhase());
+        }
       }
-      else {
-    	  if (pod.getStatus() == null) {
-    		  LOGGER.error("Pod Status is empty");
-    	  }
-    	  else {
-    		  LOGGER.info("Phase: " + pod.getStatus().getPhase());
-    	  }
-      }
-  
+
       PodLogs logs = new PodLogs();
       InputStream inputStream = logs.streamNamespacedPodLog(pod);
 
       responseBody = getPodLog(inputStream, pod.getMetadata().getName());
     } catch (ApiException | IOException e) {
-//    	TODO: handle better throwing so that it can be caught in LogService and the default stream returned rather than failure.
+      // TODO: handle better throwing so that it can be caught in LogService and the default stream
+      // returned rather than failure.
       LOGGER.error("streamPodLog Exception: ", e);
       throw new KubeRuntimeException("Error streamPodLog", e);
     }
 
     return responseBody;
   }
-  
+
 
   public V1PersistentVolumeClaim createPVC(String workflowName, String workflowId,
       String workflowActivityId, String pvcSize) throws ApiException {
@@ -541,16 +544,14 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   @Override
   public V1Status deletePVC(String workflowId, String workflowActivityId) {
     V1DeleteOptions deleteOptions = new V1DeleteOptions();
-//    deleteOptions.setPropagationPolicy("Background");
+    // deleteOptions.setPropagationPolicy("Background");
     V1Status result = new V1Status();
     String pvcName = getPVCName(workflowId, workflowActivityId);
     LOGGER.info("Deleting PVC (" + pvcName + ")...");
     if (!pvcName.isEmpty()) {
       try {
-        result =
-            getCoreApi()
-                .deleteNamespacedPersistentVolumeClaim(
-                    pvcName, kubeNamespace, kubeApiPretty, deleteOptions, null, null, null, null);
+        result = getCoreApi().deleteNamespacedPersistentVolumeClaim(pvcName, kubeNamespace,
+            kubeApiPretty, deleteOptions, null, null, null, null);
       } catch (JsonSyntaxException e) {
         if (e.getCause() instanceof IllegalStateException) {
           IllegalStateException ise = (IllegalStateException) e.getCause();
@@ -559,7 +560,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
             LOGGER.error(
                 "Catching exception because of issue https://github.com/kubernetes-client/java/issues/86");
           } else {
-        	  LOGGER.error("Exception when running deletePVC()", e);
+            LOGGER.error("Exception when running deletePVC()", e);
           }
         }
       } catch (ApiException e) {
@@ -568,47 +569,51 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     }
     return result;
   }
-  
-  protected String getJobName(boolean onlyOnSuccess, String workflowId, String workflowActivityId, String taskId) {
-	    String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
 
-	    try {
-	    	V1JobList listOfJobs =
-	    	          getBatchApi().listNamespacedJob(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty,
-	    	              null, null, labelSelector, null, null, TIMEOUT_ONE_MINUTE, false);
-	      if (!listOfJobs.getItems().isEmpty()) {
-		    	Optional<V1Job> job = listOfJobs.getItems().stream()
-	    		.filter(item -> (onlyOnSuccess && item.getStatus().getSucceeded() != null) || !onlyOnSuccess)
-	    		.findFirst();
-		    	String jobName = job.isPresent() ? job.get().getMetadata().getName() : "";
-		    	LOGGER.info(" Job Name: " + jobName);
-		    	return jobName;
-	      }
-	    } catch (ApiException e) {
-	      LOGGER.error(EXCEPTION, e);
-	    }
-	    return "";
-	  }
-  
+  protected String getJobName(boolean onlyOnSuccess, String workflowId, String workflowActivityId,
+      String taskId) {
+    String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
+
+    try {
+      V1JobList listOfJobs =
+          getBatchApi().listNamespacedJob(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty,
+              null, null, labelSelector, null, null, TIMEOUT_ONE_MINUTE, false);
+      if (!listOfJobs.getItems().isEmpty()) {
+        Optional<V1Job> job = listOfJobs.getItems().stream().filter(
+            item -> (onlyOnSuccess && item.getStatus().getSucceeded() != null) || !onlyOnSuccess)
+            .findFirst();
+        String jobName = job.isPresent() ? job.get().getMetadata().getName() : "";
+        LOGGER.info(" Job Name: " + jobName);
+        return jobName;
+      }
+    } catch (ApiException e) {
+      LOGGER.error(EXCEPTION, e);
+    }
+    return "";
+  }
+
   @Override
-  public V1Status deleteJob(TaskDeletion taskDeletion, String workflowId, String workflowActivityId, String taskId) {
+  public V1Status deleteJob(TaskDeletion taskDeletion, String workflowId, String workflowActivityId,
+      String taskId) {
     V1DeleteOptions deleteOptions = new V1DeleteOptions();
     deleteOptions.setPropagationPolicy("Background");
     V1Status result = new V1Status();
-    String jobName = getJobName(TaskDeletion.OnSuccess.equals(taskDeletion) ? true : false, workflowId, workflowActivityId, taskId);
+    String jobName = getJobName(TaskDeletion.OnSuccess.equals(taskDeletion) ? true : false,
+        workflowId, workflowActivityId, taskId);
     if (!jobName.isEmpty()) {
       try {
-    	  LOGGER.info("Deleting Job ( " + jobName + ")...");
-        result = getBatchApi().deleteNamespacedJob(jobName, kubeNamespace, kubeApiPretty, deleteOptions, null, null, null, null);
+        LOGGER.info("Deleting Job ( " + jobName + ")...");
+        result = getBatchApi().deleteNamespacedJob(jobName, kubeNamespace, kubeApiPretty,
+            deleteOptions, null, null, null, null);
       } catch (JsonSyntaxException e) {
-    	if (e.getCause() instanceof IllegalStateException) {
+        if (e.getCause() instanceof IllegalStateException) {
           IllegalStateException ise = (IllegalStateException) e.getCause();
           if (ise.getMessage() != null
               && ise.getMessage().contains("Expected a string but was BEGIN_OBJECT")) {
             LOGGER.error(
                 "Catching exception because of issue https://github.com/kubernetes-client/java/issues/86");
           } else {
-        	  LOGGER.error("Exception when running deleteJob()", e);
+            LOGGER.error("Exception when running deleteJob()", e);
           }
         }
       } catch (ApiException e) {
@@ -695,8 +700,8 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     try {
       String configMapName = getConfigMapName(getConfigMap(workflowId, workflowActivityId, taskId));
       LOGGER.info("Deleting ConfigMap (" + configMapName + ")...");
-      result = getCoreApi().deleteNamespacedConfigMap(configMapName, kubeNamespace,
-          kubeApiPretty, deleteOptions, null, null, null, null);
+      result = getCoreApi().deleteNamespacedConfigMap(configMapName, kubeNamespace, kubeApiPretty,
+          deleteOptions, null, null, null, null);
     } catch (JsonSyntaxException e) {
       if (e.getCause() instanceof IllegalStateException) {
         IllegalStateException ise = (IllegalStateException) e.getCause();
@@ -786,14 +791,20 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
           getCoreApi().listNamespacedConfigMap(kubeNamespace, kubeApiIncludeuninitialized,
               kubeApiPretty, null, null, labelSelector, null, null, TIMEOUT_ONE_MINUTE, false);
       if (!configMapList.getItems().isEmpty()) {
-        LOGGER.info(" getConfigMap() - Found " + configMapList.getItems().size() + " configmaps: " + configMapList.getItems().stream().reduce("", (configMapNames, cm) -> configMapNames += cm.getMetadata().getName() + "(" + cm.getMetadata().getCreationTimestamp() + ")", String::concat));
+        LOGGER.info(" getConfigMap() - Found " + configMapList.getItems().size() + " configmaps: "
+            + configMapList.getItems().stream().reduce("", (configMapNames, cm) -> configMapNames +=
+                cm.getMetadata().getName() + "(" + cm.getMetadata().getCreationTimestamp() + ")",
+                String::concat));
         if (!Optional.ofNullable(taskId).isPresent()) {
-        	Optional<V1ConfigMap> configMapOptional = configMapList.getItems().stream().filter(cm -> !cm.getMetadata().getLabels().containsKey("task-id")).findFirst();
-        	configMap = configMapOptional.isPresent() ? configMapOptional.get() : configMapList.getItems().get(0);
+          Optional<V1ConfigMap> configMapOptional = configMapList.getItems().stream()
+              .filter(cm -> !cm.getMetadata().getLabels().containsKey("task-id")).findFirst();
+          configMap = configMapOptional.isPresent() ? configMapOptional.get()
+              : configMapList.getItems().get(0);
         } else {
-        	configMap = configMapList.getItems().get(0);
+          configMap = configMapList.getItems().get(0);
         }
-    	LOGGER.info(" getConfigMap() - chosen configmap: " + configMap.getMetadata().getName() + "(" + configMap.getMetadata().getCreationTimestamp() + ")");
+        LOGGER.info(" getConfigMap() - chosen configmap: " + configMap.getMetadata().getName() + "("
+            + configMap.getMetadata().getCreationTimestamp() + ")");
       }
     } catch (ApiException e) {
       LOGGER.error("Error: ", e);
@@ -802,30 +813,25 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   }
 
   protected V1ConfigMap getFirstConfigmapByDateTime(V1ConfigMapList configMapList) {
-	  V1ConfigMap configMap = null;
-	  if (!configMapList.getItems().isEmpty()) {
-		  configMap = configMapList.getItems().get(0);
-		    DateTime configMapDateTime = configMap.getMetadata().getCreationTimestamp();
-		    for (int i = 0; i < configMapList.getItems().size(); i++) {
-		      DateTime configMapDateTimeIter =
-		          configMapList.getItems().get(i).getMetadata().getCreationTimestamp();
-		      //    		if (configMapDateTimeIter != null) &&
-		      // configMapDateTime.compareTo(configMapDateTimeIter) > 0) {
-		      if (configMapDateTimeIter != null) {
-		        LOGGER.info(
-		            "Comparing "
-		                + configMapDateTime
-		                + " to "
-		                + configMapDateTimeIter
-		                + " = "
-		                + configMapDateTime.compareTo(configMapDateTimeIter));
-		        if (configMapDateTime.compareTo(configMapDateTimeIter) > 0) {
-		          configMap = configMapList.getItems().get(i);
-		          configMapDateTime = configMap.getMetadata().getCreationTimestamp();
-		        }
-		      }
-		    }
-	  }
+    V1ConfigMap configMap = null;
+    if (!configMapList.getItems().isEmpty()) {
+      configMap = configMapList.getItems().get(0);
+      DateTime configMapDateTime = configMap.getMetadata().getCreationTimestamp();
+      for (int i = 0; i < configMapList.getItems().size(); i++) {
+        DateTime configMapDateTimeIter =
+            configMapList.getItems().get(i).getMetadata().getCreationTimestamp();
+        // if (configMapDateTimeIter != null) &&
+        // configMapDateTime.compareTo(configMapDateTimeIter) > 0) {
+        if (configMapDateTimeIter != null) {
+          LOGGER.info("Comparing " + configMapDateTime + " to " + configMapDateTimeIter + " = "
+              + configMapDateTime.compareTo(configMapDateTimeIter));
+          if (configMapDateTime.compareTo(configMapDateTimeIter) > 0) {
+            configMap = configMapList.getItems().get(i);
+            configMapDateTime = configMap.getMetadata().getCreationTimestamp();
+          }
+        }
+      }
+    }
     return configMap;
   }
 
@@ -883,15 +889,15 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     container.imagePullPolicy(kubeImagePullPolicy);
     V1SecurityContext securityContext = new V1SecurityContext();
     securityContext.setPrivileged(true);
-//	Only works with Kube 1.12. ICP 3.1.1 is Kube 1.11.5
-//	TODO: securityContext.setProcMount("Unmasked");
+    // Only works with Kube 1.12. ICP 3.1.1 is Kube 1.11.5
+    // TODO: securityContext.setProcMount("Unmasked");
     container.setSecurityContext(securityContext);
     return container;
   }
 
-/*
- * Passes through optional method inputs to the sub methods which need to handle this.
- */
+  /*
+   * Passes through optional method inputs to the sub methods which need to handle this.
+   */
   protected V1ObjectMeta getMetadata(String workflowName, String workflowId,
       String workflowActivityId, String taskId, String generateName) {
     V1ObjectMeta metadata = new V1ObjectMeta();
@@ -902,20 +908,39 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     }
     return metadata;
   }
-  
+
   /*
-   * Sets the tolerations and nodeSelector to match the dedicated node
-   * taints and node-role label
+   * Sets the tolerations and nodeSelector to match the dedicated node taints and node-role label
    */
-    protected void getTolerationAndSelector(V1PodSpec podSpec) {
-	    V1Toleration nodeTolerationItem = new V1Toleration();
-	    nodeTolerationItem.key("dedicated");
-	    nodeTolerationItem.value("bmrg-worker");
-	    nodeTolerationItem.effect("NoSchedule");
-	    nodeTolerationItem.operator("Equal");
-	    podSpec.addTolerationsItem(nodeTolerationItem);
-	    podSpec.putNodeSelectorItem("node-role.kubernetes.io/bmrg-worker", "true");
-    }
+  protected void getTolerationAndSelector(V1PodSpec podSpec) {
+    V1Toleration nodeTolerationItem = new V1Toleration();
+    nodeTolerationItem.key("dedicated");
+    nodeTolerationItem.value("bmrg-worker");
+    nodeTolerationItem.effect("NoSchedule");
+    nodeTolerationItem.operator("Equal");
+    podSpec.addTolerationsItem(nodeTolerationItem);
+    podSpec.putNodeSelectorItem("node-role.kubernetes.io/bmrg-worker", "true");
+  }
+
+  /*
+   * Sets the pod anti affinity
+   */
+  protected void getPodAntiAffinity(V1PodSpec podSpec, Map<String, String> labels) {
+    V1LabelSelector labelSelector = new V1LabelSelector();
+    labelSelector.setMatchLabels(labels);
+    V1PodAffinityTerm podAntiAffinityPreferredTerm = new V1PodAffinityTerm();
+    podAntiAffinityPreferredTerm.setLabelSelector(labelSelector);
+    podAntiAffinityPreferredTerm.setTopologyKey("kubernetes.io/hostname");
+    V1WeightedPodAffinityTerm podAntiAffinityPreferred = new V1WeightedPodAffinityTerm();
+    podAntiAffinityPreferred.setWeight(100);
+    podAntiAffinityPreferred.setPodAffinityTerm(podAntiAffinityPreferredTerm);
+    V1PodAntiAffinity podAntiAffinity = new V1PodAntiAffinity();
+    podAntiAffinity
+        .addPreferredDuringSchedulingIgnoredDuringExecutionItem(podAntiAffinityPreferred);
+    V1Affinity podAffinity = new V1Affinity();
+    podAffinity.setPodAntiAffinity(podAntiAffinity);
+    podSpec.affinity(podAffinity);
+  }
 
   private boolean isPVCAvailable(boolean failIfNotBound,
       V1PersistentVolumeClaimList persistentVolumeClaimList) {
@@ -1085,12 +1110,13 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   void setApiClient(ApiClient apiClient) {
     this.apiClient = apiClient;
   }
-  
+
   public ApiClient getApiClient() {
     return this.apiClient;
   }
-  
+
   protected String getTaskDebug(TaskConfiguration taskConfiguration) {
-	  return taskConfiguration.getDebug() != null ? taskConfiguration.getDebug().toString() : configurationService.getTaskDebug().toString();
+    return taskConfiguration.getDebug() != null ? taskConfiguration.getDebug().toString()
+        : configurationService.getTaskDebug().toString();
   }
 }
