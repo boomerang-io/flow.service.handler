@@ -2,14 +2,12 @@ package net.boomerangplatform.service;
 
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-
 import io.kubernetes.client.ApiException;
 import net.boomerangplatform.error.BoomerangException;
 import net.boomerangplatform.kube.exception.KubeRuntimeException;
@@ -29,6 +27,9 @@ public class FlowControllerServiceImpl extends AbstractControllerServiceImpl {
 
   @Autowired
   private FlowKubeServiceImpl kubeService;
+
+  @Autowired
+  private FlowDeleteServiceImpl flowDeleteService;
 
   @Override
   public Response createWorkflow(Workflow workflow) {
@@ -99,7 +100,7 @@ public class FlowControllerServiceImpl extends AbstractControllerServiceImpl {
 						task.getWorkflowActivityId(), task.getTaskId(), task.getTaskName()));
 				kubeService.deleteConfigMap(null, task.getWorkflowActivityId(), task.getTaskId());
 				if (isTaskDeletionNever(task.getConfiguration().getDeletion())) {
-					kubeService.deleteJob(getTaskDeletion(task.getConfiguration().getDeletion()), task.getWorkflowId(),
+				  flowDeleteService.deleteJob(getTaskDeletion(task.getConfiguration().getDeletion()), task.getWorkflowId(),
 							task.getWorkflowActivityId(), task.getTaskId());
 				}
 				LOGGER.info("Task (" + task.getTaskId() + ") has completed with code " + response.getCode());
@@ -130,8 +131,8 @@ public class FlowControllerServiceImpl extends AbstractControllerServiceImpl {
 						task.getWorkflowActivityId(), task.getTaskId(), task.getTaskName()));
 				kubeService.deleteConfigMap(null, task.getWorkflowActivityId(), task.getTaskId());
 				if (isTaskDeletionNever(task.getConfiguration().getDeletion())) {
-					kubeService.deleteJob(getTaskDeletion(task.getConfiguration().getDeletion()), task.getWorkflowId(),
-							task.getWorkflowActivityId(), task.getTaskId());
+                  flowDeleteService.deleteJob(getTaskDeletion(task.getConfiguration().getDeletion()), task.getWorkflowId(),
+                      task.getWorkflowActivityId(), task.getTaskId());
 				}
 				LOGGER.info("Task (" + task.getTaskId() + ") has completed with code " + response.getCode());
 			}
