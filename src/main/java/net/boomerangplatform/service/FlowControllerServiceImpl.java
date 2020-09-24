@@ -29,7 +29,7 @@ public class FlowControllerServiceImpl extends AbstractControllerServiceImpl {
   private FlowKubeServiceImpl kubeService;
 
   @Autowired
-  private FlowDeleteServiceImpl flowDeleteService;
+  private DeleteServiceImpl deleteService;
 
   @Override
   public Response createWorkflow(Workflow workflow) {
@@ -100,7 +100,7 @@ public class FlowControllerServiceImpl extends AbstractControllerServiceImpl {
 						task.getWorkflowActivityId(), task.getTaskId(), task.getTaskName()));
 				kubeService.deleteConfigMap(null, task.getWorkflowActivityId(), task.getTaskId());
 				if (isTaskDeletionNever(task.getConfiguration().getDeletion())) {
-				  flowDeleteService.deleteJob(getTaskDeletion(task.getConfiguration().getDeletion()), task.getWorkflowId(),
+				  deleteService.deleteJob(getTaskDeletion(task.getConfiguration().getDeletion()), task.getWorkflowId(),
 							task.getWorkflowActivityId(), task.getTaskId());
 				}
 				LOGGER.info("Task (" + task.getTaskId() + ") has completed with code " + response.getCode());
@@ -131,7 +131,7 @@ public class FlowControllerServiceImpl extends AbstractControllerServiceImpl {
 						task.getWorkflowActivityId(), task.getTaskId(), task.getTaskName()));
 				kubeService.deleteConfigMap(null, task.getWorkflowActivityId(), task.getTaskId());
 				if (isTaskDeletionNever(task.getConfiguration().getDeletion())) {
-                  flowDeleteService.deleteJob(getTaskDeletion(task.getConfiguration().getDeletion()), task.getWorkflowId(),
+                  deleteService.deleteJob(getTaskDeletion(task.getConfiguration().getDeletion()), task.getWorkflowId(),
                       task.getWorkflowActivityId(), task.getTaskId());
 				}
 				LOGGER.info("Task (" + task.getTaskId() + ") has completed with code " + response.getCode());

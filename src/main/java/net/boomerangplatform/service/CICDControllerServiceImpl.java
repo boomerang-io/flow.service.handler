@@ -29,6 +29,9 @@ public class CICDControllerServiceImpl extends AbstractControllerServiceImpl {
   @Autowired
   private CICDKubeServiceImpl kubeService;
 
+  @Autowired
+  private DeleteServiceImpl deleteService;
+
   @Override
   public Response createWorkflow(Workflow workflow) {
     Response response = new Response("0", "Component Activity (" + workflow.getWorkflowActivityId()
@@ -98,8 +101,9 @@ public class CICDControllerServiceImpl extends AbstractControllerServiceImpl {
 			} finally {
 				kubeService.deleteConfigMap(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
 			      if (isTaskDeletionNever(task.getConfiguration().getDeletion())) {
-			    	  kubeService.deleteJob(getTaskDeletion(task.getConfiguration().getDeletion()), task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
-			      }
+			        deleteService.deleteJob(getTaskDeletion(task.getConfiguration().getDeletion()), task.getWorkflowId(),
+                        task.getWorkflowActivityId(), task.getTaskId());
+			        }
 				LOGGER.info("Task (" + task.getTaskId() + ") has completed with code " + response.getCode());
 			}
 		}

@@ -1,19 +1,21 @@
 package net.boomerangplatform.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import net.boomerangplatform.kube.service.FlowKubeServiceImpl;
+import net.boomerangplatform.kube.service.AbstractKubeServiceImpl;
 import net.boomerangplatform.model.TaskDeletion;
 
 @Service
-@Profile({"live", "local"})
-public class FlowDeleteServiceImpl implements FlowDeleteService {
+public class DeleteServiceImpl implements DeleteService {
   
   @Autowired
-  private FlowKubeServiceImpl kubeService;
+  private AbstractKubeServiceImpl kubeService;
 
+  /*
+   * Implement asynchronous delete after a period of time to ensure
+   * that logs can be retrieved / ingested from quick running tasks
+   */
   @Override
   @Async
   public void deleteJob(TaskDeletion taskDeletion, String workflowId, String workflowActivityId, String taskId) {
