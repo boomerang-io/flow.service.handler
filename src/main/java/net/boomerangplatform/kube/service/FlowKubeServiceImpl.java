@@ -5,26 +5,29 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
-
+import io.kubernetes.client.models.V1Affinity;
 import io.kubernetes.client.models.V1ConfigMap;
 import io.kubernetes.client.models.V1Container;
 import io.kubernetes.client.models.V1EmptyDirVolumeSource;
 import io.kubernetes.client.models.V1EnvVar;
 import io.kubernetes.client.models.V1Job;
 import io.kubernetes.client.models.V1JobSpec;
+import io.kubernetes.client.models.V1LabelSelector;
 import io.kubernetes.client.models.V1LocalObjectReference;
 import io.kubernetes.client.models.V1PersistentVolumeClaimVolumeSource;
+import io.kubernetes.client.models.V1PodAffinityTerm;
+import io.kubernetes.client.models.V1PodAntiAffinity;
 import io.kubernetes.client.models.V1PodSpec;
 import io.kubernetes.client.models.V1PodTemplateSpec;
 import io.kubernetes.client.models.V1ProjectedVolumeSource;
 import io.kubernetes.client.models.V1Volume;
 import io.kubernetes.client.models.V1VolumeProjection;
+import io.kubernetes.client.models.V1WeightedPodAffinityTerm;
 import net.boomerangplatform.model.TaskConfiguration;
 
 @Service
@@ -158,6 +161,23 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
     
     if (kubeWorkerDedicatedNodes) {
     	getTolerationAndSelector(podSpec);
+    	Map<String, String> labels = new HashMap<>();
+        labels.put("platform", ORG);
+        labels.put("product", PRODUCT);
+        labels.put("tier", TIER);
+        V1LabelSelector labelSelector = new V1LabelSelector();
+    	labelSelector.setMatchLabels(labels);
+        V1PodAffinityTerm podAntiAffinityPreferredTerm = new V1PodAffinityTerm();
+    	podAntiAffinityPreferredTerm.setLabelSelector(labelSelector);
+    	podAntiAffinityPreferredTerm.setTopologyKey("kubernetes.io/hostname");
+        V1WeightedPodAffinityTerm podAntiAffinityPreferred = new V1WeightedPodAffinityTerm();
+    	podAntiAffinityPreferred.setWeight(100);
+    	podAntiAffinityPreferred.setPodAffinityTerm(podAntiAffinityPreferredTerm);
+        V1PodAntiAffinity podAntiAffinity = new V1PodAntiAffinity();
+    	podAntiAffinity.addPreferredDuringSchedulingIgnoredDuringExecutionItem(podAntiAffinityPreferred);
+        V1Affinity podAffinity = new V1Affinity();
+    	podAffinity.setPodAntiAffinity(podAntiAffinity);
+    	podSpec.affinity(podAffinity);
     }
 
     if (!kubeWorkerServiceAccount.isEmpty()) {
