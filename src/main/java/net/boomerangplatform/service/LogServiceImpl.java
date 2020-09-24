@@ -131,6 +131,14 @@ public class LogServiceImpl implements LogService {
               JSONArray queryResults = currentLogBatch.getJSONObject("data").getJSONArray("result");
               JSONArray logArray;
               String logEntry;
+              
+              if (queryResults.length() == 0) {
+                printWriter.println(getMessageUnableToAccessLogs());
+                printWriter.flush();
+                printWriter.close();
+                return;
+              }
+          
                 
               if(queryResults.length() > 0){
                 logArray = queryResults.getJSONObject(0).optJSONArray("values");
@@ -151,6 +159,12 @@ public class LogServiceImpl implements LogService {
                 }
               }else{
                 moreLogsAvailable = Boolean.FALSE;
+              }
+            } else {
+                printWriter.println(getMessageUnableToAccessLogs());
+                printWriter.flush();
+                printWriter.close();
+                return;
               }
             }
           } finally {
