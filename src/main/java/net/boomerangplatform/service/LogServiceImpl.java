@@ -53,11 +53,10 @@ public class LogServiceImpl implements LogService {
   @Autowired
   private AbstractKubeServiceImpl kubeService;
   
-  
-  @Value("${kube.worker.logging.loki.host}")
+  @Value("${kube.worker.logging.host}")
   protected String lokiHost;
   
-  @Value("${kube.worker.logging.loki.port}")
+  @Value("${kube.worker.logging.port}")
   protected String lokiPort;
  
 
@@ -82,14 +81,6 @@ public class LogServiceImpl implements LogService {
     }
     return srb;
   }
-
-//  protected boolean streamLogsFromElastic() {
-//    return "elastic".equals(loggingType);
-//  }
-//
-//  protected boolean streamLogsFromLoki() {
-//    return "loki".equals(loggingType);
-//  }
 
   // TODO: reduce complexity, refactor method
   private StreamingResponseBody streamLogsFromLoki(String workflowId,
