@@ -67,14 +67,12 @@ public class LogServiceImpl implements LogService {
     StreamingResponseBody srb = null;
     try {
       if (kubeService.isKubePodAvailable(workflowId, workflowActivityId, taskId)
-          && !streamLogsFromElastic() && !streamLogsFromLoki()) {
+          || "default".equals(loggingType)) {
         srb = kubeService.streamPodLog(response, workflowId, workflowActivityId, taskId,
             taskActivityId);
-      } else if (streamLogsFromElastic()) {
-        // TODO: double check WorkflowActivityId for CICD and TaskActivityId for Flow otherwise this
-        // wont return flow
+      } else if ("elastic".equals(loggingType)) {
         return streamLogsFromElastic(taskActivityId);
-      } else if (streamLogsFromLoki()) {
+      } else if ("loki".equals(loggingType)) {
         return streamLogsFromLoki( workflowId, workflowActivityId, taskId, taskActivityId);
       } else {
         return getDefaultErrorMessage(getMessageUnableToAccessLogs());
@@ -85,13 +83,13 @@ public class LogServiceImpl implements LogService {
     return srb;
   }
 
-  protected boolean streamLogsFromElastic() {
-    return "elastic".equals(loggingType);
-  }
-
-  protected boolean streamLogsFromLoki() {
-    return "loki".equals(loggingType);
-  }
+//  protected boolean streamLogsFromElastic() {
+//    return "elastic".equals(loggingType);
+//  }
+//
+//  protected boolean streamLogsFromLoki() {
+//    return "loki".equals(loggingType);
+//  }
 
   // TODO: reduce complexity, refactor method
   private StreamingResponseBody streamLogsFromLoki(String workflowId,

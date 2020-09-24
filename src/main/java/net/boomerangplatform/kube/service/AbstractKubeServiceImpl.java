@@ -393,9 +393,10 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
 
 	      if (allPods.isEmpty() || "succeeded".equalsIgnoreCase(allPods.get(0).getStatus().getPhase())
 	              || "failed".equalsIgnoreCase(allPods.get(0).getStatus().getPhase())){
-	    	  LOGGER.info("isKubePodAvailable() - " + false);
+	    	  LOGGER.info("isKubePodAvailable() - Not available");
 	      	return false;
 	      }
+	      LOGGER.info("isKubePodAvailable() - Available");
 	  } catch (ApiException e) {
 	      LOGGER.error("streamPodLog Exception: ", e);
 	      throw new KubeRuntimeException("Error streamPodLog", e);
