@@ -140,7 +140,7 @@ public class LogServiceImpl implements LogService {
 
                 for(; index < logArray.length(); index++){//print line by line
                   logEntry = logArray.getJSONArray(index).get(1).toString();
-                  printWriter.println(logEntry); //TODO: can I generate multiline payloads?
+                  printWriter.print(logEntry); //TODO: can I generate multiline payloads?
                 }
 
                 if(logArray.length() < limit){ //check if the current iteration is the last one
@@ -167,12 +167,8 @@ public class LogServiceImpl implements LogService {
 
   private String createLokoFilter(String workflowId, String workflowActivityId, String taskId,
       String taskActivityId) {
-    return "{bmrg_activity=\""
-        + workflowActivityId
-        + "\",bmrg_workflow=\"" + 
-        workflowId + "\",bmrg_task=\""
-            + taskId
-            + "\"}";
+    return "{bmrg_activity=\"" + workflowActivityId + "\",bmrg_workflow=\"" + workflowId
+        + "\",bmrg_task=\"" + taskId + "\",bmrg_container=\"worker-cntr\"}";
   }
 
   private StreamingResponseBody streamLogsFromElastic(String activityId) {
