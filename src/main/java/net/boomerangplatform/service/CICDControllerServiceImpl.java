@@ -3,15 +3,12 @@ package net.boomerangplatform.service;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.servlet.http.HttpServletResponse;
-import org.springframework.http.HttpStatus;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import io.kubernetes.client.ApiException;
 import net.boomerangplatform.error.BoomerangException;
@@ -31,6 +28,9 @@ public class CICDControllerServiceImpl extends AbstractControllerServiceImpl {
   
   @Autowired
   private CICDKubeServiceImpl kubeService;
+
+  @Autowired
+  private DeleteServiceImpl deleteService;
 
   @Override
   public Response createWorkflow(Workflow workflow) {
@@ -101,8 +101,9 @@ public class CICDControllerServiceImpl extends AbstractControllerServiceImpl {
 			} finally {
 				kubeService.deleteConfigMap(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
 			      if (isTaskDeletionNever(task.getConfiguration().getDeletion())) {
-			    	  kubeService.deleteJob(getTaskDeletion(task.getConfiguration().getDeletion()), task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
-			      }
+			        deleteService.deleteJob(getTaskDeletion(task.getConfiguration().getDeletion()), task.getWorkflowId(),
+                        task.getWorkflowActivityId(), task.getTaskId());
+			        }
 				LOGGER.info("Task (" + task.getTaskId() + ") has completed with code " + response.getCode());
 			}
 		}
@@ -137,28 +138,5 @@ public class CICDControllerServiceImpl extends AbstractControllerServiceImpl {
 		  throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
     }
     return response;
-  }
-
-  @Override
-  public Response getLogForTask(String workflowId, String workflowActivityId, String taskId,  String taskActivityId) {
-    Response response = new Response("0", "");
-    try {
-      response.setMessage(kubeService.getPodLog(workflowId, workflowActivityId, taskId, taskActivityId));
-    } catch (KubeRuntimeException e) {
-		  throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-    return response;
-  }
-
-  @Override
-  public StreamingResponseBody streamLogForTask(HttpServletResponse response, String workflowId,
-      String workflowActivityId, String taskId, String taskActivityId) {
-    StreamingResponseBody srb = null;
-    try {
-      srb = kubeService.streamPodLog(response, workflowId, workflowActivityId, taskId, taskActivityId);
-    } catch (KubeRuntimeException e) {
-		  throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-    return srb;
   }
 }
