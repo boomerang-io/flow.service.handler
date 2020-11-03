@@ -17,6 +17,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -95,6 +96,8 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   private static final String EXCEPTION = "Exception: ";
 
   protected static final Integer ONE_DAY_IN_SECONDS = 86400; // 60*60*24
+  
+  private static final String[] waitingErrorReasons = new String[] {"CrashLoopBackOff","ErrImagePull","ImagePullBackOff","CreateContainerConfigError","InvalidImageName","CreateContainerError"};
 
   @Value("${kube.api.base.path}")
   protected String kubeApiBasePath;
@@ -279,17 +282,17 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
 
         String name = item.object.getMetadata().getName();
         LOGGER
-            .info("Pod: " + name + ", started: " + item.object.getStatus().getStartTime() + "...");
+            .info("Pod: " + name + ", started: " + item.object.getStatus().getStartTime());
         String phase = item.object.getStatus().getPhase();
         LOGGER.info("Pod Phase: " + phase + "...");
         if (item.object.getStatus().getConditions() != null) {
           for (V1PodCondition condition : item.object.getStatus().getConditions()) {
-            LOGGER.info("Pod Condition: " + condition.toString() + "...");
+            LOGGER.info("Pod Condition: " + condition.toString());
           }
         }
         if (item.object.getStatus().getContainerStatuses() != null) {
           for (V1ContainerStatus containerStatus : item.object.getStatus().getContainerStatuses()) {
-            LOGGER.info("Container Status: " + containerStatus.toString() + "...");
+            LOGGER.info("Container Status: " + containerStatus.toString());
             if ("worker-cntr".equalsIgnoreCase(containerStatus.getName())
                 && containerStatus.getState().getTerminated() != null) {
               LOGGER.info("-----------------------------------------------");
@@ -303,6 +306,11 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
               }
               pod = item.object;
               break;
+            } else if ("worker-cntr".equalsIgnoreCase(containerStatus.getName())
+                && containerStatus.getState().getWaiting() != null 
+//                && "CreateContainerError".equalsIgnoreCase(containerStatus.getState().getWaiting().getReason())) {
+                  && ArrayUtils.contains(waitingErrorReasons, containerStatus.getState().getWaiting().getReason())) {
+              throw new KubeRuntimeException("Container Waiting Error (" + containerStatus.getState().getWaiting().getReason() + ")");
             }
           }
         }
