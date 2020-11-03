@@ -36,6 +36,12 @@ We currently use projected volumes however subpath was considered.
 
 ## Stash
 
+### Container States
+
+When monitoring the Job/Pod/Container there are additional error states in the waiting status that need to be accounted for
+
+- https://stackoverflow.com/questions/57821723/list-of-all-reasons-for-container-states-in-kubernetes
+
 ### Lifecycle Container Hooks
 
 The following code was written to interface with the container lifecycle hooks of postStart and preStop however there were two main issues:
