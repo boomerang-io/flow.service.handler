@@ -309,7 +309,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
                 && containerStatus.getState().getWaiting() != null 
 //                && "CreateContainerError".equalsIgnoreCase(containerStatus.getState().getWaiting().getReason())) {
                   && ArrayUtils.contains(waitingErrorReasons, containerStatus.getState().getWaiting().getReason())) {
-              throw new KubeRuntimeException("Container Waiting Error");
+              throw new KubeRuntimeException("Container Waiting Error (" + containerStatus.getState().getWaiting().getReason() + ")");
             }
           }
         }
