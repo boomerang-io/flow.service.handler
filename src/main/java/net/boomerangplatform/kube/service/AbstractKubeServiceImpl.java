@@ -96,6 +96,8 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   private static final String EXCEPTION = "Exception: ";
 
   protected static final Integer ONE_DAY_IN_SECONDS = 86400; // 60*60*24
+  
+  private static final String[] waitingErrorReasons = new String[] {"CrashLoopBackOff","ErrImagePull","ImagePullBackOff","CreateContainerConfigError","InvalidImageName","CreateContainerError"};
 
   @Value("${kube.api.base.path}")
   protected String kubeApiBasePath;
@@ -275,7 +277,6 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
 
   private void getJobPod(Watch<V1Pod> watch) throws IOException {
     V1Pod pod = null;
-    final String[] waitingErrorReasons = new String[] {"CrashLoopBackOff","ErrImagePull","ImagePullBackOff","CreateContainerConfigError","InvalidImageName","CreateContainerError"};
     try {
       for (Watch.Response<V1Pod> item : watch) {
 
