@@ -180,12 +180,6 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
       String taskId, List<String> arguments, Map<String, String> taskProperties, String image,
       String command, TaskConfiguration taskConfiguration);
 
-  protected abstract V1ConfigMap createTaskConfigMapBody(String workflowName, String workflowId,
-      String workflowActivityId, String taskName, String taskId, Map<String, String> inputProps);
-
-  protected abstract V1ConfigMap createWorkflowConfigMapBody(String workflowName, String workflowId,
-      String workflowActivityId, Map<String, String> inputProps);
-
 // Used by LogServiceImpl as well 
   public String getPrefixJob() {
     return bmrgProduct + TIER;
@@ -1158,6 +1152,46 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
       watch.close();
     }
     return pod;
+  }
+  
+
+
+  protected V1ConfigMap createTaskConfigMapBody(String workflowName, String workflowId,
+      String workflowActivityId, String taskName, String taskId, Map<String, String> inputProps) {
+    V1ConfigMap body = new V1ConfigMap();
+
+    body.metadata(
+        getMetadata(workflowName, workflowId, workflowActivityId, taskId, getPrefixCFGMAP()));
+
+    // Create Data
+    Map<String, String> inputsWithFixedKeys = new HashMap<>();
+    Map<String, String> sysProps = new HashMap<>();
+    sysProps.put("task.id", taskId);
+    sysProps.put("task.name", taskName);
+    inputsWithFixedKeys.put("task.input.properties", createConfigMapProp(inputProps));
+    inputsWithFixedKeys.put("task.system.properties", createConfigMapProp(sysProps));
+    body.data(inputsWithFixedKeys);
+    return body;
+  }
+
+  protected V1ConfigMap createWorkflowConfigMapBody(String workflowName, String workflowId,
+      String workflowActivityId, Map<String, String> inputProps) {
+    V1ConfigMap body = new V1ConfigMap();
+
+    body.metadata(
+        getMetadata(workflowName, workflowId, workflowActivityId, null, getPrefixCFGMAP()));
+
+    // Create Data
+    Map<String, String> inputsWithFixedKeys = new HashMap<>();
+    Map<String, String> sysProps = new HashMap<>();
+    sysProps.put("activity.id", workflowActivityId);
+    sysProps.put("workflow.name", workflowName);
+    sysProps.put("workflow.id", workflowId);
+    sysProps.put("controller.service.url", bmrgControllerServiceURL);
+    inputsWithFixedKeys.put("workflow.input.properties", createConfigMapProp(inputProps));
+    inputsWithFixedKeys.put("workflow.system.properties", createConfigMapProp(sysProps));
+    body.data(inputsWithFixedKeys);
+    return body;
   }
 
   protected CoreV1Api getCoreApi() {
