@@ -141,7 +141,7 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
       V1PersistentVolumeClaimVolumeSource workerVolumePVCSource =
           new V1PersistentVolumeClaimVolumeSource();
       workspaceVolume
-          .persistentVolumeClaim(workerVolumePVCSource.claimName(getPVCName(componentId, null)));
+          .persistentVolumeClaim(workerVolumePVCSource.claimName(getPVCName(getLabelSelector(componentId, activityId, null))));
       podSpec.addVolumesItem(workspaceVolume);
     }
     container.addVolumeMountsItem(getVolumeMount(PREFIX_VOL_PROPS, "/props"));

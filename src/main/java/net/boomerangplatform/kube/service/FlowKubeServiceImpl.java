@@ -92,13 +92,13 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
     envVars.add(createEnvVar("DEBUG", getTaskDebug(taskConfiguration)));
     container.env(envVars);
     container.args(arguments);
-    if (!getPVCName(workflowId, workflowActivityId).isEmpty()) {
+    if (!getPVCName(getLabelSelector(workflowId, workflowActivityId, null)).isEmpty()) {
       container.addVolumeMountsItem(getVolumeMount(PREFIX_VOL_DATA, "/data"));
       V1Volume workerVolume = getVolume(PREFIX_VOL_DATA);
       V1PersistentVolumeClaimVolumeSource workerVolumePVCSource =
           new V1PersistentVolumeClaimVolumeSource();
       workerVolume.persistentVolumeClaim(
-          workerVolumePVCSource.claimName(getPVCName(workflowId, workflowActivityId)));
+          workerVolumePVCSource.claimName(getPVCName(getLabelSelector(workflowId, workflowActivityId, null))));
       podSpec.addVolumesItem(workerVolume);
     }
     
