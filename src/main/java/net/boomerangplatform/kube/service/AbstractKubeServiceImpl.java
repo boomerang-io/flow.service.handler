@@ -488,8 +488,6 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     pvcResourceReq.requests(pvcRequests);
     pvcSpec.resources(pvcResourceReq);
     body.spec(pvcSpec);
-    
-    LOGGER.info("PVC: " + body.toString());
 
     V1PersistentVolumeClaim result = getCoreApi().createNamespacedPersistentVolumeClaim(
         kubeNamespace, body, kubeApiIncludeuninitialized, kubeApiPretty, null);
@@ -547,9 +545,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
         new TypeToken<Watch.Response<V1PersistentVolumeClaim>>() {}.getType());
   }
 
-  protected String getPVCName(String workflowId, String workflowActivityId) {
-    String labelSelector = getLabelSelector(workflowId, workflowActivityId, null);
-
+  protected String getPVCName(String labelSelector) {
     try {
       V1PersistentVolumeClaimList persistentVolumeClaimList = getCoreApi()
           .listNamespacedPersistentVolumeClaim(kubeNamespace, kubeApiIncludeuninitialized,
@@ -568,13 +564,22 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     }
     return "";
   }
-
+  
   @Override
-  public V1Status deletePVC(String workflowId, String workflowActivityId) {
+  public V1Status deleteWorkspacePVC(String workspaceId) {
+    return deletePVC(getWorkspaceLabelSelector(workspaceId));
+  }
+  
+  @Override
+  public V1Status deleteWorkflowPVC(String workflowId, String workflowActivityId) {
+    return deletePVC(getLabelSelector(workflowId, workflowActivityId, null));
+  }
+
+  private V1Status deletePVC(String labelSelector) {
     V1DeleteOptions deleteOptions = new V1DeleteOptions();
     // deleteOptions.setPropagationPolicy("Background");
     V1Status result = new V1Status();
-    String pvcName = getPVCName(workflowId, workflowActivityId);
+    String pvcName = getPVCName(labelSelector);
     LOGGER.info("Deleting PVC (" + pvcName + ")...");
     if (!pvcName.isEmpty()) {
       try {

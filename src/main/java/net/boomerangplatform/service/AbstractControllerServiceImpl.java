@@ -54,20 +54,21 @@ public abstract class AbstractControllerServiceImpl implements AbstractControlle
     @Override
     public Response createWorkspace(Workspace workspace) {
       Response response =
-          new Response("0", "Workspace (" + workspace.getId() + ") has been created successfully.");
+          new Response("0", "Workspace (" + workspace.getId() + ") PVC has been created successfully.");
       try {
         LOGGER.info("Workspace: " + workspace.toString());
         boolean cacheExists = kubeService.checkWorkspacePVCExists(workspace.getId(), false);
-        LOGGER.info("Workspace PVC Exists? " + cacheExists);
         if (workspace.getStorage().getEnable() && !cacheExists) {
           kubeService.createWorkspacePVC(workspace.getName(), workspace.getId(), workspace.getStorage().getSize());
           kubeService.watchWorkspacePVC(workspace.getId());
+        } else if (cacheExists) {
+          response = new Response("0", "Workspace (" + workspace.getId() + ") PVC already existed.");
         }
-        // TODO: Needs to handle check if already exists
       } catch (ApiException | KubeRuntimeException e) {
         LOGGER.error(e.getMessage());
         throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
       }
+      LOGGER.info("createWorkspace() - " + response.getMessage());
       return response;
     }
 
@@ -77,7 +78,7 @@ public abstract class AbstractControllerServiceImpl implements AbstractControlle
           new Response("0", "Workspace (" + workspace.getId() + ") has been deleted successfully.");
       try {
         LOGGER.info(workspace.toString());
-        kubeService.deletePVC(workspace.getId(), null);
+        kubeService.deleteWorkspacePVC(workspace.getId());
       } catch (KubeRuntimeException e) {
         throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
       }

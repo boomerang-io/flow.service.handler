@@ -56,7 +56,7 @@ public class FlowControllerServiceImpl extends AbstractControllerServiceImpl {
     Response response = new Response("0", "Workflow Activity (" + workflow.getWorkflowActivityId()
         + ") has been terminated successfully.");
     try {
-      kubeService.deletePVC(workflow.getWorkflowId(), workflow.getWorkflowActivityId());
+      kubeService.deleteWorkflowPVC(workflow.getWorkflowId(), workflow.getWorkflowActivityId());
       kubeService.deleteConfigMap(workflow.getWorkflowId(), workflow.getWorkflowActivityId(), null);
     } catch (KubeRuntimeException e) {
     	  throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);

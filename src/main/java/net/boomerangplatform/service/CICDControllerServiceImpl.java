@@ -53,7 +53,7 @@ public class CICDControllerServiceImpl extends AbstractControllerServiceImpl {
     Response response = new Response("0",
         "Component Storage (" + workflow.getWorkflowId() + ") has been removed successfully.");
     try {
-      kubeService.deletePVC(workflow.getWorkflowId(), null);
+      kubeService.deleteWorkflowPVC(workflow.getWorkflowId(), null);
     } catch (KubeRuntimeException e) {
 	  throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
     }

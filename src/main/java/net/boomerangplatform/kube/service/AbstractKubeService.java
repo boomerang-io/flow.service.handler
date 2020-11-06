@@ -76,8 +76,6 @@ public interface AbstractKubeService {
   V1PersistentVolumeClaim createWorkflowPVC(String workflowName, String workflowId,
       String workflowActivityId, String pvcSize) throws ApiException;
 
-  V1Status deletePVC(String workflowId, String workflowActivityId);
-
   V1PersistentVolumeClaimStatus watchWorkspacePVC(String workspaceId);
 
   V1PersistentVolumeClaimStatus watchWorkflowPVC(String workflowId, String workflowActivityId);
@@ -86,4 +84,8 @@ public interface AbstractKubeService {
       boolean failIfNotBound);
 
   boolean checkWorkspacePVCExists(String workspaceId, boolean failIfNotBound);
+
+  V1Status deleteWorkspacePVC(String workspaceId);
+
+  V1Status deleteWorkflowPVC(String workflowId, String workflowActivityId);
 }
