@@ -8,7 +8,7 @@ public class TaskConfiguration {
 
   private Boolean debug;
 
-  private TaskDeletion deletion;
+  private TaskDeletionEnum deletion;
 
 	public Boolean getDebug() {
 		return debug ;
@@ -18,11 +18,11 @@ public class TaskConfiguration {
 		this.debug = debug;
 	}
 
-	public TaskDeletion getDeletion() {
+	public TaskDeletionEnum getDeletion() {
 		return deletion ;
 	}
 
-	public void setDeletion(TaskDeletion deletion) {
+	public void setDeletion(TaskDeletionEnum deletion) {
 		this.deletion = deletion;
 	}
 }

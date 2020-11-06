@@ -1,5 +1,5 @@
 package net.boomerangplatform.model;
 
-public enum TaskDeletion {
+public enum TaskDeletionEnum {
 	Never, OnSuccess, Always
 }

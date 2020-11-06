@@ -1,9 +1,9 @@
 package net.boomerangplatform.service;
 
-import net.boomerangplatform.model.TaskDeletion;
+import net.boomerangplatform.model.TaskDeletionEnum;
 
 public interface ConfigurationService {
-	  public TaskDeletion getTaskDeletion();
+	  public TaskDeletionEnum getTaskDeletion();
 	  
 	  public Boolean getTaskDebug();
 }
