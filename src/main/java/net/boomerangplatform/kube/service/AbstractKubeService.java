@@ -14,17 +14,9 @@ import io.kubernetes.client.models.V1PersistentVolumeClaim;
 import io.kubernetes.client.models.V1PersistentVolumeClaimStatus;
 import io.kubernetes.client.models.V1Status;
 import net.boomerangplatform.model.TaskConfiguration;
-import net.boomerangplatform.model.TaskDeletion;
+import net.boomerangplatform.model.TaskDeletionEnum;
 
 public interface AbstractKubeService {
-
-  V1PersistentVolumeClaim createPVC(
-      String workflowName, String workflowId, String workflowActivityId, String pvcSize)
-      throws ApiException;
-
-  V1Status deletePVC(String workflowId, String workflowActivityId);
-
-  V1PersistentVolumeClaimStatus watchPVC(String workflowId, String workflowActivityId);
 
   V1ConfigMap createWorkflowConfigMap(
       String workflowName, String workflowId, String workflowActivityId, Map<String, String> data);
@@ -76,5 +68,24 @@ public interface AbstractKubeService {
       Map<String, String> properties);
 
   V1Status deleteJob(
-      TaskDeletion taskDeletion, String workflowId, String workflowActivityId, String taskId);
+      TaskDeletionEnum taskDeletion, String workflowId, String workflowActivityId, String taskId);
+
+  V1PersistentVolumeClaim createWorkspacePVC(String workspaceName, String workspaceId,
+      String pvcSize) throws ApiException;
+
+  V1PersistentVolumeClaim createWorkflowPVC(String workflowName, String workflowId,
+      String workflowActivityId, String pvcSize) throws ApiException;
+
+  V1PersistentVolumeClaimStatus watchWorkspacePVC(String workspaceId);
+
+  V1PersistentVolumeClaimStatus watchWorkflowPVC(String workflowId, String workflowActivityId);
+
+  boolean checkWorkflowPVCExists(String workflowId, String workflowActivityId, String taskId,
+      boolean failIfNotBound);
+
+  boolean checkWorkspacePVCExists(String workspaceId, boolean failIfNotBound);
+
+  V1Status deleteWorkspacePVC(String workspaceId);
+
+  V1Status deleteWorkflowPVC(String workflowId, String workflowActivityId);
 }

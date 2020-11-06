@@ -6,6 +6,7 @@ import net.boomerangplatform.model.Response;
 import net.boomerangplatform.model.Task;
 import net.boomerangplatform.model.TaskResponse;
 import net.boomerangplatform.model.Workflow;
+import net.boomerangplatform.model.Workspace;
 
 public abstract interface AbstractControllerService {
 
@@ -20,4 +21,8 @@ public abstract interface AbstractControllerService {
 
 	Response setJobOutputProperties(String workflowId, String workflowActivityId, String taskId, String taskName,
 			Map<String, String> properties);
+
+    Response createWorkspace(Workspace workspace);
+
+    Response deleteWorkspace(Workspace workspace);
 }

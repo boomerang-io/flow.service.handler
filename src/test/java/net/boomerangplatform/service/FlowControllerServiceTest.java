@@ -35,7 +35,7 @@ import net.boomerangplatform.model.Response;
 import net.boomerangplatform.model.Task;
 import net.boomerangplatform.model.TaskResponse;
 import net.boomerangplatform.model.Workflow;
-import net.boomerangplatform.model.WorkflowStorage;
+import net.boomerangplatform.model.Storage;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringBootTest
@@ -51,7 +51,7 @@ public class FlowControllerServiceTest {
   @Test
   public void testCreateWorkflow() throws ApiException {
     Workflow workflow = getDefaultWorkflow();
-    WorkflowStorage storage = new WorkflowStorage();
+    Storage storage = new Storage();
     storage.setEnable(true);
     storage.setSize("200");
     workflow.setWorkflowStorage(storage);
@@ -83,7 +83,7 @@ public class FlowControllerServiceTest {
   @Test
   public void testCreateWorkflowWithException() throws ApiException {
     Workflow workflow = getDefaultWorkflow();
-    WorkflowStorage storage = new WorkflowStorage();
+    Storage storage = new Storage();
     storage.setEnable(false);
     storage.setSize("200");
     workflow.setWorkflowStorage(storage);

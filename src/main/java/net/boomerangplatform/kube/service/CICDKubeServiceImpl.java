@@ -135,14 +135,14 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
 	    resources.putLimitsItem("memory", new Quantity(kubeResourceLimitMemory));
 	}
     container.setResources(resources);
-    if (checkPVCExists(componentId, null, null, true)) {
+    if (checkWorkspacePVCExists(componentId, true)) {
       container.addVolumeMountsItem(getVolumeMount(PREFIX_VOL_CACHE, "/cache"));
-      V1Volume workerVolume = getVolume(PREFIX_VOL_CACHE);
+      V1Volume workspaceVolume = getVolume(PREFIX_VOL_CACHE);
       V1PersistentVolumeClaimVolumeSource workerVolumePVCSource =
           new V1PersistentVolumeClaimVolumeSource();
-      workerVolume
-          .persistentVolumeClaim(workerVolumePVCSource.claimName(getPVCName(componentId, null)));
-      podSpec.addVolumesItem(workerVolume);
+      workspaceVolume
+          .persistentVolumeClaim(workerVolumePVCSource.claimName(getPVCName(getWorkspaceLabelSelector(componentId))));
+      podSpec.addVolumesItem(workspaceVolume);
     }
     container.addVolumeMountsItem(getVolumeMount(PREFIX_VOL_PROPS, "/props"));
 

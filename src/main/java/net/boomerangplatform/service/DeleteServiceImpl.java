@@ -4,7 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import net.boomerangplatform.kube.service.AbstractKubeServiceImpl;
-import net.boomerangplatform.model.TaskDeletion;
+import net.boomerangplatform.model.TaskDeletionEnum;
 
 @Service
 public class DeleteServiceImpl implements DeleteService {
@@ -18,7 +18,7 @@ public class DeleteServiceImpl implements DeleteService {
    */
   @Override
   @Async
-  public void deleteJob(TaskDeletion taskDeletion, String workflowId, String workflowActivityId, String taskId) {
+  public void deleteJob(TaskDeletionEnum taskDeletion, String workflowId, String workflowActivityId, String taskId) {
     try {
       Thread.sleep(10000);
     } catch (InterruptedException e) {

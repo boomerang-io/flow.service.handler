@@ -3,18 +3,18 @@ package net.boomerangplatform.service;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import net.boomerangplatform.model.TaskDeletion;
+import net.boomerangplatform.model.TaskDeletionEnum;
 
 @Service
 public class ConfigurationServiceImpl implements ConfigurationService {
 
 	  @Value("${kube.worker.job.deletion}")
-	  private TaskDeletion workerDeletion;
+	  private TaskDeletionEnum workerDeletion;
 
 	  @Value("${kube.worker.debug}")
 	  private Boolean workerDebug;
 	  
-	  public TaskDeletion getTaskDeletion() {
+	  public TaskDeletionEnum getTaskDeletion() {
 		  return workerDeletion;
 	  }
 	  
