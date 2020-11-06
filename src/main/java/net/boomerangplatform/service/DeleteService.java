@@ -1,10 +1,10 @@
 package net.boomerangplatform.service;
 
-import net.boomerangplatform.model.TaskDeletion;
+import net.boomerangplatform.model.TaskDeletionEnum;
 
 public interface DeleteService {
 
-  void deleteJob(TaskDeletion taskDeletion, String workflowId, String workflowActivityId,
+  void deleteJob(TaskDeletionEnum taskDeletion, String workflowId, String workflowActivityId,
       String taskId);
 
 }

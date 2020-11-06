@@ -38,9 +38,9 @@ public class FlowControllerServiceImpl extends AbstractControllerServiceImpl {
     try {
     	LOGGER.info(workflow.toString());
       if (workflow.getWorkflowStorage().getEnable()) {
-        kubeService.createPVC(workflow.getWorkflowName(), workflow.getWorkflowId(),
+        kubeService.createWorkflowPVC(workflow.getWorkflowName(), workflow.getWorkflowId(),
             workflow.getWorkflowActivityId(), workflow.getWorkflowStorage().getSize());
-        kubeService.watchPVC(workflow.getWorkflowId(), workflow.getWorkflowActivityId()).getPhase();
+        kubeService.watchWorkflowPVC(workflow.getWorkflowId(), workflow.getWorkflowActivityId()).getPhase();
       }
       kubeService.createWorkflowConfigMap(workflow.getWorkflowName(), workflow.getWorkflowId(),
           workflow.getWorkflowActivityId(), workflow.getProperties());

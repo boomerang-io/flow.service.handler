@@ -68,14 +68,14 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
   }
 
   @Override
-  protected V1Job createJobBody(boolean createLifecycle, String workflowName, String workflowId, String activityId, String taskActivityId,
+  protected V1Job createJobBody(boolean createLifecycle, String workflowName, String workflowId, String workflowActivityId, String taskActivityId,
       String taskName, String taskId, List<String> arguments,
       Map<String, String> taskProperties, String image, String command, TaskConfiguration taskConfiguration) {
 
     // Initialize Job Body
     V1Job body = new V1Job();
     body.metadata(
-        getMetadata(workflowName, workflowId, activityId, taskId, getJobPrefix() + "-" + taskActivityId));
+        getMetadata(workflowName, workflowId, workflowActivityId, taskId, getJobPrefix() + "-" + taskActivityId));
 
     // Create Spec
     V1JobSpec jobSpec = new V1JobSpec();
@@ -88,17 +88,17 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
     if (proxyEnabled) {
       envVars.addAll(createProxyEnvVars());
     }
-    envVars.addAll(createEnvVars(workflowId,activityId,taskName,taskId));
+    envVars.addAll(createEnvVars(workflowId,workflowActivityId,taskName,taskId));
     envVars.add(createEnvVar("DEBUG", getTaskDebug(taskConfiguration)));
     container.env(envVars);
     container.args(arguments);
-    if (!getPVCName(workflowId, activityId).isEmpty()) {
+    if (!getPVCName(workflowId, workflowActivityId).isEmpty()) {
       container.addVolumeMountsItem(getVolumeMount(PREFIX_VOL_DATA, "/data"));
       V1Volume workerVolume = getVolume(PREFIX_VOL_DATA);
       V1PersistentVolumeClaimVolumeSource workerVolumePVCSource =
           new V1PersistentVolumeClaimVolumeSource();
       workerVolume.persistentVolumeClaim(
-          workerVolumePVCSource.claimName(getPVCName(workflowId, activityId)));
+          workerVolumePVCSource.claimName(getPVCName(workflowId, workflowActivityId)));
       podSpec.addVolumesItem(workerVolume);
     }
     
@@ -121,7 +121,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
               .addVolumeMountsItem(getVolumeMount("lifecycle", "/lifecycle"))
               .addArgsItem("lifecycle")
               .addArgsItem("wait");
-    	lifecycleContainer.env(createEnvVars(workflowId,activityId,taskName,taskId));
+    	lifecycleContainer.env(createEnvVars(workflowId,workflowActivityId,taskName,taskId));
     	containerList.add(lifecycleContainer);
     	container.addVolumeMountsItem(getVolumeMount("lifecycle", "/lifecycle"));
         V1Volume lifecycleVol = getVolume("lifecycle");
@@ -138,13 +138,13 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
     List<V1VolumeProjection> projectPropsVolumeList = new ArrayList<>();
 
     // Add Worfklow Configmap Projected Volume
-    V1ConfigMap wfConfigMap = getConfigMap(workflowId, activityId, null);
+    V1ConfigMap wfConfigMap = getConfigMap(workflowId, workflowActivityId, null);
     if (wfConfigMap != null && !getConfigMapName(wfConfigMap).isEmpty()) {
       projectPropsVolumeList.add(getVolumeProjection(wfConfigMap));
     }
 
     // Add Task Configmap Projected Volume
-    V1ConfigMap taskConfigMap = getConfigMap(null, activityId, taskId);
+    V1ConfigMap taskConfigMap = getConfigMap(null, workflowActivityId, taskId);
     if (taskConfigMap != null && !getConfigMapName(taskConfigMap).isEmpty()) {
       projectPropsVolumeList.add(getVolumeProjection(taskConfigMap));
     }
@@ -176,7 +176,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
     podSpec.imagePullSecrets(imagePullSecretList);
     podSpec.restartPolicy(kubeWorkerJobRestartPolicy);
     templateSpec.spec(podSpec);
-    templateSpec.metadata(getMetadata(workflowName, workflowId, activityId, taskId, null));
+    templateSpec.metadata(getMetadata(workflowName, workflowId, workflowActivityId, taskId, null));
 
     jobSpec.backoffLimit(kubeWorkerJobBackOffLimit);
     jobSpec.template(templateSpec);

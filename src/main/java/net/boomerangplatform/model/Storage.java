@@ -3,7 +3,7 @@ package net.boomerangplatform.model;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties
-public class WorkflowStorage {
+public class Storage {
 
   
   private Boolean enable;

@@ -38,9 +38,9 @@ public class CICDControllerServiceImpl extends AbstractControllerServiceImpl {
         + ") has been created successfully.");
     try {
       if (workflow.getWorkflowStorage().getEnable()) {
-        kubeService.createPVC(workflow.getWorkflowName(), workflow.getWorkflowId(),
+        kubeService.createWorkflowPVC(workflow.getWorkflowName(), workflow.getWorkflowId(),
             workflow.getWorkflowActivityId(), null);
-        kubeService.watchPVC(workflow.getWorkflowId(), workflow.getWorkflowActivityId()).getPhase();
+        kubeService.watchWorkflowPVC(workflow.getWorkflowId(), workflow.getWorkflowActivityId()).getPhase();
       }
     } catch (ApiException | KubeRuntimeException e) {
   	  throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -59,8 +59,6 @@ public class CICDControllerServiceImpl extends AbstractControllerServiceImpl {
     }
     return response;
   }
-  
-
 
   @Override
   public TaskResponse executeTask(Task task) {
@@ -77,17 +75,6 @@ public class CICDControllerServiceImpl extends AbstractControllerServiceImpl {
 			  throw new BoomerangException(1,"NO_TASK_IMAGE",HttpStatus.BAD_REQUEST, task.getClass().toString());
 		} else {
 			try {
-				// TODO separate out cache handling to separate try catch to handle failure and
-				// continue.
-				boolean cacheEnable = "true".equals(task.getProperties().get("component/cache.enabled"));
-				boolean cacheExists = kubeService.checkPVCExists(task.getWorkflowId(), null, null, true);
-				if (cacheEnable && !cacheExists) {
-					kubeService.createPVC(task.getWorkflowName(), task.getWorkflowId(), task.getWorkflowActivityId(),
-							null);
-					kubeService.watchPVC(task.getWorkflowId(), task.getWorkflowActivityId());
-				} else if (!cacheEnable && cacheExists) {
-					kubeService.deletePVC(task.getWorkflowId(), null);
-				}
 				kubeService.createTaskConfigMap(task.getWorkflowName(), task.getWorkflowId(),
 						task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(), task.getProperties());
 				kubeService.watchConfigMap(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
@@ -95,7 +82,7 @@ public class CICDControllerServiceImpl extends AbstractControllerServiceImpl {
 						task.getTaskActivityId(), task.getTaskName(), task.getTaskId(), task.getArguments(),
 						task.getProperties(), task.getImage(), task.getCommand(), task.getConfiguration());
 				kubeService.watchJob(false, task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
-			} catch (ApiException | KubeRuntimeException e) {
+			} catch (KubeRuntimeException e) {
 				LOGGER.info("DEBUG::Task Is Being Set as Failed");
 				  throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
 			} finally {

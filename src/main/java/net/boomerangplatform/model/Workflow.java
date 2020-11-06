@@ -15,7 +15,7 @@ public class Workflow {
   private String workflowActivityId;
 
   @JsonProperty("storage")
-  private WorkflowStorage storage;
+  private Storage storage;
 
   private Map<String, String> properties;
 
@@ -43,11 +43,11 @@ public class Workflow {
     this.workflowActivityId = workflowActivityId;
   }
 
-  public WorkflowStorage getWorkflowStorage() {
+  public Storage getWorkflowStorage() {
     return storage;
   }
 
-  public void setWorkflowStorage(WorkflowStorage storage) {
+  public void setWorkflowStorage(Storage storage) {
     this.storage = storage;
   }
 

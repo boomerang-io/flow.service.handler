@@ -76,7 +76,7 @@ import io.kubernetes.client.util.Watch;
 import net.boomerangplatform.error.BoomerangException;
 import net.boomerangplatform.kube.exception.KubeRuntimeException;
 import net.boomerangplatform.model.TaskConfiguration;
-import net.boomerangplatform.model.TaskDeletion;
+import net.boomerangplatform.model.TaskDeletionEnum;
 import net.boomerangplatform.service.ConfigurationService;
 
 public abstract class AbstractKubeServiceImpl implements AbstractKubeService { // NOSONAR
@@ -129,8 +129,8 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   @Value("${kube.image.pullSecret}")
   protected String kubeImagePullSecret;
 
-  @Value("${kube.worker.pvc.initialSize}")
-  protected String kubeWorkerPVCInitialSize;
+  @Value("${kube.workflow.pvc.size}")
+  protected String kubeWorkerPVCSize;
 
   @Value("${kube.worker.job.backOffLimit}")
   protected Integer kubeWorkerJobBackOffLimit;
@@ -451,17 +451,26 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
 
     return responseBody;
   }
-
-
-  public V1PersistentVolumeClaim createPVC(String workflowName, String workflowId,
+  
+  @Override
+  public V1PersistentVolumeClaim createWorkspacePVC(String workspaceName, String workspaceId, String pvcSize) throws ApiException {
+    return createPVC(createWorkspaceAnnotations(workspaceName, workspaceId), createWorkspaceLabels(workspaceId), pvcSize);
+  }
+  
+  @Override
+  public V1PersistentVolumeClaim createWorkflowPVC(String workflowName, String workflowId,
       String workflowActivityId, String pvcSize) throws ApiException {
+    return createPVC(createAnnotations(workflowName, workflowId, workflowActivityId, null), createLabels(workflowId, workflowActivityId, null), pvcSize);
+  }
+
+  private V1PersistentVolumeClaim createPVC(Map<String, String> annotations, Map<String, String> labels, String pvcSize) throws ApiException {
     // Setup
     V1PersistentVolumeClaim body = new V1PersistentVolumeClaim();
 
     // Create Metadata
     V1ObjectMeta metadata = new V1ObjectMeta();
-    metadata.annotations(createAnnotations(workflowName, workflowId, workflowActivityId, null));
-    metadata.labels(createLabels(workflowId, workflowActivityId, null));
+    metadata.annotations(annotations);
+    metadata.labels(labels);
     metadata.generateName(getPVCPrefix() + "-");
     body.metadata(metadata);
 
@@ -473,22 +482,33 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     V1ResourceRequirements pvcResourceReq = new V1ResourceRequirements();
     Map<String, Quantity> pvcRequests = new HashMap<>();
     if (pvcSize == null || pvcSize.isEmpty()) {
-      pvcSize = kubeWorkerPVCInitialSize;
+      pvcSize = kubeWorkerPVCSize;
     }
     pvcRequests.put("storage", Quantity.fromString(pvcSize));
     pvcResourceReq.requests(pvcRequests);
     pvcSpec.resources(pvcResourceReq);
     body.spec(pvcSpec);
+    
+    LOGGER.info("PVC: " + body.toString());
 
     V1PersistentVolumeClaim result = getCoreApi().createNamespacedPersistentVolumeClaim(
         kubeNamespace, body, kubeApiIncludeuninitialized, kubeApiPretty, null);
     LOGGER.info(result);
     return result;
   }
-
+  
   @Override
-  public V1PersistentVolumeClaimStatus watchPVC(String workflowId, String workflowActivityId) {
-    String labelSelector = getLabelSelector(workflowId, workflowActivityId, null);
+  public V1PersistentVolumeClaimStatus watchWorkspacePVC(String workspaceId) {
+    return watchPVC(getWorkspaceLabelSelector(workspaceId));
+    
+  }
+  
+  @Override
+  public V1PersistentVolumeClaimStatus watchWorkflowPVC(String workflowId, String workflowActivityId) {
+    return watchPVC(getLabelSelector(workflowId, workflowActivityId, null));
+  }
+
+  private V1PersistentVolumeClaimStatus watchPVC(String labelSelector) {
     V1PersistentVolumeClaimStatus result = null;
     try {
       result =
@@ -601,12 +621,12 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   }
 
   @Override
-  public V1Status deleteJob(TaskDeletion taskDeletion, String workflowId, String workflowActivityId,
+  public V1Status deleteJob(TaskDeletionEnum taskDeletion, String workflowId, String workflowActivityId,
       String taskId) {
     V1DeleteOptions deleteOptions = new V1DeleteOptions();
     deleteOptions.setPropagationPolicy("Background");
     V1Status result = new V1Status();
-    String jobName = getJobName(TaskDeletion.OnSuccess.equals(taskDeletion) ? true : false,
+    String jobName = getJobName(TaskDeletionEnum.OnSuccess.equals(taskDeletion) ? true : false,
         workflowId, workflowActivityId, taskId);
     if (!jobName.isEmpty()) {
       try {
@@ -726,11 +746,19 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     }
     return result;
   }
+  
+  @Override
+  public boolean checkWorkspacePVCExists(String workspaceId, boolean failIfNotBound) {
+    return checkPVCExists(getWorkspaceLabelSelector(workspaceId), failIfNotBound);
+  }
 
-  public boolean checkPVCExists(String workflowId, String workflowActivityId, String taskId,
+  @Override
+  public boolean checkWorkflowPVCExists(String workflowId, String workflowActivityId, String taskId,
       boolean failIfNotBound) {
-    String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
-
+    return checkPVCExists(getLabelSelector(workflowId, workflowActivityId, taskId), failIfNotBound);
+  }
+  
+  private boolean checkPVCExists(String labelSelector, boolean failIfNotBound) {
     boolean isPVCExists = false;
     try {
       V1PersistentVolumeClaimList persistentVolumeClaimList = getCoreApi()
@@ -739,7 +767,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
       isPVCExists = isPVCAvailable(failIfNotBound, persistentVolumeClaimList);
     } catch (ApiException e) {
       LOGGER.error(
-          "No PVC found matching Id: " + workflowId + " and ActivityId: " + workflowActivityId, e);
+          "No PVC found matching selector: " + labelSelector, e);
     }
     return isPVCExists;
   }
@@ -1126,5 +1154,31 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   protected String getTaskDebug(TaskConfiguration taskConfiguration) {
     return taskConfiguration.getDebug() != null ? taskConfiguration.getDebug().toString()
         : configurationService.getTaskDebug().toString();
+  }
+  
+  protected Map<String, String> createWorkspaceLabels(String workspaceId) {
+    Map<String, String> labels = new HashMap<>();
+    labels.put("app.kubernetes.io/name", "worker");
+    labels.put("app.kubernetes.io/instance", "worker-"+workspaceId);
+    labels.put("app.kubernetes.io/part-of", "bmrg-flow");
+    labels.put("app.kubernetes.io/managed-by", "controller");
+    labels.put("boomerang.io/product", "bmrg-flow");
+    labels.put("boomerang.io/tier", "worker");
+    labels.put("boomerang.io/workspace-id", workspaceId);
+    return labels;
+  }
+  
+  protected Map<String, String> createWorkspaceAnnotations(String workspaceName, String workspaceId) {
+    Map<String, String> annotations = new HashMap<>();
+    annotations.put("boomerang.io/workspace-name", workspaceName);
+    annotations.put("boomerang.io/selector", getWorkspaceLabelSelector(workspaceId));
+    return annotations;
+  }
+  
+  protected String getWorkspaceLabelSelector(String workspaceId) {
+    StringBuilder labelSelector = new StringBuilder("boomerang.io/product=bmrg-flow,boomerang.io/tier=worker,boomerang.io/workspace-id=" + workspaceId);
+
+    LOGGER.info("  labelSelector: " + labelSelector.toString());
+    return labelSelector.toString();
   }
 }
