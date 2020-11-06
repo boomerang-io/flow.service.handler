@@ -82,6 +82,8 @@ import net.boomerangplatform.service.ConfigurationService;
 public abstract class AbstractKubeServiceImpl implements AbstractKubeService { // NOSONAR
 
   private static final Logger LOGGER = LogManager.getLogger(AbstractKubeService.class);
+  
+  protected static final String TIER = "worker";
 
   private static final int PROPERTY_SIZE = 2;
 
@@ -164,15 +166,14 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
 
   @Value("${controller.service.host}")
   protected String bmrgControllerServiceURL;
+  
+  @Value("${boomerang.product}")
+  private String bmrgProduct;
 
   @Autowired
   private ConfigurationService configurationService;
 
-
   private ApiClient apiClient; // NOSONAR
-
-  protected abstract String getLabelSelector(String workflowId, String workflowActivityId,
-      String taskId);
 
   protected abstract V1Job createJobBody(boolean createLifecycle, String workflowName,
       String workflowId, String workflowActivityId, String taskActivityId, String taskName,
@@ -182,18 +183,37 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   protected abstract V1ConfigMap createTaskConfigMapBody(String workflowName, String workflowId,
       String workflowActivityId, String taskName, String taskId, Map<String, String> inputProps);
 
-  protected abstract Map<String, String> createAnnotations(String workflowName, String workflowId,
-      String workflowActivityId, String taskId);
-
-  protected abstract Map<String, String> createLabels(String workflowId, String workflowActivityId,
-      String taskId);
-
   protected abstract V1ConfigMap createWorkflowConfigMapBody(String workflowName, String workflowId,
       String workflowActivityId, Map<String, String> inputProps);
 
-  public abstract String getJobPrefix();
-
-  public abstract String getPVCPrefix();
+// Used by LogServiceImpl as well 
+  public String getPrefixJob() {
+    return bmrgProduct + TIER;
+  }
+  
+  protected String getPrefixPVC() {
+    return bmrgProduct + "-pvc";
+  }
+  
+  protected String getPrefixCFGMAP() {
+    return bmrgProduct + "-cfg";
+  }
+  
+  protected String getPrefixVol() {
+    return bmrgProduct + "-vol";
+  }
+  
+  protected String getPrefixVolData() {
+    return getPrefixVol() + "-data";
+  }
+  
+  protected String getPrefixVolProps() {
+    return getPrefixVol() + "-props";
+  }
+  
+  protected String getPrefixVolCache() {
+    return getPrefixVol() + "-cache";
+  }
 
   @Override
   public V1Job createJob(boolean createLifecycle, String workflowName, String workflowId,
@@ -471,7 +491,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     V1ObjectMeta metadata = new V1ObjectMeta();
     metadata.annotations(annotations);
     metadata.labels(labels);
-    metadata.generateName(getPVCPrefix() + "-");
+    metadata.generateName(getPrefixPVC() + "-");
     body.metadata(metadata);
 
     // Create PVC Spec
@@ -1161,17 +1181,46 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     return taskConfiguration.getDebug() != null ? taskConfiguration.getDebug().toString()
         : configurationService.getTaskDebug().toString();
   }
+
+  protected Map<String, String> createAntiAffinityLabels() {
+    Map<String, String> labels = new HashMap<>();
+    labels.put("boomerang.io/product", bmrgProduct);
+    labels.put("boomerang.io/tier", TIER);
+    return labels;
+  }
+
+  protected Map<String, String> createLabels(String workflowId, String activityId, String taskId) {
+    Map<String, String> labels = new HashMap<>();
+    labels.put("app.kubernetes.io/name", TIER);
+    labels.put("app.kubernetes.io/instance", TIER + "-" + workflowId);
+    labels.put("app.kubernetes.io/part-of", bmrgProduct);
+    labels.put("app.kubernetes.io/managed-by", "controller");
+    labels.put("boomerang.io/product", bmrgProduct);
+    labels.put("boomerang.io/tier", TIER);
+    Optional.ofNullable(workflowId).ifPresent(str -> labels.put("workflow-id", str));
+    Optional.ofNullable(activityId).ifPresent(str -> labels.put("activity-id", str));
+    Optional.ofNullable(taskId).ifPresent(str -> labels.put("task-id", str));
+    return labels;
+  }
   
   protected Map<String, String> createWorkspaceLabels(String workspaceId) {
     Map<String, String> labels = new HashMap<>();
-    labels.put("app.kubernetes.io/name", "worker");
-    labels.put("app.kubernetes.io/instance", "worker-"+workspaceId);
-    labels.put("app.kubernetes.io/part-of", "bmrg-flow");
+    labels.put("app.kubernetes.io/name", TIER);
+    labels.put("app.kubernetes.io/instance", TIER + "-" + workspaceId);
+    labels.put("app.kubernetes.io/part-of", bmrgProduct);
     labels.put("app.kubernetes.io/managed-by", "controller");
-    labels.put("boomerang.io/product", "bmrg-flow");
-    labels.put("boomerang.io/tier", "worker");
+    labels.put("boomerang.io/product", bmrgProduct);
+    labels.put("boomerang.io/tier", TIER);
     labels.put("boomerang.io/workspace-id", workspaceId);
     return labels;
+  }
+
+  protected Map<String, String> createAnnotations(String workflowName, String workflowId,
+      String activityId, String taskId) {
+    Map<String, String> annotations = new HashMap<>();
+    annotations.put("boomerang.io/workflow-name", workflowName);
+    annotations.put("boomerang.io/selector", getLabelSelector(workflowId, activityId, taskId));
+    return annotations;
   }
   
   protected Map<String, String> createWorkspaceAnnotations(String workspaceName, String workspaceId) {
@@ -1180,11 +1229,30 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     annotations.put("boomerang.io/selector", getWorkspaceLabelSelector(workspaceId));
     return annotations;
   }
-  
-  protected String getWorkspaceLabelSelector(String workspaceId) {
-    StringBuilder labelSelector = new StringBuilder("boomerang.io/product=bmrg-flow,boomerang.io/tier=worker,boomerang.io/workspace-id=" + workspaceId);
+
+  protected String getLabelSelector(String workflowId, String activityId, String taskId) {
+    StringBuilder labelSelector = new StringBuilder("boomerang.io/product=" + bmrgProduct + ",boomerang.io/tier=" + TIER);
+    Optional.ofNullable(workflowId).ifPresent(str -> labelSelector.append(",workflow-id=" + str));
+    Optional.ofNullable(activityId).ifPresent(str -> labelSelector.append(",activity-id=" + str));
+    Optional.ofNullable(taskId).ifPresent(str -> labelSelector.append(",task-id=" + str));
 
     LOGGER.info("  labelSelector: " + labelSelector.toString());
     return labelSelector.toString();
+  }
+  
+  protected String getWorkspaceLabelSelector(String workspaceId) {
+    StringBuilder labelSelector = new StringBuilder("boomerang.io/product=" + bmrgProduct + ",boomerang.io/tier=" + TIER + ",boomerang.io/workspace-id=" + workspaceId);
+
+    LOGGER.info("  labelSelector: " + labelSelector.toString());
+    return labelSelector.toString();
+  }
+
+  protected List<V1EnvVar> createEnvVars(String workflowId,String activityId,String taskName,String taskId){
+      List<V1EnvVar> envVars = new ArrayList<>();
+      envVars.add(createEnvVar("BMRG_WORKFLOW_ID", workflowId));
+      envVars.add(createEnvVar("BMRG_ACTIVITY_ID", activityId));
+      envVars.add(createEnvVar("BMRG_TASK_ID", taskId));
+      envVars.add(createEnvVar("BMRG_TASK_NAME", taskName.replace(" ", "")));
+      return envVars;
   }
 }

@@ -94,7 +94,7 @@ public class LogServiceImpl implements LogService {
       PrintWriter printWriter = new PrintWriter(outputStream);
 
       final String filter =
-          createLokoFilter(workflowId, workflowActivityId, taskId, taskActivityId);
+          createLokiFilter(workflowId, workflowActivityId, taskId, taskActivityId);
       LOGGER.info("Loki filter: " + filter);
 
       final String encodedQuery = URLEncoder.encode(filter, StandardCharsets.UTF_8);
@@ -175,7 +175,7 @@ public class LogServiceImpl implements LogService {
     };
   }
 
-  private String createLokoFilter(String workflowId, String workflowActivityId, String taskId,
+  private String createLokiFilter(String workflowId, String workflowActivityId, String taskId,
       String taskActivityId) {
     return "{bmrg_activity=\"" + workflowActivityId + "\",bmrg_workflow=\"" + workflowId
         + "\",bmrg_task=\"" + taskId + "\",bmrg_container=\"worker-cntr\"}";
@@ -183,9 +183,9 @@ public class LogServiceImpl implements LogService {
 
   private StreamingResponseBody streamLogsFromElastic(String activityId) {
     LOGGER.info(
-        "Streaming logs from elastic: " + kubeService.getJobPrefix() + "-" + activityId + "-*");
+        "Streaming logs from elastic: " + kubeService.getPrefixJob() + "-" + activityId + "-*");
 
-    LOGGER.info("kubernetes.pod=", kubeService.getJobPrefix() + "-" + activityId + "-*");
+    LOGGER.info("kubernetes.pod=", kubeService.getPrefixJob() + "-" + activityId + "-*");
     return outputStream -> {
 
 
@@ -203,7 +203,7 @@ public class LogServiceImpl implements LogService {
 
 
       MatchPhraseQueryBuilder podName = QueryBuilders.matchPhraseQuery("kubernetes.pod",
-          kubeService.getJobPrefix() + "-" + activityId + "-*");
+          kubeService.getPrefixJob() + "-" + activityId + "-*");
 
       MatchPhraseQueryBuilder containerName =
           QueryBuilders.matchPhraseQuery("kubernetes.container_name", "worker-cntr");
