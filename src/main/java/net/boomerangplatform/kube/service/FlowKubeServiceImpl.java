@@ -1,7 +1,6 @@
 package net.boomerangplatform.kube.service;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
@@ -151,44 +150,6 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
     jobSpec.setTtlSecondsAfterFinished(ttl);
     body.spec(jobSpec);
 
-    return body;
-  }
-
-  protected V1ConfigMap createTaskConfigMapBody(String workflowName, String workflowId,
-      String workflowActivityId, String taskName, String taskId, Map<String, String> inputProps) {
-    V1ConfigMap body = new V1ConfigMap();
-
-    body.metadata(
-        getMetadata(workflowName, workflowId, workflowActivityId, taskId, getPrefixCFGMAP()));
-
-    // Create Data
-    Map<String, String> inputsWithFixedKeys = new HashMap<>();
-    Map<String, String> sysProps = new HashMap<>();
-    sysProps.put("task.id", taskId);
-    sysProps.put("task.name", taskName);
-    inputsWithFixedKeys.put("task.input.properties", createConfigMapProp(inputProps));
-    inputsWithFixedKeys.put("task.system.properties", createConfigMapProp(sysProps));
-    body.data(inputsWithFixedKeys);
-    return body;
-  }
-
-  protected V1ConfigMap createWorkflowConfigMapBody(String workflowName, String workflowId,
-      String workflowActivityId, Map<String, String> inputProps) {
-    V1ConfigMap body = new V1ConfigMap();
-
-    body.metadata(
-        getMetadata(workflowName, workflowId, workflowActivityId, null, getPrefixCFGMAP()));
-
-    // Create Data
-    Map<String, String> inputsWithFixedKeys = new HashMap<>();
-    Map<String, String> sysProps = new HashMap<>();
-    sysProps.put("activity.id", workflowActivityId);
-    sysProps.put("workflow.name", workflowName);
-    sysProps.put("workflow.id", workflowId);
-    sysProps.put("controller.service.url", bmrgControllerServiceURL);
-    inputsWithFixedKeys.put("workflow.input.properties", createConfigMapProp(inputProps));
-    inputsWithFixedKeys.put("workflow.system.properties", createConfigMapProp(sysProps));
-    body.data(inputsWithFixedKeys);
     return body;
   }
   
