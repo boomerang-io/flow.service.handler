@@ -8,7 +8,7 @@ import org.springframework.http.HttpStatus;
 import io.kubernetes.client.ApiException;
 import net.boomerangplatform.error.BoomerangException;
 import net.boomerangplatform.kube.exception.KubeRuntimeException;
-import net.boomerangplatform.kube.service.FlowKubeServiceImpl;
+import net.boomerangplatform.kube.service.AbstractKubeServiceImpl;
 import net.boomerangplatform.model.Response;
 import net.boomerangplatform.model.Task;
 import net.boomerangplatform.model.TaskDeletionEnum;
@@ -24,7 +24,7 @@ public abstract class AbstractControllerServiceImpl implements AbstractControlle
 	private ConfigurationServiceImpl configurationService;
 
     @Autowired
-    private FlowKubeServiceImpl kubeService;
+    private AbstractKubeServiceImpl kubeService;
 
 	@Override
 	public abstract TaskResponse executeTask(Task task);
