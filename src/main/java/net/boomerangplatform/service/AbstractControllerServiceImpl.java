@@ -82,6 +82,7 @@ public abstract class AbstractControllerServiceImpl implements AbstractControlle
       } catch (KubeRuntimeException e) {
         throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
       }
+      LOGGER.info("createWorkspace() - " + response.getMessage());
       return response;
     }
 

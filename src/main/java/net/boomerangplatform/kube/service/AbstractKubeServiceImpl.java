@@ -580,8 +580,8 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     // deleteOptions.setPropagationPolicy("Background");
     V1Status result = new V1Status();
     String pvcName = getPVCName(labelSelector);
-    LOGGER.info("Deleting PVC (" + pvcName + ")...");
     if (!pvcName.isEmpty()) {
+      LOGGER.info("Deleting PVC (" + pvcName + ")...");
       try {
         result = getCoreApi().deleteNamespacedPersistentVolumeClaim(pvcName, kubeNamespace,
             kubeApiPretty, deleteOptions, null, null, null, null);
@@ -925,7 +925,8 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     V1Container container = new V1Container();
     LOGGER.info("Container Image: " + image);
     container.image(image);
-    Optional.ofNullable(command).ifPresent(str -> container.addCommandItem(str));
+    LOGGER.info("Container Command: " + command);
+    Optional.ofNullable(command).filter(str -> !str.isEmpty()).ifPresent(str -> container.addCommandItem(str));
     container.name("worker-cntr");
     container.imagePullPolicy(kubeImagePullPolicy);
     V1SecurityContext securityContext = new V1SecurityContext();
