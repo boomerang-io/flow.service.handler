@@ -1,5 +1,6 @@
 package net.boomerangplatform.service;
 
+import java.util.HashMap;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -33,15 +34,7 @@ public abstract class AbstractControllerServiceImpl implements AbstractControlle
 	public abstract Response createWorkflow(Workflow workflow);
 
 	@Override
-	public abstract Response terminateWorkflow(Workflow workflow);
-
-	@Override
-	public abstract Response setJobOutputProperty(String workflowId, String workflowActivityId, String taskId, String taskName,
-			String key, String value);
-
-	@Override
-	public abstract Response setJobOutputProperties(String workflowId, String workflowActivityId, String taskId, String taskName,
-			Map<String, String> properties);	  
+	public abstract Response terminateWorkflow(Workflow workflow);	  
 
 	protected TaskDeletionEnum getTaskDeletion(TaskDeletionEnum taskDeletion) {
 		return taskDeletion != null ? taskDeletion : configurationService.getTaskDeletion();
@@ -94,4 +87,33 @@ public abstract class AbstractControllerServiceImpl implements AbstractControlle
       return response;
     }
 
+    @Override
+    public Response setJobOutputProperty(String workflowId, String workflowActivityId, String taskId,
+        String taskName, String key, String value) {
+      Response response = new Response("0", "Property has been set against workflow ("
+          + workflowActivityId + ") and task (" + taskId + ")");
+      try {
+        Map<String, String> properties = new HashMap<>();
+        properties.put(key, value);
+        kubeService.patchTaskConfigMap(workflowId, workflowActivityId, taskId, taskName, properties);
+      } catch (KubeRuntimeException e) {
+        throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
+      }
+      return response;
+    }
+
+    @Override
+    public Response setJobOutputProperties(String workflowId, String workflowActivityId,
+        String taskId, String taskName, Map<String, String> properties) {
+      Response response = new Response("0", "Properties have been set against workflow ("
+          + workflowActivityId + ") and task (" + taskId + ")");
+
+      LOGGER.info(properties);
+      try {
+        kubeService.patchTaskConfigMap(workflowId, workflowActivityId, taskId, taskName, properties);
+      } catch (KubeRuntimeException e) {
+        throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
+      }
+      return response;
+    }
 }

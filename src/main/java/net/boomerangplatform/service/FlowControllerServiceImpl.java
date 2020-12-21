@@ -1,7 +1,5 @@
 package net.boomerangplatform.service;
 
-import java.util.HashMap;
-import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -138,35 +136,5 @@ public class FlowControllerServiceImpl extends AbstractControllerServiceImpl {
 			}
 		}
 		return response;
-  }
-
-  @Override
-  public Response setJobOutputProperty(String workflowId, String workflowActivityId, String taskId,
-      String taskName, String key, String value) {
-    Response response = new Response("0", "Property has been set against workflow ("
-        + workflowActivityId + ") and task (" + taskId + ")");
-    try {
-      Map<String, String> properties = new HashMap<>();
-      properties.put(key, value);
-      kubeService.patchTaskConfigMap(workflowId, workflowActivityId, taskId, taskName, properties);
-    } catch (KubeRuntimeException e) {
-  	  throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-    return response;
-  }
-
-  @Override
-  public Response setJobOutputProperties(String workflowId, String workflowActivityId,
-      String taskId, String taskName, Map<String, String> properties) {
-    Response response = new Response("0", "Properties have been set against workflow ("
-        + workflowActivityId + ") and task (" + taskId + ")");
-
-    LOGGER.info(properties);
-    try {
-      kubeService.patchTaskConfigMap(workflowId, workflowActivityId, taskId, taskName, properties);
-    } catch (KubeRuntimeException e) {
-  	  throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-    return response;
   }
 }
