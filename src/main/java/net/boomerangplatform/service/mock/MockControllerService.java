@@ -55,4 +55,10 @@ public class MockControllerService implements AbstractControllerService {
     return null;
   }
 
+  @Override
+  public TaskResponse terminateTask(Task task) {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
 }
