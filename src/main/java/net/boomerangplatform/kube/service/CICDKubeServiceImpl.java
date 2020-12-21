@@ -5,17 +5,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
-
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-
 import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.models.V1ConfigMap;
 import io.kubernetes.client.models.V1Container;
@@ -39,28 +35,6 @@ import net.boomerangplatform.model.TaskConfiguration;
 @Profile("cicd")
 public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
 
-  protected static final String ORG = "bmrg";
-  
-  protected static final String PRODUCT = "cicd";
-  
-  protected static final String TIER = "worker";
-
-  protected static final String PREFIX = ORG + "-" + PRODUCT;
-
-  protected static final String PREFIX_JOB = PREFIX + "-" + TIER;
-
-  protected static final String PREFIX_CFGMAP = PREFIX + "-cfg";
-
-  protected static final String PREFIX_VOL = PREFIX + "-vol";
-
-  protected static final String PREFIX_VOL_DATA = PREFIX_VOL + "-data";
-  
-  protected static final String PREFIX_VOL_CACHE = PREFIX_VOL + "-cache";
-
-  protected static final String PREFIX_VOL_PROPS = PREFIX_VOL + "-props";
-
-  private static final String PREFIX_PVC = PREFIX + "-pvc";
-
   private static final Logger LOGGER = LogManager.getLogger(CICDKubeServiceImpl.class);
 
   @Value("${kube.api.timeout}")
@@ -81,28 +55,18 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
   @Value("${kube.worker.storage.data.memory}")
   private Boolean kubeWorkerStorageDataMemory;
 
-  @Override
-  public String getJobPrefix() {
-    return PREFIX_JOB;
-  }
-  
-  @Override
-  public String getPVCPrefix() {
-    return PREFIX_PVC;
-  }
-
   /**
  *
  */
 @Override
-  protected V1Job createJobBody(boolean createLifecycle, String componentName, String componentId, String activityId, String taskActivityId,
+  protected V1Job createJobBody(boolean createLifecycle, String workflowName, String workflowId, String workflowActivityId, String taskActivityId,
       String taskName, String taskId, List<String> arguments,
       Map<String, String> taskProperties, String image, String command, TaskConfiguration taskConfiguration) {
 
     // Initialize Job Body
     V1Job body = new V1Job();
-    V1ObjectMeta jobMetadata = getMetadata(componentName, componentId, activityId, taskId, null);
-	jobMetadata.name(PREFIX_JOB + "-" + activityId);
+    V1ObjectMeta jobMetadata = getMetadata(workflowName, workflowId, workflowActivityId, taskId, null);
+	jobMetadata.name(getPrefixJob() + "-" + workflowActivityId);
     body.metadata(jobMetadata);
 
     // Create Spec
@@ -135,23 +99,23 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
 	    resources.putLimitsItem("memory", new Quantity(kubeResourceLimitMemory));
 	}
     container.setResources(resources);
-    if (checkWorkspacePVCExists(componentId, true)) {
-      container.addVolumeMountsItem(getVolumeMount(PREFIX_VOL_CACHE, "/cache"));
-      V1Volume workspaceVolume = getVolume(PREFIX_VOL_CACHE);
+    if (checkWorkspacePVCExists(workflowId, true)) {
+      container.addVolumeMountsItem(getVolumeMount(getPrefixVolCache(), "/cache"));
+      V1Volume workspaceVolume = getVolume(getPrefixVolCache());
       V1PersistentVolumeClaimVolumeSource workerVolumePVCSource =
           new V1PersistentVolumeClaimVolumeSource();
       workspaceVolume
-          .persistentVolumeClaim(workerVolumePVCSource.claimName(getPVCName(getWorkspaceLabelSelector(componentId))));
+          .persistentVolumeClaim(workerVolumePVCSource.claimName(getPVCName(getWorkspaceLabelSelector(workflowId))));
       podSpec.addVolumesItem(workspaceVolume);
     }
-    container.addVolumeMountsItem(getVolumeMount(PREFIX_VOL_PROPS, "/props"));
+    container.addVolumeMountsItem(getVolumeMount(getPrefixVolProps(), "/props"));
 
     /*  The following code is integrated to the helm chart and CICD properties
     * 	It allows for containers that breach the standard ephemeral-storage size by off-loading to memory
     * 	See: https://kubernetes.io/docs/concepts/storage/volumes/#emptydir
     */
-    container.addVolumeMountsItem(getVolumeMount(PREFIX_VOL_DATA, "/data"));
-	V1Volume dataVolume = getVolume(PREFIX_VOL_DATA);
+    container.addVolumeMountsItem(getVolumeMount(getPrefixVolData(), "/data"));
+	V1Volume dataVolume = getVolume(getPrefixVolData());
 	V1EmptyDirVolumeSource emptyDir = new V1EmptyDirVolumeSource();
     if (kubeWorkerStorageDataMemory && Boolean.valueOf(taskProperties.get("worker.storage.data.memory"))) {
     	LOGGER.info("Setting /data to in memory storage...");
@@ -161,17 +125,17 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
 	podSpec.addVolumesItem(dataVolume);
 
     // Creation of Projected Volume for multiple ConfigMaps
-    V1Volume volumeProps = getVolume(PREFIX_VOL_PROPS);
+    V1Volume volumeProps = getVolume(getPrefixVolProps());
     V1ProjectedVolumeSource projectedVolPropsSource = new V1ProjectedVolumeSource();
     List<V1VolumeProjection> projectPropsVolumeList = new ArrayList<>();
 
     // Add Worfklow Configmap Projected Volume
-    V1ConfigMap wfConfigMap = getConfigMap(componentId, activityId, null);
+    V1ConfigMap wfConfigMap = getConfigMap(workflowId, workflowActivityId, null);
     if (wfConfigMap != null && !getConfigMapName(wfConfigMap).isEmpty()) {
       projectPropsVolumeList.add(getVolumeProjection(wfConfigMap));
     }
     // Add Task Configmap Projected Volume
-    V1ConfigMap taskConfigMap = getConfigMap(componentId, activityId, taskId);
+    V1ConfigMap taskConfigMap = getConfigMap(workflowId, workflowActivityId, taskId);
     if (taskConfigMap != null && !getConfigMapName(taskConfigMap).isEmpty()) {
       projectPropsVolumeList.add(getVolumeProjection(taskConfigMap));
     }
@@ -186,13 +150,10 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
     podSpec.containers(containerList);
     
     if (kubeWorkerDedicatedNodes) {
-    	getTolerationAndSelector(podSpec);
-        Map<String, String> labels = new HashMap<>();
-        labels.put("platform", ORG);
-        labels.put("product", PRODUCT);
-        labels.put("tier", TIER);
-        getPodAntiAffinity(podSpec, labels);
+        getTolerationAndSelector(podSpec);
     }
+
+    getPodAntiAffinity(podSpec, createAntiAffinityLabels());
 
     if (!kubeWorkerHostAliases.isEmpty()) {
       Type listHostAliasType = new TypeToken<List<V1HostAlias>>() {}.getType();
@@ -212,7 +173,7 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
     podSpec.imagePullSecrets(imagePullSecretList);
     podSpec.restartPolicy(kubeWorkerJobRestartPolicy);
     templateSpec.spec(podSpec);
-    templateSpec.metadata(getMetadata(componentName, componentId, activityId, taskId, null));
+    templateSpec.metadata(getMetadata(workflowName, workflowId, workflowActivityId, taskId, null));
 
     jobSpec.backoffLimit(kubeWorkerJobBackOffLimit);
     jobSpec.template(templateSpec);
@@ -227,7 +188,7 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
   protected V1ConfigMap createTaskConfigMapBody(String componentName, String componentId,
       String activityId, String taskName, String taskId, Map<String, String> inputProps) {
     V1ConfigMap body = new V1ConfigMap();
-    body.metadata(getMetadata(componentName, componentId, activityId, taskId, PREFIX_CFGMAP));
+    body.metadata(getMetadata(componentName, componentId, activityId, taskId, getPrefixCFGMAP()));
 
     // Create Data
     Map<String, String> inputsWithFixedKeys = new HashMap<>();
@@ -239,7 +200,7 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
   protected V1ConfigMap createWorkflowConfigMapBody(String componentName, String componentId,
       String activityId, Map<String, String> inputProps) {
     V1ConfigMap body = new V1ConfigMap();
-    body.metadata(getMetadata(componentName, componentId, activityId, null, PREFIX_CFGMAP));
+    body.metadata(getMetadata(componentName, componentId, activityId, null, getPrefixCFGMAP()));
 
     // Create Data
     Map<String, String> inputsWithFixedKeys = new HashMap<>();
@@ -252,43 +213,5 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
     inputsWithFixedKeys.put("workflow.system.properties", createConfigMapProp(sysProps));
     body.data(inputsWithFixedKeys);
     return body;
-  }
-
-  protected String getLabelSelector(String componentId, String activityId, String taskId) {
-    StringBuilder labelSelector = new StringBuilder("platform=" + ORG + ",product=" + PRODUCT + ",tier=" + TIER);
-    Optional.ofNullable(componentId).ifPresent(str -> labelSelector.append(",component-id=" + str));
-    Optional.ofNullable(activityId).ifPresent(str -> labelSelector.append(",activity-id=" + str));
-    Optional.ofNullable(taskId).ifPresent(str -> labelSelector.append(",task-id=" + str));
-
-    LOGGER.info("  labelSelector: " + labelSelector.toString());
-    return labelSelector.toString();
-  }
-
-  protected Map<String, String> createAnnotations(String componentName, String componentId,
-      String activityId, String taskId) {
-    Map<String, String> annotations = new HashMap<>();
-    annotations.put("boomerangplatform.net/platform", ORG);
-    annotations.put("boomerangplatform.net/product", PRODUCT);
-    annotations.put("boomerangplatform.net/tier", TIER);
-    annotations.put("boomerangplatform.net/component-name", componentName);
-    Optional.ofNullable(componentId)
-    .ifPresent(str -> annotations.put("boomerangplatform.net/component-id", componentId));
-    Optional.ofNullable(activityId)
-    .ifPresent(str -> annotations.put("boomerangplatform.net/activity-id", activityId));
-    Optional.ofNullable(taskId)
-        .ifPresent(str -> annotations.put("boomerangplatform.net/task-id", str));
-
-    return annotations;
-  }
-
-  protected Map<String, String> createLabels(String componentId, String activityId, String taskId) {
-    Map<String, String> labels = new HashMap<>();
-    labels.put("platform", ORG);
-    labels.put("product", PRODUCT);
-    labels.put("tier", TIER);
-    Optional.ofNullable(componentId).ifPresent(str -> labels.put("component-id", str));
-    Optional.ofNullable(activityId).ifPresent(str -> labels.put("activity-id", str));
-    Optional.ofNullable(taskId).ifPresent(str -> labels.put("task-id", str));
-    return labels;
   }
 }

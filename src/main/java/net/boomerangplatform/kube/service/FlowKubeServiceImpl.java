@@ -1,10 +1,8 @@
 package net.boomerangplatform.kube.service;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,26 +27,6 @@ import net.boomerangplatform.model.TaskConfiguration;
 @Profile({"live", "local"})
 public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
 
-  protected static final String ORG = "bmrg";
-  
-  protected static final String PRODUCT = "flow";
-  
-  protected static final String TIER = "worker";
-
-  protected static final String PREFIX = ORG + "-" + PRODUCT;
-
-  protected static final String PREFIX_JOB = PREFIX + "-" + TIER;
-
-  protected static final String PREFIX_CFGMAP = PREFIX + "-cfg";
-
-  protected static final String PREFIX_VOL = PREFIX + "-vol";
-
-  protected static final String PREFIX_VOL_DATA = PREFIX_VOL + "-data";
-
-  protected static final String PREFIX_VOL_PROPS = PREFIX_VOL + "-props";
-
-  private static final String PREFIX_PVC = PREFIX + "-pvc";
-
   private static final Logger LOGGER = LogManager.getLogger(FlowKubeServiceImpl.class);
 
   @Value("${kube.lifecycle.image}")
@@ -58,16 +36,6 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
   private Integer kubeApiTimeOut;
 
   @Override
-  public String getJobPrefix() {
-    return PREFIX_JOB;
-  }
-  
-  @Override
-  public String getPVCPrefix() {
-    return PREFIX_PVC;
-  }
-
-  @Override
   protected V1Job createJobBody(boolean createLifecycle, String workflowName, String workflowId, String workflowActivityId, String taskActivityId,
       String taskName, String taskId, List<String> arguments,
       Map<String, String> taskProperties, String image, String command, TaskConfiguration taskConfiguration) {
@@ -75,7 +43,7 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
     // Initialize Job Body
     V1Job body = new V1Job();
     body.metadata(
-        getMetadata(workflowName, workflowId, workflowActivityId, taskId, getJobPrefix() + "-" + taskActivityId));
+        getMetadata(workflowName, workflowId, workflowActivityId, taskId, getPrefixJob() + "-" + taskActivityId));
 
     // Create Spec
     V1JobSpec jobSpec = new V1JobSpec();
@@ -93,8 +61,8 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
     container.env(envVars);
     container.args(arguments);
     if (!getPVCName(getLabelSelector(workflowId, workflowActivityId, null)).isEmpty()) {
-      container.addVolumeMountsItem(getVolumeMount(PREFIX_VOL_DATA, "/data"));
-      V1Volume workerVolume = getVolume(PREFIX_VOL_DATA);
+      container.addVolumeMountsItem(getVolumeMount(getPrefixVolData(), "/data"));
+      V1Volume workerVolume = getVolume(getPrefixVolData());
       V1PersistentVolumeClaimVolumeSource workerVolumePVCSource =
           new V1PersistentVolumeClaimVolumeSource();
       workerVolume.persistentVolumeClaim(
@@ -130,10 +98,10 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
         podSpec.addVolumesItem(lifecycleVol);
     }
     
-    container.addVolumeMountsItem(getVolumeMount(PREFIX_VOL_PROPS, "/props"));
+    container.addVolumeMountsItem(getVolumeMount(getPrefixVolProps(), "/props"));
 
     // Creation of Projected Volume with multiple ConfigMaps
-    V1Volume volumeProps = getVolume(PREFIX_VOL_PROPS);
+    V1Volume volumeProps = getVolume(getPrefixVolProps());
     V1ProjectedVolumeSource projectedVolPropsSource = new V1ProjectedVolumeSource();
     List<V1VolumeProjection> projectPropsVolumeList = new ArrayList<>();
 
@@ -156,12 +124,9 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
     
     if (kubeWorkerDedicatedNodes) {
     	getTolerationAndSelector(podSpec);
-        Map<String, String> labels = new HashMap<>();
-        labels.put("platform", ORG);
-        labels.put("product", PRODUCT);
-        labels.put("tier", TIER);
-        getPodAntiAffinity(podSpec, labels);
     }
+
+    getPodAntiAffinity(podSpec, createAntiAffinityLabels());
 
     if (!kubeWorkerServiceAccount.isEmpty()) {
       podSpec.serviceAccountName(kubeWorkerServiceAccount);
@@ -186,92 +151,6 @@ public class FlowKubeServiceImpl extends AbstractKubeServiceImpl {
     body.spec(jobSpec);
 
     return body;
-  }
-
-  protected V1ConfigMap createTaskConfigMapBody(String workflowName, String workflowId,
-      String workflowActivityId, String taskName, String taskId, Map<String, String> inputProps) {
-    V1ConfigMap body = new V1ConfigMap();
-
-    body.metadata(
-        getMetadata(workflowName, workflowId, workflowActivityId, taskId, PREFIX_CFGMAP));
-
-    // Create Data
-    Map<String, String> inputsWithFixedKeys = new HashMap<>();
-    Map<String, String> sysProps = new HashMap<>();
-    sysProps.put("task.id", taskId);
-    sysProps.put("task.name", taskName);
-    inputsWithFixedKeys.put("task.input.properties", createConfigMapProp(inputProps));
-    inputsWithFixedKeys.put("task.system.properties", createConfigMapProp(sysProps));
-    body.data(inputsWithFixedKeys);
-    return body;
-  }
-
-  protected V1ConfigMap createWorkflowConfigMapBody(String workflowName, String workflowId,
-      String workflowActivityId, Map<String, String> inputProps) {
-    V1ConfigMap body = new V1ConfigMap();
-
-    body.metadata(
-        getMetadata(workflowName, workflowId, workflowActivityId, null, PREFIX_CFGMAP));
-
-    // Create Data
-    Map<String, String> inputsWithFixedKeys = new HashMap<>();
-    Map<String, String> sysProps = new HashMap<>();
-    sysProps.put("activity.id", workflowActivityId);
-    sysProps.put("workflow.name", workflowName);
-    sysProps.put("workflow.id", workflowId);
-    sysProps.put("controller.service.url", bmrgControllerServiceURL);
-    inputsWithFixedKeys.put("workflow.input.properties", createConfigMapProp(inputProps));
-    inputsWithFixedKeys.put("workflow.system.properties", createConfigMapProp(sysProps));
-    body.data(inputsWithFixedKeys);
-    return body;
-  }
-
-
-  protected String getLabelSelector(String workflowId, String activityId, String taskId) {
-    StringBuilder labelSelector = new StringBuilder("platform=" + ORG + ",product=" + PRODUCT + ",tier=" + TIER);
-    Optional.ofNullable(workflowId).ifPresent(str -> labelSelector.append(",workflow-id=" + str));
-    Optional.ofNullable(activityId).ifPresent(str -> labelSelector.append(",activity-id=" + str));
-    Optional.ofNullable(taskId).ifPresent(str -> labelSelector.append(",task-id=" + str));
-
-    LOGGER.info("  labelSelector: " + labelSelector.toString());
-    return labelSelector.toString();
-  }
-
-  protected Map<String, String> createAnnotations(String workflowName, String workflowId,
-      String activityId, String taskId) {
-    Map<String, String> annotations = new HashMap<>();
-    annotations.put("boomerang.io/platform", ORG);
-    annotations.put("boomerang.io/product", PRODUCT);
-    annotations.put("boomerang.io/tier", TIER);
-    annotations.put("boomerang.io/workflow-name", workflowName);
-    Optional.ofNullable(workflowId)
-    .ifPresent(str -> annotations.put("boomerang.io/workflow-id", str));
-    Optional.ofNullable(activityId)
-    .ifPresent(str -> annotations.put("boomerang.io/activity-id", str));
-    Optional.ofNullable(taskId)
-        .ifPresent(str -> annotations.put("boomerang.io/task-id", str));
-
-    return annotations;
-  }
-
-  protected Map<String, String> createLabels(String workflowId, String activityId, String taskId) {
-    Map<String, String> labels = new HashMap<>();
-    labels.put("platform", ORG);
-    labels.put("product", PRODUCT);
-    labels.put("tier", TIER);
-    Optional.ofNullable(workflowId).ifPresent(str -> labels.put("workflow-id", str));
-    Optional.ofNullable(activityId).ifPresent(str -> labels.put("activity-id", str));
-    Optional.ofNullable(taskId).ifPresent(str -> labels.put("task-id", str));
-    return labels;
-  }
-
-  protected List<V1EnvVar> createEnvVars(String workflowId,String activityId,String taskName,String taskId){
-	  List<V1EnvVar> envVars = new ArrayList<>();
-	  envVars.add(createEnvVar("BMRG_WORKFLOW_ID", workflowId));
-	  envVars.add(createEnvVar("BMRG_ACTIVITY_ID", activityId));
-	  envVars.add(createEnvVar("BMRG_TASK_ID", taskId));
-	  envVars.add(createEnvVar("BMRG_TASK_NAME", taskName.replace(" ", "")));
-	  return envVars;
   }
   
 }
