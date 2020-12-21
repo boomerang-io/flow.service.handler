@@ -182,7 +182,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
 
 // Used by LogServiceImpl as well 
   public String getPrefixJob() {
-    return bmrgProduct + TIER;
+    return bmrgProduct + "-" + TIER;
   }
   
   protected String getPrefixPVC() {

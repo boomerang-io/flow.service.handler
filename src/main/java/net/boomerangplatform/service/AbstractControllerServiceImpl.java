@@ -85,5 +85,13 @@ public abstract class AbstractControllerServiceImpl implements AbstractControlle
       LOGGER.info("createWorkspace() - " + response.getMessage());
       return response;
     }
+    
+    @Override
+    public TaskResponse terminateTask(Task task) {
+      TaskResponse response = new TaskResponse("0", "Task (" + task.getTaskId() + ") is meant to be terminated now.",
+              null);
+
+      return response;
+    }
 
 }

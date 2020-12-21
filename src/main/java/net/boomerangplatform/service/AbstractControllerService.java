@@ -25,4 +25,6 @@ public abstract interface AbstractControllerService {
     Response createWorkspace(Workspace workspace);
 
     Response deleteWorkspace(Workspace workspace);
+
+    TaskResponse terminateTask(Task task);
 }

@@ -22,8 +22,8 @@ public class TaskController {
     return controllerService.executeTask(task);
   }
 
-//  @PostMapping(value = "/terminate")
-//  public TaskResponse terminateTask(@RequestBody Task task) {
-//    return controllerService.terminateTask(task);
-//  }
+  @PostMapping(value = "/terminate")
+  public TaskResponse terminateTask(@RequestBody Task task) {
+    return controllerService.terminateTask(task);
+  }
 }
