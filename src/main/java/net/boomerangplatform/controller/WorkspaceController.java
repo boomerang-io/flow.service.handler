@@ -7,22 +7,22 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import net.boomerangplatform.model.Response;
 import net.boomerangplatform.model.Workspace;
-import net.boomerangplatform.service.ControllerService;
+import net.boomerangplatform.service.WorkspaceService;
 
 @RestController
 @RequestMapping("/controller/workspace")
 public class WorkspaceController {
 
   @Autowired
-  private ControllerService controllerService;
+  private WorkspaceService workspaceService;
 
   @PostMapping(value = "/create")
   public Response createWorkspace(@RequestBody Workspace workspace) {
-    return controllerService.createWorkspace(workspace);
+    return workspaceService.createWorkspace(workspace);
   }
 
   @PostMapping(value = "/delete")
   public Response deleteWorkspace(@RequestBody Workspace workspace) {
-    return controllerService.deleteWorkspace(workspace);
+    return workspaceService.deleteWorkspace(workspace);
   }
 }
