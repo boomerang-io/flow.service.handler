@@ -9,6 +9,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import com.google.common.io.ByteStreams;
 import io.kubernetes.client.ApiException;
@@ -17,6 +18,7 @@ import io.kubernetes.client.models.V1Pod;
 import io.kubernetes.client.util.Watch;
 import net.boomerangplatform.kube.exception.KubeRuntimeException;
 
+@Component
 public class LogKubeServiceImpl implements LogKubeService {
 
   private static final Logger LOGGER = LogManager.getLogger(KubeService.class);

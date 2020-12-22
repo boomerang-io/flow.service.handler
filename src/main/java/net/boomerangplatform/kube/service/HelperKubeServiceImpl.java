@@ -13,6 +13,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 import io.kubernetes.client.models.V1Affinity;
 import io.kubernetes.client.models.V1EnvVar;
 import io.kubernetes.client.models.V1LabelSelector;
@@ -25,9 +26,10 @@ import io.kubernetes.client.models.V1WeightedPodAffinityTerm;
 import net.boomerangplatform.model.TaskConfiguration;
 import net.boomerangplatform.service.ConfigurationService;
 
+@Component
 public class HelperKubeServiceImpl implements HelperKubeService {
 
-  private static final Logger LOGGER = LogManager.getLogger(KubeService.class);
+  private static final Logger LOGGER = LogManager.getLogger(HelperKubeService.class);
   
   protected static final String TIER = "worker";
 
@@ -52,6 +54,7 @@ public class HelperKubeServiceImpl implements HelperKubeService {
   private ConfigurationService configurationService;
 
 //  Utilized by LogServiceImpl
+  @Override
   public String getPrefixJob() {
     return bmrgProduct + "-" + TIER;
   }

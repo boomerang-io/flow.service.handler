@@ -4,6 +4,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
 import io.kubernetes.client.ApiException;
 import net.boomerangplatform.error.BoomerangException;
 import net.boomerangplatform.kube.exception.KubeRuntimeException;
@@ -11,6 +12,7 @@ import net.boomerangplatform.kube.service.KubeServiceImpl;
 import net.boomerangplatform.model.Response;
 import net.boomerangplatform.model.Workflow;
 
+@Service
 public class WorklowServiceImpl implements WorkflowService {
 
   private static final Logger LOGGER = LogManager.getLogger(WorklowServiceImpl.class);
