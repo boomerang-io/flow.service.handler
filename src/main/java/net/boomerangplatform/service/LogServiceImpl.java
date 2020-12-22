@@ -33,7 +33,7 @@ import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import net.boomerangplatform.kube.exception.KubeRuntimeException;
-import net.boomerangplatform.kube.service.AbstractKubeServiceImpl;
+import net.boomerangplatform.kube.service.HelperKubeServiceImpl;
 import net.boomerangplatform.kube.service.LogKubeServiceImpl;
 
 @Service
@@ -51,7 +51,7 @@ public class LogServiceImpl implements LogService {
   private RestHighLevelClient elasticRestClient;
 
   @Autowired
-  private AbstractKubeServiceImpl kubeService;
+  private HelperKubeServiceImpl helperKubeService;
 
   @Autowired
   private LogKubeServiceImpl logKubeService;
@@ -186,9 +186,9 @@ public class LogServiceImpl implements LogService {
 
   private StreamingResponseBody streamLogsFromElastic(String activityId) {
     LOGGER.info(
-        "Streaming logs from elastic: " + kubeService.getPrefixJob() + "-" + activityId + "-*");
+        "Streaming logs from elastic: " + helperKubeService.getPrefixJob() + "-" + activityId + "-*");
 
-    LOGGER.info("kubernetes.pod=", kubeService.getPrefixJob() + "-" + activityId + "-*");
+    LOGGER.info("kubernetes.pod=", helperKubeService.getPrefixJob() + "-" + activityId + "-*");
     return outputStream -> {
 
 
@@ -206,7 +206,7 @@ public class LogServiceImpl implements LogService {
 
 
       MatchPhraseQueryBuilder podName = QueryBuilders.matchPhraseQuery("kubernetes.pod",
-          kubeService.getPrefixJob() + "-" + activityId + "-*");
+          helperKubeService.getPrefixJob() + "-" + activityId + "-*");
 
       MatchPhraseQueryBuilder containerName =
           QueryBuilders.matchPhraseQuery("kubernetes.container_name", "worker-cntr");

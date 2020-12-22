@@ -65,8 +65,8 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
 
     // Initialize Job Body
     V1Job body = new V1Job();
-    V1ObjectMeta jobMetadata = getMetadata(workflowName, workflowId, workflowActivityId, taskId, null);
-	jobMetadata.name(getPrefixJob() + "-" + workflowActivityId);
+    V1ObjectMeta jobMetadata = helperKubeService.getMetadata(workflowName, workflowId, workflowActivityId, taskId, null);
+	jobMetadata.name(helperKubeService.getPrefixJob() + "-" + workflowActivityId);
     body.metadata(jobMetadata);
 
     // Create Spec
@@ -76,10 +76,10 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
     V1Container container = getContainer(image, command);
     List<V1EnvVar> envVars = new ArrayList<>();
     if (proxyEnabled) {
-      envVars.addAll(createProxyEnvVars());
+      envVars.addAll(helperKubeService.createProxyEnvVars());
     }
-    envVars.add(createEnvVar("DEBUG", getTaskDebug(taskConfiguration)));
-    envVars.add(createEnvVar("CI", "true"));
+    envVars.add(helperKubeService.createEnvVar("DEBUG", helperKubeService.getTaskDebug(taskConfiguration)));
+    envVars.add(helperKubeService.createEnvVar("CI", "true"));
     container.env(envVars);
     container.args(arguments);
     V1ResourceRequirements resources = new V1ResourceRequirements();
@@ -100,22 +100,22 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
 	}
     container.setResources(resources);
     if (checkWorkspacePVCExists(workflowId, true)) {
-      container.addVolumeMountsItem(getVolumeMount(getPrefixVolCache(), "/cache"));
-      V1Volume workspaceVolume = getVolume(getPrefixVolCache());
+      container.addVolumeMountsItem(getVolumeMount(helperKubeService.getPrefixVolCache(), "/cache"));
+      V1Volume workspaceVolume = getVolume(helperKubeService.getPrefixVolCache());
       V1PersistentVolumeClaimVolumeSource workerVolumePVCSource =
           new V1PersistentVolumeClaimVolumeSource();
       workspaceVolume
-          .persistentVolumeClaim(workerVolumePVCSource.claimName(getPVCName(getWorkspaceLabelSelector(workflowId))));
+          .persistentVolumeClaim(workerVolumePVCSource.claimName(getPVCName(helperKubeService.getWorkspaceLabelSelector(workflowId))));
       podSpec.addVolumesItem(workspaceVolume);
     }
-    container.addVolumeMountsItem(getVolumeMount(getPrefixVolProps(), "/props"));
+    container.addVolumeMountsItem(getVolumeMount(helperKubeService.getPrefixVolProps(), "/props"));
 
     /*  The following code is integrated to the helm chart and CICD properties
     * 	It allows for containers that breach the standard ephemeral-storage size by off-loading to memory
     * 	See: https://kubernetes.io/docs/concepts/storage/volumes/#emptydir
     */
-    container.addVolumeMountsItem(getVolumeMount(getPrefixVolData(), "/data"));
-	V1Volume dataVolume = getVolume(getPrefixVolData());
+    container.addVolumeMountsItem(getVolumeMount(helperKubeService.getPrefixVolData(), "/data"));
+	V1Volume dataVolume = getVolume(helperKubeService.getPrefixVolData());
 	V1EmptyDirVolumeSource emptyDir = new V1EmptyDirVolumeSource();
     if (kubeWorkerStorageDataMemory && Boolean.valueOf(taskProperties.get("worker.storage.data.memory"))) {
     	LOGGER.info("Setting /data to in memory storage...");
@@ -125,7 +125,7 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
 	podSpec.addVolumesItem(dataVolume);
 
     // Creation of Projected Volume for multiple ConfigMaps
-    V1Volume volumeProps = getVolume(getPrefixVolProps());
+    V1Volume volumeProps = getVolume(helperKubeService.getPrefixVolProps());
     V1ProjectedVolumeSource projectedVolPropsSource = new V1ProjectedVolumeSource();
     List<V1VolumeProjection> projectPropsVolumeList = new ArrayList<>();
 
@@ -150,10 +150,10 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
     podSpec.containers(containerList);
     
     if (kubeWorkerDedicatedNodes) {
-        getTolerationAndSelector(podSpec);
+      helperKubeService.getTolerationAndSelector(podSpec);
     }
 
-    getPodAntiAffinity(podSpec, createAntiAffinityLabels());
+    helperKubeService.getPodAntiAffinity(podSpec, helperKubeService.createAntiAffinityLabels());
 
     if (!kubeWorkerHostAliases.isEmpty()) {
       Type listHostAliasType = new TypeToken<List<V1HostAlias>>() {}.getType();
@@ -173,7 +173,7 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
     podSpec.imagePullSecrets(imagePullSecretList);
     podSpec.restartPolicy(kubeWorkerJobRestartPolicy);
     templateSpec.spec(podSpec);
-    templateSpec.metadata(getMetadata(workflowName, workflowId, workflowActivityId, taskId, null));
+    templateSpec.metadata(helperKubeService.getMetadata(workflowName, workflowId, workflowActivityId, taskId, null));
 
     jobSpec.backoffLimit(kubeWorkerJobBackOffLimit);
     jobSpec.template(templateSpec);
@@ -188,11 +188,11 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
   protected V1ConfigMap createTaskConfigMapBody(String componentName, String componentId,
       String activityId, String taskName, String taskId, Map<String, String> inputProps) {
     V1ConfigMap body = new V1ConfigMap();
-    body.metadata(getMetadata(componentName, componentId, activityId, taskId, getPrefixCFGMAP()));
+    body.metadata(helperKubeService.getMetadata(componentName, componentId, activityId, taskId, helperKubeService.getPrefixCFGMAP()));
 
     // Create Data
     Map<String, String> inputsWithFixedKeys = new HashMap<>();
-    inputsWithFixedKeys.put("task.input.properties", createConfigMapProp(inputProps));
+    inputsWithFixedKeys.put("task.input.properties", helperKubeService.createConfigMapProp(inputProps));
     body.data(inputsWithFixedKeys);
     return body;
   }
@@ -200,7 +200,7 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
   protected V1ConfigMap createWorkflowConfigMapBody(String componentName, String componentId,
       String activityId, Map<String, String> inputProps) {
     V1ConfigMap body = new V1ConfigMap();
-    body.metadata(getMetadata(componentName, componentId, activityId, null, getPrefixCFGMAP()));
+    body.metadata(helperKubeService.getMetadata(componentName, componentId, activityId, null, helperKubeService.getPrefixCFGMAP()));
 
     // Create Data
     Map<String, String> inputsWithFixedKeys = new HashMap<>();
@@ -209,8 +209,8 @@ public class CICDKubeServiceImpl extends AbstractKubeServiceImpl {
     sysProps.put("workflow.name", componentName);
     sysProps.put("workflow.id", componentId);
     sysProps.put("controller.service.url", bmrgControllerServiceURL);
-    inputsWithFixedKeys.put("workflow.input.properties", createConfigMapProp(inputProps));
-    inputsWithFixedKeys.put("workflow.system.properties", createConfigMapProp(sysProps));
+    inputsWithFixedKeys.put("workflow.input.properties", helperKubeService.createConfigMapProp(inputProps));
+    inputsWithFixedKeys.put("workflow.system.properties", helperKubeService.createConfigMapProp(sysProps));
     body.data(inputsWithFixedKeys);
     return body;
   }

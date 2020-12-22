@@ -3,7 +3,6 @@ package net.boomerangplatform.kube.service;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringWriter;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -12,13 +11,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.joda.time.DateTime;
@@ -42,42 +39,33 @@ import io.kubernetes.client.PodLogs;
 import io.kubernetes.client.apis.BatchV1Api;
 import io.kubernetes.client.apis.CoreV1Api;
 import io.kubernetes.client.custom.Quantity;
-import io.kubernetes.client.models.V1Affinity;
 import io.kubernetes.client.models.V1ConfigMap;
 import io.kubernetes.client.models.V1ConfigMapList;
 import io.kubernetes.client.models.V1ConfigMapProjection;
 import io.kubernetes.client.models.V1Container;
 import io.kubernetes.client.models.V1ContainerStatus;
 import io.kubernetes.client.models.V1DeleteOptions;
-import io.kubernetes.client.models.V1EnvVar;
 import io.kubernetes.client.models.V1Job;
 import io.kubernetes.client.models.V1JobList;
 import io.kubernetes.client.models.V1JobStatus;
-import io.kubernetes.client.models.V1LabelSelector;
 import io.kubernetes.client.models.V1ObjectMeta;
 import io.kubernetes.client.models.V1PersistentVolumeClaim;
 import io.kubernetes.client.models.V1PersistentVolumeClaimList;
 import io.kubernetes.client.models.V1PersistentVolumeClaimSpec;
 import io.kubernetes.client.models.V1PersistentVolumeClaimStatus;
 import io.kubernetes.client.models.V1Pod;
-import io.kubernetes.client.models.V1PodAffinityTerm;
-import io.kubernetes.client.models.V1PodAntiAffinity;
 import io.kubernetes.client.models.V1PodCondition;
-import io.kubernetes.client.models.V1PodSpec;
 import io.kubernetes.client.models.V1ResourceRequirements;
 import io.kubernetes.client.models.V1SecurityContext;
 import io.kubernetes.client.models.V1Status;
-import io.kubernetes.client.models.V1Toleration;
 import io.kubernetes.client.models.V1Volume;
 import io.kubernetes.client.models.V1VolumeMount;
 import io.kubernetes.client.models.V1VolumeProjection;
-import io.kubernetes.client.models.V1WeightedPodAffinityTerm;
 import io.kubernetes.client.util.Watch;
 import net.boomerangplatform.error.BoomerangException;
 import net.boomerangplatform.kube.exception.KubeRuntimeException;
 import net.boomerangplatform.model.TaskConfiguration;
 import net.boomerangplatform.model.TaskDeletionEnum;
-import net.boomerangplatform.service.ConfigurationService;
 
 public abstract class AbstractKubeServiceImpl implements AbstractKubeService { // NOSONAR
 
@@ -171,7 +159,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   private String bmrgProduct;
 
   @Autowired
-  private ConfigurationService configurationService;
+  protected HelperKubeServiceImpl helperKubeService;
 
   private ApiClient apiClient; // NOSONAR
 
@@ -179,35 +167,6 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
       String workflowId, String workflowActivityId, String taskActivityId, String taskName,
       String taskId, List<String> arguments, Map<String, String> taskProperties, String image,
       String command, TaskConfiguration taskConfiguration);
-
-// Used by LogServiceImpl as well 
-  public String getPrefixJob() {
-    return bmrgProduct + "-" + TIER;
-  }
-  
-  protected String getPrefixPVC() {
-    return bmrgProduct + "-pvc";
-  }
-  
-  protected String getPrefixCFGMAP() {
-    return bmrgProduct + "-cfg";
-  }
-  
-  protected String getPrefixVol() {
-    return bmrgProduct + "-vol";
-  }
-  
-  protected String getPrefixVolData() {
-    return getPrefixVol() + "-data";
-  }
-  
-  protected String getPrefixVolProps() {
-    return getPrefixVol() + "-props";
-  }
-  
-  protected String getPrefixVolCache() {
-    return getPrefixVol() + "-cache";
-  }
 
   @Override
   public V1Job createJob(boolean createLifecycle, String workflowName, String workflowId,
@@ -257,7 +216,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
 
   public V1Job watchJob(boolean watchLifecycle, String workflowId, String workflowActivityId,
       String taskId) {
-    String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
+    String labelSelector = helperKubeService.getLabelSelector(workflowId, workflowActivityId, taskId);
     V1Job jobResult = null;
 
     // Since upgrade to Java11 the watcher stops listening for events (irrespective of timeout) and
@@ -383,7 +342,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   @Override
   public String getPodLog(String workflowId, String workflowActivityId, String taskId,
       String taskActivityId) {
-    String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
+    String labelSelector = helperKubeService.getLabelSelector(workflowId, workflowActivityId, taskId);
 
     PodLogs logs = new PodLogs();
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -410,7 +369,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   }
 
   public boolean isKubePodAvailable(String workflowId, String workflowActivityId, String taskId) {
-    String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
+    String labelSelector = helperKubeService.getLabelSelector(workflowId, workflowActivityId, taskId);
 
     try {
       List<V1Pod> allPods =
@@ -436,7 +395,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
 
     LOGGER.info("Stream logs from Kubernetes");
 
-    String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
+    String labelSelector = helperKubeService.getLabelSelector(workflowId, workflowActivityId, taskId);
     StreamingResponseBody responseBody = null;
     try {
       Watch<V1Pod> watch = createPodWatch(labelSelector, getCoreApi());
@@ -468,13 +427,13 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   
   @Override
   public V1PersistentVolumeClaim createWorkspacePVC(String workspaceName, String workspaceId, String pvcSize) throws ApiException {
-    return createPVC(createWorkspaceAnnotations(workspaceName, workspaceId), createWorkspaceLabels(workspaceId), pvcSize);
+    return createPVC(helperKubeService.createWorkspaceAnnotations(workspaceName, workspaceId), helperKubeService.createWorkspaceLabels(workspaceId), pvcSize);
   }
   
   @Override
   public V1PersistentVolumeClaim createWorkflowPVC(String workflowName, String workflowId,
       String workflowActivityId, String pvcSize) throws ApiException {
-    return createPVC(createAnnotations(workflowName, workflowId, workflowActivityId, null), createLabels(workflowId, workflowActivityId, null), pvcSize);
+    return createPVC(helperKubeService.createAnnotations(workflowName, workflowId, workflowActivityId, null), helperKubeService.createLabels(workflowId, workflowActivityId, null), pvcSize);
   }
 
   private V1PersistentVolumeClaim createPVC(Map<String, String> annotations, Map<String, String> labels, String pvcSize) throws ApiException {
@@ -485,7 +444,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     V1ObjectMeta metadata = new V1ObjectMeta();
     metadata.annotations(annotations);
     metadata.labels(labels);
-    metadata.generateName(getPrefixPVC() + "-");
+    metadata.generateName(helperKubeService.getPrefixPVC() + "-");
     body.metadata(metadata);
 
     // Create PVC Spec
@@ -511,13 +470,13 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   
   @Override
   public V1PersistentVolumeClaimStatus watchWorkspacePVC(String workspaceId) {
-    return watchPVC(getWorkspaceLabelSelector(workspaceId));
+    return watchPVC(helperKubeService.getWorkspaceLabelSelector(workspaceId));
     
   }
   
   @Override
   public V1PersistentVolumeClaimStatus watchWorkflowPVC(String workflowId, String workflowActivityId) {
-    return watchPVC(getLabelSelector(workflowId, workflowActivityId, null));
+    return watchPVC(helperKubeService.getLabelSelector(workflowId, workflowActivityId, null));
   }
 
   private V1PersistentVolumeClaimStatus watchPVC(String labelSelector) {
@@ -581,12 +540,12 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   
   @Override
   public V1Status deleteWorkspacePVC(String workspaceId) {
-    return deletePVC(getWorkspaceLabelSelector(workspaceId));
+    return deletePVC(helperKubeService.getWorkspaceLabelSelector(workspaceId));
   }
   
   @Override
   public V1Status deleteWorkflowPVC(String workflowId, String workflowActivityId) {
-    return deletePVC(getLabelSelector(workflowId, workflowActivityId, null));
+    return deletePVC(helperKubeService.getLabelSelector(workflowId, workflowActivityId, null));
   }
 
   private V1Status deletePVC(String labelSelector) {
@@ -619,7 +578,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
 
   protected String getJobName(boolean onlyOnSuccess, String workflowId, String workflowActivityId,
       String taskId) {
-    String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
+    String labelSelector = helperKubeService.getLabelSelector(workflowId, workflowActivityId, taskId);
 
     try {
       V1JobList listOfJobs =
@@ -700,7 +659,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
 
   @Override
   public V1ConfigMap watchConfigMap(String workflowId, String workflowActivityId, String taskId) {
-    String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
+    String labelSelector = helperKubeService.getLabelSelector(workflowId, workflowActivityId, taskId);
 
     try {
       Watch<V1ConfigMap> watch = Watch.createWatch(createWatcherApiClient(),
@@ -720,7 +679,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     V1ConfigMap wfConfigMap = getConfigMap(workflowId, workflowActivityId, null);
     String fileName = taskName + ".output.properties";
     patchConfigMap(getConfigMapName(wfConfigMap), fileName,
-        getConfigMapDataProp(wfConfigMap, fileName), createConfigMapProp(properties));
+        getConfigMapDataProp(wfConfigMap, fileName), helperKubeService.createConfigMapProp(properties));
   }
 
   @Override
@@ -768,13 +727,13 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
   
   @Override
   public boolean checkWorkspacePVCExists(String workspaceId, boolean failIfNotBound) {
-    return checkPVCExists(getWorkspaceLabelSelector(workspaceId), failIfNotBound);
+    return checkPVCExists(helperKubeService.getWorkspaceLabelSelector(workspaceId), failIfNotBound);
   }
 
   @Override
   public boolean checkWorkflowPVCExists(String workflowId, String workflowActivityId, String taskId,
       boolean failIfNotBound) {
-    return checkPVCExists(getLabelSelector(workflowId, workflowActivityId, taskId), failIfNotBound);
+    return checkPVCExists(helperKubeService.getLabelSelector(workflowId, workflowActivityId, taskId), failIfNotBound);
   }
   
   private boolean checkPVCExists(String labelSelector, boolean failIfNotBound) {
@@ -791,56 +750,10 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     return isPVCExists;
   }
 
-  protected List<V1EnvVar> createProxyEnvVars() {
-    List<V1EnvVar> proxyEnvVars = new ArrayList<>();
-
-    final String proxyUrl = "http://" + proxyHost + ":" + proxyPort;
-    proxyEnvVars.add(createEnvVar("PROXY_HOST", proxyHost));
-    proxyEnvVars.add(createEnvVar("PROXY_PORT", proxyPort));
-    proxyEnvVars.add(createEnvVar("HTTP_PROXY", proxyUrl));
-    proxyEnvVars.add(createEnvVar("HTTPS_PROXY", proxyUrl));
-    proxyEnvVars.add(createEnvVar("http_proxy", proxyUrl));
-    proxyEnvVars.add(createEnvVar("https_proxy", proxyUrl));
-    proxyEnvVars.add(createEnvVar("NO_PROXY", proxyIgnore));
-    proxyEnvVars.add(createEnvVar("no_proxy", proxyIgnore));
-    proxyEnvVars.add(createEnvVar("use_proxy", "on"));
-
-    return proxyEnvVars;
-  }
-
-  protected V1EnvVar createEnvVar(String key, String value) {
-    V1EnvVar envVar = new V1EnvVar();
-    envVar.setName(key);
-    envVar.setValue(value);
-    return envVar;
-  }
-
-  protected String createConfigMapProp(Map<String, String> properties) {
-    LOGGER.info("Building ConfigMap Body");
-    Properties props = new Properties();
-    StringWriter propsSW = new StringWriter();
-    if (properties != null && !properties.isEmpty()) {
-      properties.forEach((key, value) -> {
-        String valueStr = value != null ? value : "";
-        LOGGER.info("  " + key + "=" + valueStr);
-        props.setProperty(key, valueStr);
-      });
-    }
-
-    try {
-      props.store(propsSW, null);
-      LOGGER.info("" + propsSW.toString());
-    } catch (IOException ex) {
-      LOGGER.error(EXCEPTION, ex);
-    }
-
-    return propsSW.toString();
-  }
-
   protected V1ConfigMap getConfigMap(String workflowId, String workflowActivityId, String taskId) {
     V1ConfigMap configMap = null;
 
-    String labelSelector = getLabelSelector(workflowId, workflowActivityId, taskId);
+    String labelSelector = helperKubeService.getLabelSelector(workflowId, workflowActivityId, taskId);
     try {
       V1ConfigMapList configMapList =
           getCoreApi().listNamespacedConfigMap(kubeNamespace, kubeApiIncludeuninitialized,
@@ -951,53 +864,6 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     return container;
   }
 
-  /*
-   * Passes through optional method inputs to the sub methods which need to handle this.
-   */
-  protected V1ObjectMeta getMetadata(String workflowName, String workflowId,
-      String workflowActivityId, String taskId, String generateName) {
-    V1ObjectMeta metadata = new V1ObjectMeta();
-    metadata.annotations(createAnnotations(workflowName, workflowId, workflowActivityId, taskId));
-    metadata.labels(createLabels(workflowId, workflowActivityId, taskId));
-    if (StringUtils.isNotBlank(generateName)) {
-      metadata.generateName(generateName + "-");
-    }
-    return metadata;
-  }
-
-  /*
-   * Sets the tolerations and nodeSelector to match the dedicated node taints and node-role label
-   */
-  protected void getTolerationAndSelector(V1PodSpec podSpec) {
-    V1Toleration nodeTolerationItem = new V1Toleration();
-    nodeTolerationItem.key("dedicated");
-    nodeTolerationItem.value("bmrg-worker");
-    nodeTolerationItem.effect("NoSchedule");
-    nodeTolerationItem.operator("Equal");
-    podSpec.addTolerationsItem(nodeTolerationItem);
-    podSpec.putNodeSelectorItem("node-role.kubernetes.io/bmrg-worker", "true");
-  }
-
-  /*
-   * Sets the pod anti affinity
-   */
-  protected void getPodAntiAffinity(V1PodSpec podSpec, Map<String, String> labels) {
-    V1LabelSelector labelSelector = new V1LabelSelector();
-    labelSelector.setMatchLabels(labels);
-    V1PodAffinityTerm podAntiAffinityPreferredTerm = new V1PodAffinityTerm();
-    podAntiAffinityPreferredTerm.setLabelSelector(labelSelector);
-    podAntiAffinityPreferredTerm.setTopologyKey("kubernetes.io/hostname");
-    V1WeightedPodAffinityTerm podAntiAffinityPreferred = new V1WeightedPodAffinityTerm();
-    podAntiAffinityPreferred.setWeight(100);
-    podAntiAffinityPreferred.setPodAffinityTerm(podAntiAffinityPreferredTerm);
-    V1PodAntiAffinity podAntiAffinity = new V1PodAntiAffinity();
-    podAntiAffinity
-        .addPreferredDuringSchedulingIgnoredDuringExecutionItem(podAntiAffinityPreferred);
-    V1Affinity podAffinity = new V1Affinity();
-    podAffinity.setPodAntiAffinity(podAntiAffinity);
-    podSpec.affinity(podAffinity);
-  }
-
   private boolean isPVCAvailable(boolean failIfNotBound,
       V1PersistentVolumeClaimList persistentVolumeClaimList) {
     if (!persistentVolumeClaimList.getItems().isEmpty()) {
@@ -1015,32 +881,6 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     }
 
     return false;
-  }
-
-  private ApiClient createWatcherApiClient() {
-    // This leverages the default ApiClient in the KubeConfiguration.java Class and overrides the
-    // debugging to false as Watch is (for now) incompatible with debugging mode active.
-    // Watches will not return data until the watch connection terminates
-    // io.kubernetes.client.ApiException: Watch is incompatible with debugging mode active.
-    ApiClient watcherClient =
-        io.kubernetes.client.Configuration.getDefaultApiClient().setDebugging(false);
-    watcherClient.getHttpClient().setReadTimeout(kubeApiTimeOut.longValue(), TimeUnit.SECONDS);
-    return watcherClient;
-
-  }
-
-  protected Watch<V1Job> createJobWatch(BatchV1Api api, String labelSelector) throws ApiException {
-    return Watch.createWatch(createWatcherApiClient(),
-        api.listNamespacedJobCall(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null,
-            null, labelSelector, null, null, null, true, null, null),
-        new TypeToken<Watch.Response<V1Job>>() {}.getType());
-  }
-
-  protected Watch<V1Pod> createPodWatch(String labelSelector, CoreV1Api api) throws ApiException {
-    return Watch.createWatch(createWatcherApiClient(),
-        api.listNamespacedPodCall(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null,
-            null, labelSelector, null, null, null, true, null, null),
-        new TypeToken<Watch.Response<V1Pod>>() {}.getType());
   }
 
 
@@ -1075,6 +915,16 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     }
 
     return jobResult;
+  }
+  
+  protected List<V1Pod> getPods(String labelSelector) throws ApiException {
+    List<V1Pod> pods = null;
+
+    getCoreApi().listNamespacedPod(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null,
+        null, labelSelector, null, null, TIMEOUT_ONE_MINUTE, false).getItems();
+
+    return pods;
+
   }
 
   private String getConfigMapDataProp(V1ConfigMap configMap, String key) {
@@ -1162,15 +1012,15 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     V1ConfigMap body = new V1ConfigMap();
 
     body.metadata(
-        getMetadata(workflowName, workflowId, workflowActivityId, taskId, getPrefixCFGMAP()));
+        helperKubeService.getMetadata(workflowName, workflowId, workflowActivityId, taskId, helperKubeService.getPrefixCFGMAP()));
 
     // Create Data
     Map<String, String> inputsWithFixedKeys = new HashMap<>();
     Map<String, String> sysProps = new HashMap<>();
     sysProps.put("task.id", taskId);
     sysProps.put("task.name", taskName);
-    inputsWithFixedKeys.put("task.input.properties", createConfigMapProp(inputProps));
-    inputsWithFixedKeys.put("task.system.properties", createConfigMapProp(sysProps));
+    inputsWithFixedKeys.put("task.input.properties", helperKubeService.createConfigMapProp(inputProps));
+    inputsWithFixedKeys.put("task.system.properties", helperKubeService.createConfigMapProp(sysProps));
     body.data(inputsWithFixedKeys);
     return body;
   }
@@ -1180,7 +1030,7 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     V1ConfigMap body = new V1ConfigMap();
 
     body.metadata(
-        getMetadata(workflowName, workflowId, workflowActivityId, null, getPrefixCFGMAP()));
+        helperKubeService.getMetadata(workflowName, workflowId, workflowActivityId, null, helperKubeService.getPrefixCFGMAP()));
 
     // Create Data
     Map<String, String> inputsWithFixedKeys = new HashMap<>();
@@ -1189,8 +1039,8 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     sysProps.put("workflow.name", workflowName);
     sysProps.put("workflow.id", workflowId);
     sysProps.put("controller.service.url", bmrgControllerServiceURL);
-    inputsWithFixedKeys.put("workflow.input.properties", createConfigMapProp(inputProps));
-    inputsWithFixedKeys.put("workflow.system.properties", createConfigMapProp(sysProps));
+    inputsWithFixedKeys.put("workflow.input.properties", helperKubeService.createConfigMapProp(inputProps));
+    inputsWithFixedKeys.put("workflow.system.properties", helperKubeService.createConfigMapProp(sysProps));
     body.data(inputsWithFixedKeys);
     return body;
   }
@@ -1211,82 +1061,29 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     return this.apiClient;
   }
 
-  protected String getTaskDebug(TaskConfiguration taskConfiguration) {
-    return taskConfiguration.getDebug() != null ? taskConfiguration.getDebug().toString()
-        : configurationService.getTaskDebug().toString();
+  private ApiClient createWatcherApiClient() {
+    // This leverages the default ApiClient in the KubeConfiguration.java Class and overrides the
+    // debugging to false as Watch is (for now) incompatible with debugging mode active.
+    // Watches will not return data until the watch connection terminates
+    // io.kubernetes.client.ApiException: Watch is incompatible with debugging mode active.
+    ApiClient watcherClient =
+        io.kubernetes.client.Configuration.getDefaultApiClient().setDebugging(false);
+    watcherClient.getHttpClient().setReadTimeout(kubeApiTimeOut.longValue(), TimeUnit.SECONDS);
+    return watcherClient;
+
   }
 
-  protected Map<String, String> createAntiAffinityLabels() {
-    Map<String, String> labels = new HashMap<>();
-    labels.put("boomerang.io/product", bmrgProduct);
-    labels.put("boomerang.io/tier", TIER);
-    return labels;
+  protected Watch<V1Job> createJobWatch(BatchV1Api api, String labelSelector) throws ApiException {
+    return Watch.createWatch(createWatcherApiClient(),
+        api.listNamespacedJobCall(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null,
+            null, labelSelector, null, null, null, true, null, null),
+        new TypeToken<Watch.Response<V1Job>>() {}.getType());
   }
 
-  protected Map<String, String> createLabels(String workflowId, String activityId, String taskId) {
-    Map<String, String> labels = new HashMap<>();
-    labels.put("app.kubernetes.io/name", TIER);
-    labels.put("app.kubernetes.io/instance", TIER + "-" + workflowId);
-    labels.put("app.kubernetes.io/part-of", bmrgProduct);
-    labels.put("app.kubernetes.io/managed-by", "controller");
-    labels.put("boomerang.io/product", bmrgProduct);
-    labels.put("boomerang.io/tier", TIER);
-    Optional.ofNullable(workflowId).ifPresent(str -> labels.put("workflow-id", str));
-    Optional.ofNullable(activityId).ifPresent(str -> labels.put("activity-id", str));
-    Optional.ofNullable(taskId).ifPresent(str -> labels.put("task-id", str));
-    return labels;
-  }
-  
-  protected Map<String, String> createWorkspaceLabels(String workspaceId) {
-    Map<String, String> labels = new HashMap<>();
-    labels.put("app.kubernetes.io/name", TIER);
-    labels.put("app.kubernetes.io/instance", TIER + "-" + workspaceId);
-    labels.put("app.kubernetes.io/part-of", bmrgProduct);
-    labels.put("app.kubernetes.io/managed-by", "controller");
-    labels.put("boomerang.io/product", bmrgProduct);
-    labels.put("boomerang.io/tier", TIER);
-    labels.put("boomerang.io/workspace-id", workspaceId);
-    return labels;
-  }
-
-  protected Map<String, String> createAnnotations(String workflowName, String workflowId,
-      String activityId, String taskId) {
-    Map<String, String> annotations = new HashMap<>();
-    annotations.put("boomerang.io/workflow-name", workflowName);
-    annotations.put("boomerang.io/selector", getLabelSelector(workflowId, activityId, taskId));
-    return annotations;
-  }
-  
-  protected Map<String, String> createWorkspaceAnnotations(String workspaceName, String workspaceId) {
-    Map<String, String> annotations = new HashMap<>();
-    annotations.put("boomerang.io/workspace-name", workspaceName);
-    annotations.put("boomerang.io/selector", getWorkspaceLabelSelector(workspaceId));
-    return annotations;
-  }
-
-  protected String getLabelSelector(String workflowId, String activityId, String taskId) {
-    StringBuilder labelSelector = new StringBuilder("boomerang.io/product=" + bmrgProduct + ",boomerang.io/tier=" + TIER);
-    Optional.ofNullable(workflowId).ifPresent(str -> labelSelector.append(",workflow-id=" + str));
-    Optional.ofNullable(activityId).ifPresent(str -> labelSelector.append(",activity-id=" + str));
-    Optional.ofNullable(taskId).ifPresent(str -> labelSelector.append(",task-id=" + str));
-
-    LOGGER.info("  labelSelector: " + labelSelector.toString());
-    return labelSelector.toString();
-  }
-  
-  protected String getWorkspaceLabelSelector(String workspaceId) {
-    StringBuilder labelSelector = new StringBuilder("boomerang.io/product=" + bmrgProduct + ",boomerang.io/tier=" + TIER + ",boomerang.io/workspace-id=" + workspaceId);
-
-    LOGGER.info("  labelSelector: " + labelSelector.toString());
-    return labelSelector.toString();
-  }
-
-  protected List<V1EnvVar> createEnvVars(String workflowId,String activityId,String taskName,String taskId){
-      List<V1EnvVar> envVars = new ArrayList<>();
-      envVars.add(createEnvVar("BMRG_WORKFLOW_ID", workflowId));
-      envVars.add(createEnvVar("BMRG_ACTIVITY_ID", activityId));
-      envVars.add(createEnvVar("BMRG_TASK_ID", taskId));
-      envVars.add(createEnvVar("BMRG_TASK_NAME", taskName.replace(" ", "")));
-      return envVars;
+  protected Watch<V1Pod> createPodWatch(String labelSelector, CoreV1Api api) throws ApiException {
+    return Watch.createWatch(createWatcherApiClient(),
+        api.listNamespacedPodCall(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null,
+            null, labelSelector, null, null, null, true, null, null),
+        new TypeToken<Watch.Response<V1Pod>>() {}.getType());
   }
 }
