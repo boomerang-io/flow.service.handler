@@ -8,14 +8,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import net.boomerangplatform.model.Response;
-import net.boomerangplatform.service.AbstractControllerService;
+import net.boomerangplatform.service.ControllerService;
 
 @RestController
 @RequestMapping("/controller")
 public class PropertyController {
 
   @Autowired
-  private AbstractControllerService controllerService;
+  private ControllerService controllerService;
 
   @PatchMapping(value = "/property/set")
   public Response setOutPutProperty(

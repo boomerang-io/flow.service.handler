@@ -7,14 +7,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import net.boomerangplatform.model.Response;
 import net.boomerangplatform.model.Workspace;
-import net.boomerangplatform.service.AbstractControllerService;
+import net.boomerangplatform.service.ControllerService;
 
 @RestController
 @RequestMapping("/controller/workspace")
 public class WorkspaceController {
 
   @Autowired
-  private AbstractControllerService controllerService;
+  private ControllerService controllerService;
 
   @PostMapping(value = "/create")
   public Response createWorkspace(@RequestBody Workspace workspace) {

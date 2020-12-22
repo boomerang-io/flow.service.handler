@@ -7,14 +7,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import net.boomerangplatform.model.Response;
 import net.boomerangplatform.model.Workflow;
-import net.boomerangplatform.service.AbstractControllerService;
+import net.boomerangplatform.service.ControllerService;
 
 @RestController
 @RequestMapping("/controller/workflow")
 public class WorkflowController {
 
   @Autowired
-  private AbstractControllerService controllerService;
+  private ControllerService controllerService;
 
   @PostMapping(value = "/create")
   public Response createWorkflow(@RequestBody Workflow workflow) {

@@ -8,7 +8,7 @@ import net.boomerangplatform.model.TaskResponse;
 import net.boomerangplatform.model.Workflow;
 import net.boomerangplatform.model.Workspace;
 
-public abstract interface AbstractControllerService {
+public abstract interface ControllerService {
 
 	TaskResponse executeTask(Task task);
 
