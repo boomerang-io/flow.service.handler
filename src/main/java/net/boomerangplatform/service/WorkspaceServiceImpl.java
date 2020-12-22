@@ -11,7 +11,7 @@ import net.boomerangplatform.kube.service.AbstractKubeServiceImpl;
 import net.boomerangplatform.model.Response;
 import net.boomerangplatform.model.Workspace;
 
-public abstract class WorkspaceServiceImpl implements WorkspaceService {
+public class WorkspaceServiceImpl implements WorkspaceService {
 
   private static final Logger LOGGER = LogManager.getLogger(WorkspaceServiceImpl.class);
 

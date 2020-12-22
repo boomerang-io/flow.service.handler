@@ -11,7 +11,7 @@ import net.boomerangplatform.kube.service.AbstractKubeServiceImpl;
 import net.boomerangplatform.model.Response;
 import net.boomerangplatform.model.Workflow;
 
-public abstract class WorklowServiceImpl implements WorkflowService {
+public class WorklowServiceImpl implements WorkflowService {
 
   private static final Logger LOGGER = LogManager.getLogger(WorklowServiceImpl.class);
     @Autowired

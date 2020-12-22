@@ -4,13 +4,12 @@ import java.io.PrintWriter;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import javax.servlet.http.HttpServletResponse;
-
+import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
-import org.apache.http.HttpEntity;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.elasticsearch.action.search.ClearScrollRequest;
@@ -35,6 +34,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import net.boomerangplatform.kube.exception.KubeRuntimeException;
 import net.boomerangplatform.kube.service.AbstractKubeServiceImpl;
+import net.boomerangplatform.kube.service.LogKubeServiceImpl;
 
 @Service
 public class LogServiceImpl implements LogService {
@@ -53,6 +53,9 @@ public class LogServiceImpl implements LogService {
   @Autowired
   private AbstractKubeServiceImpl kubeService;
 
+  @Autowired
+  private LogKubeServiceImpl logKubeService;
+
   @Value("${kube.worker.logging.host}")
   protected String lokiHost;
 
@@ -65,9 +68,9 @@ public class LogServiceImpl implements LogService {
       String workflowActivityId, String taskId, String taskActivityId) {
     StreamingResponseBody srb = null;
     try {
-      if (kubeService.isKubePodAvailable(workflowId, workflowActivityId, taskId)
+      if (logKubeService.isKubePodAvailable(workflowId, workflowActivityId, taskId)
           || "default".equals(loggingType)) {
-        srb = kubeService.streamPodLog(response, workflowId, workflowActivityId, taskId,
+        srb = logKubeService.streamPodLog(response, workflowId, workflowActivityId, taskId,
             taskActivityId);
       } else if ("elastic".equals(loggingType)) {
         return streamLogsFromElastic(taskActivityId);

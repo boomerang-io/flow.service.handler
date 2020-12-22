@@ -16,7 +16,7 @@ import net.boomerangplatform.model.TaskDeletionEnum;
 import net.boomerangplatform.model.TaskResponse;
 import net.boomerangplatform.model.TaskTemplate;
 
-public abstract class ControllerServiceImpl implements ControllerService {
+public class ControllerServiceImpl implements ControllerService {
 
   private static final Logger LOGGER = LogManager.getLogger(ControllerServiceImpl.class);
 
