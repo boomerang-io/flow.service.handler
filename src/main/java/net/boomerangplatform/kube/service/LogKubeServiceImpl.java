@@ -19,7 +19,7 @@ import net.boomerangplatform.kube.exception.KubeRuntimeException;
 
 public class LogKubeServiceImpl implements LogKubeService {
 
-  private static final Logger LOGGER = LogManager.getLogger(AbstractKubeService.class);
+  private static final Logger LOGGER = LogManager.getLogger(KubeService.class);
 
   private static final int BYTE_SIZE = 1024;
 
@@ -27,7 +27,7 @@ public class LogKubeServiceImpl implements LogKubeService {
   private HelperKubeServiceImpl helperKubeService;
 
   @Autowired
-  private AbstractKubeServiceImpl kubeService;
+  private KubeServiceImpl kubeService;
 
   @Override
   public String getPodLog(String workflowId, String workflowActivityId, String taskId,

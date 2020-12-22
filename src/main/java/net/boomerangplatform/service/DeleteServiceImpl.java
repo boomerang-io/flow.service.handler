@@ -3,14 +3,14 @@ package net.boomerangplatform.service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import net.boomerangplatform.kube.service.AbstractKubeServiceImpl;
+import net.boomerangplatform.kube.service.KubeServiceImpl;
 import net.boomerangplatform.model.TaskDeletionEnum;
 
 @Service
 public class DeleteServiceImpl implements DeleteService {
   
   @Autowired
-  private AbstractKubeServiceImpl kubeService;
+  private KubeServiceImpl kubeService;
 
   /*
    * Implement asynchronous delete after a period of time to ensure

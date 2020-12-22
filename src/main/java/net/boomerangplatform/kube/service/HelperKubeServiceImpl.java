@@ -27,7 +27,7 @@ import net.boomerangplatform.service.ConfigurationService;
 
 public class HelperKubeServiceImpl implements HelperKubeService {
 
-  private static final Logger LOGGER = LogManager.getLogger(AbstractKubeService.class);
+  private static final Logger LOGGER = LogManager.getLogger(KubeService.class);
   
   protected static final String TIER = "worker";
 
@@ -66,18 +66,6 @@ public class HelperKubeServiceImpl implements HelperKubeService {
   
   protected String getPrefixVol() {
     return bmrgProduct + "-vol";
-  }
-  
-  protected String getPrefixVolData() {
-    return getPrefixVol() + "-data";
-  }
-  
-  protected String getPrefixVolProps() {
-    return getPrefixVol() + "-props";
-  }
-  
-  protected String getPrefixVolCache() {
-    return getPrefixVol() + "-cache";
   }
 
   protected List<V1EnvVar> createProxyEnvVars() {

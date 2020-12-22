@@ -8,7 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import net.boomerangplatform.error.BoomerangException;
 import net.boomerangplatform.kube.exception.KubeRuntimeException;
-import net.boomerangplatform.kube.service.AbstractKubeServiceImpl;
+import net.boomerangplatform.kube.service.KubeServiceImpl;
 import net.boomerangplatform.model.Response;
 import net.boomerangplatform.model.Task;
 import net.boomerangplatform.model.TaskCustom;
@@ -24,7 +24,7 @@ public class ControllerServiceImpl implements ControllerService {
 	private ConfigurationServiceImpl configurationService;
 
     @Autowired
-    private AbstractKubeServiceImpl kubeService;
+    private KubeServiceImpl kubeService;
 
     @Autowired
     private DeleteServiceImpl deleteService;

@@ -7,7 +7,7 @@ import org.springframework.http.HttpStatus;
 import io.kubernetes.client.ApiException;
 import net.boomerangplatform.error.BoomerangException;
 import net.boomerangplatform.kube.exception.KubeRuntimeException;
-import net.boomerangplatform.kube.service.AbstractKubeServiceImpl;
+import net.boomerangplatform.kube.service.KubeServiceImpl;
 import net.boomerangplatform.model.Response;
 import net.boomerangplatform.model.Workspace;
 
@@ -16,7 +16,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
   private static final Logger LOGGER = LogManager.getLogger(WorkspaceServiceImpl.class);
 
     @Autowired
-    private AbstractKubeServiceImpl kubeService;
+    private KubeServiceImpl kubeService;
 	
     @Override
     public Response createWorkspace(Workspace workspace) {

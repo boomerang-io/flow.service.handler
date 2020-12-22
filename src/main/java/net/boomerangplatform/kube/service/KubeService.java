@@ -16,7 +16,7 @@ import io.kubernetes.client.models.V1Status;
 import net.boomerangplatform.model.TaskConfiguration;
 import net.boomerangplatform.model.TaskDeletionEnum;
 
-public interface AbstractKubeService {
+public interface KubeService {
 
   V1ConfigMap createWorkflowConfigMap(
       String workflowName, String workflowId, String workflowActivityId, Map<String, String> data);

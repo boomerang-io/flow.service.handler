@@ -3,6 +3,7 @@ package net.boomerangplatform.kube.service;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Type;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -45,16 +46,25 @@ import io.kubernetes.client.models.V1ConfigMapProjection;
 import io.kubernetes.client.models.V1Container;
 import io.kubernetes.client.models.V1ContainerStatus;
 import io.kubernetes.client.models.V1DeleteOptions;
+import io.kubernetes.client.models.V1EmptyDirVolumeSource;
+import io.kubernetes.client.models.V1EnvVar;
+import io.kubernetes.client.models.V1HostAlias;
 import io.kubernetes.client.models.V1Job;
 import io.kubernetes.client.models.V1JobList;
+import io.kubernetes.client.models.V1JobSpec;
 import io.kubernetes.client.models.V1JobStatus;
+import io.kubernetes.client.models.V1LocalObjectReference;
 import io.kubernetes.client.models.V1ObjectMeta;
 import io.kubernetes.client.models.V1PersistentVolumeClaim;
 import io.kubernetes.client.models.V1PersistentVolumeClaimList;
 import io.kubernetes.client.models.V1PersistentVolumeClaimSpec;
 import io.kubernetes.client.models.V1PersistentVolumeClaimStatus;
+import io.kubernetes.client.models.V1PersistentVolumeClaimVolumeSource;
 import io.kubernetes.client.models.V1Pod;
 import io.kubernetes.client.models.V1PodCondition;
+import io.kubernetes.client.models.V1PodSpec;
+import io.kubernetes.client.models.V1PodTemplateSpec;
+import io.kubernetes.client.models.V1ProjectedVolumeSource;
 import io.kubernetes.client.models.V1ResourceRequirements;
 import io.kubernetes.client.models.V1SecurityContext;
 import io.kubernetes.client.models.V1Status;
@@ -67,9 +77,9 @@ import net.boomerangplatform.kube.exception.KubeRuntimeException;
 import net.boomerangplatform.model.TaskConfiguration;
 import net.boomerangplatform.model.TaskDeletionEnum;
 
-public abstract class AbstractKubeServiceImpl implements AbstractKubeService { // NOSONAR
+public class KubeServiceImpl implements KubeService {
 
-  private static final Logger LOGGER = LogManager.getLogger(AbstractKubeService.class);
+  private static final Logger LOGGER = LogManager.getLogger(KubeService.class);
   
   protected static final String TIER = "worker";
 
@@ -163,10 +173,204 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
 
   private ApiClient apiClient; // NOSONAR
 
-  protected abstract V1Job createJobBody(boolean createLifecycle, String workflowName,
-      String workflowId, String workflowActivityId, String taskActivityId, String taskName,
-      String taskId, List<String> arguments, Map<String, String> taskProperties, String image,
-      String command, TaskConfiguration taskConfiguration);
+  @Value("${kube.lifecycle.image}")
+  private String kubeLifecycleImage;
+  
+  @Value("${kube.resource.limit.ephemeral-storage}")
+  private String kubeResourceLimitEphemeralStorage;
+  
+  @Value("${kube.resource.request.ephemeral-storage}")
+  private String kubeResourceRequestEphemeralStorage;
+  
+  @Value("${kube.resource.limit.memory}")
+  private String kubeResourceLimitMemory;
+  
+  @Value("${kube.resource.request.memory}")
+  private String kubeResourceRequestMemory;
+  
+  @Value("${kube.worker.storage.data.memory}")
+  private Boolean kubeWorkerStorageDataMemory;
+
+  private V1Job createJobBody(boolean createLifecycle, String workflowName, String workflowId, String workflowActivityId, String taskActivityId,
+      String taskName, String taskId, List<String> arguments,
+      Map<String, String> taskProperties, String image, String command, TaskConfiguration taskConfiguration) {
+
+    // Initialize Job Body
+    V1Job body = new V1Job();
+    body.metadata(
+        helperKubeService.getMetadata(workflowName, workflowId, workflowActivityId, taskId, helperKubeService.getPrefixJob() + "-" + taskActivityId));
+
+    // Create Spec
+    V1JobSpec jobSpec = new V1JobSpec();
+    V1PodTemplateSpec templateSpec = new V1PodTemplateSpec();
+    V1PodSpec podSpec = new V1PodSpec();
+    V1Container container = getContainer(image, command);
+    List<V1Container> containerList = new ArrayList<>();
+
+    List<V1EnvVar> envVars = new ArrayList<>();
+    if (proxyEnabled) {
+      envVars.addAll(helperKubeService.createProxyEnvVars());
+    }
+    envVars.addAll(helperKubeService.createEnvVars(workflowId,workflowActivityId,taskName,taskId));
+    envVars.add(helperKubeService.createEnvVar("DEBUG", helperKubeService.getTaskDebug(taskConfiguration)));
+    envVars.add(helperKubeService.createEnvVar("CI", "true"));
+    container.env(envVars);
+    
+    container.args(arguments);
+    
+    /*
+     * Create a resource request and limit for ephemeral-storage
+     * Defaults to application.properties, can be overridden by user property.
+     */
+    V1ResourceRequirements resources = new V1ResourceRequirements();
+    resources.putRequestsItem("ephemeral-storage", new Quantity(kubeResourceRequestEphemeralStorage));
+    resources.putLimitsItem("ephemeral-storage", new Quantity(kubeResourceLimitEphemeralStorage));
+    
+    /*
+     * Create a resource request and limit for memory
+     * Defaults to application.properties, can be overridden by user property. Maximum of 32Gi.
+     */
+    resources.putRequestsItem("memory", new Quantity(kubeResourceRequestMemory));
+    String kubeResourceLimitMemoryProp = taskProperties.get("worker.resource.memory.size");
+    if (kubeResourceLimitMemoryProp != null && !(Integer.valueOf(kubeResourceLimitMemoryProp.replace("Gi", "")) > 32)) {
+        LOGGER.info("Setting Resource Memory Limit to " + kubeResourceLimitMemoryProp + "...");
+        resources.putLimitsItem("memory", new Quantity(kubeResourceLimitMemoryProp));
+    } else {
+        LOGGER.info("Setting Resource Memory Limit to default of: " + kubeResourceLimitMemory + " ...");
+        resources.putLimitsItem("memory", new Quantity(kubeResourceLimitMemory));
+    }
+    container.setResources(resources);
+    
+    /*
+     * Create volumes
+     * - /workspace for cross workflow persistence such as caches (optional if mounted prior)
+     * - /workflow for workflow based sharing between tasks (optional if mounted prior)
+     * - /props for mounting config_maps
+     * - /data for task storage (optional - needed if using in memory storage)
+     */
+    if (checkWorkspacePVCExists(workflowId, true)) {
+      container.addVolumeMountsItem(getVolumeMount(helperKubeService.getPrefixVol() + "-workspace", "/workspace"));
+      V1Volume workspaceVolume = getVolume(helperKubeService.getPrefixVol() + "-ws");
+      V1PersistentVolumeClaimVolumeSource workerVolumePVCSource =
+          new V1PersistentVolumeClaimVolumeSource();
+      workspaceVolume
+          .persistentVolumeClaim(workerVolumePVCSource.claimName(getPVCName(helperKubeService.getWorkspaceLabelSelector(workflowId))));
+      podSpec.addVolumesItem(workspaceVolume);
+    }
+    
+    if (!getPVCName(helperKubeService.getLabelSelector(workflowId, workflowActivityId, null)).isEmpty()) {
+      container.addVolumeMountsItem(getVolumeMount(helperKubeService.getPrefixVol() + "-workflow", "/workflow"));
+      V1Volume workerVolume = getVolume(helperKubeService.getPrefixVol() + "-wf");
+      V1PersistentVolumeClaimVolumeSource workerVolumePVCSource =
+          new V1PersistentVolumeClaimVolumeSource();
+      workerVolume.persistentVolumeClaim(
+          workerVolumePVCSource.claimName(getPVCName(helperKubeService.getLabelSelector(workflowId, workflowActivityId, null))));
+      podSpec.addVolumesItem(workerVolume);
+    }
+    
+    /*  The following code is integrated to the helm chart and CICD properties
+    *   It allows for containers that breach the standard ephemeral-storage size by off-loading to memory
+    *   See: https://kubernetes.io/docs/concepts/storage/volumes/#emptydir
+    */
+    container.addVolumeMountsItem(getVolumeMount(helperKubeService.getPrefixVol() + "-data", "/data"));
+    V1Volume dataVolume = getVolume(helperKubeService.getPrefixVol() + "-data");
+    V1EmptyDirVolumeSource emptyDir = new V1EmptyDirVolumeSource();
+    if (kubeWorkerStorageDataMemory && Boolean.valueOf(taskProperties.get("worker.storage.data.memory"))) {
+        LOGGER.info("Setting /data to in memory storage...");
+        emptyDir.setMedium("Memory");
+    }
+    dataVolume.emptyDir(emptyDir);
+    podSpec.addVolumesItem(dataVolume);
+    
+    container.addVolumeMountsItem(getVolumeMount(helperKubeService.getPrefixVol() + "-props", "/props"));
+
+    // Creation of Projected Volume with multiple ConfigMaps
+    V1Volume volumeProps = getVolume(helperKubeService.getPrefixVol() + "-props");
+    V1ProjectedVolumeSource projectedVolPropsSource = new V1ProjectedVolumeSource();
+    List<V1VolumeProjection> projectPropsVolumeList = new ArrayList<>();
+
+    // Add Worfklow Configmap Projected Volume
+    V1ConfigMap wfConfigMap = getConfigMap(workflowId, workflowActivityId, null);
+    if (wfConfigMap != null && !getConfigMapName(wfConfigMap).isEmpty()) {
+      projectPropsVolumeList.add(getVolumeProjection(wfConfigMap));
+    }
+
+    // Add Task Configmap Projected Volume
+    V1ConfigMap taskConfigMap = getConfigMap(null, workflowActivityId, taskId);
+    if (taskConfigMap != null && !getConfigMapName(taskConfigMap).isEmpty()) {
+      projectPropsVolumeList.add(getVolumeProjection(taskConfigMap));
+    }
+
+    // Add all configmap projected volume
+    projectedVolPropsSource.sources(projectPropsVolumeList);
+    volumeProps.projected(projectedVolPropsSource);
+    podSpec.addVolumesItem(volumeProps);
+    
+    /*
+     * The following code is for custom tasks only
+     */
+    if (createLifecycle) {
+      List<V1Container> initContainers = new ArrayList<>();
+      V1Container initContainer =
+          getContainer(kubeLifecycleImage, null)
+              .name("init-cntr")
+              .addVolumeMountsItem(getVolumeMount("lifecycle", "/lifecycle"))
+              .addArgsItem("lifecycle")
+              .addArgsItem("init");
+      initContainers.add(initContainer);
+      podSpec.setInitContainers(initContainers);
+      V1Container lifecycleContainer =
+          getContainer(kubeLifecycleImage, null)
+              .name("lifecycle-cntr")
+              .addVolumeMountsItem(getVolumeMount("lifecycle", "/lifecycle"))
+              .addArgsItem("lifecycle")
+              .addArgsItem("wait");
+        lifecycleContainer.env(helperKubeService.createEnvVars(workflowId,workflowActivityId,taskName,taskId));
+        containerList.add(lifecycleContainer);
+        container.addVolumeMountsItem(getVolumeMount("lifecycle", "/lifecycle"));
+        V1Volume lifecycleVol = getVolume("lifecycle");
+        V1EmptyDirVolumeSource emptyDir2 = new V1EmptyDirVolumeSource();
+        lifecycleVol.emptyDir(emptyDir2);
+        podSpec.addVolumesItem(lifecycleVol);
+    }
+    
+    if (kubeWorkerDedicatedNodes) {
+      helperKubeService.getTolerationAndSelector(podSpec);
+    }
+
+    helperKubeService.getPodAntiAffinity(podSpec, helperKubeService.createAntiAffinityLabels());
+
+    if (!kubeWorkerHostAliases.isEmpty()) {
+      Type listHostAliasType = new TypeToken<List<V1HostAlias>>() {}.getType();
+      List<V1HostAlias> hostAliasList =
+          new Gson().fromJson(kubeWorkerHostAliases, listHostAliasType);
+      podSpec.hostAliases(hostAliasList);
+    }
+
+    if (!kubeWorkerServiceAccount.isEmpty()) {
+      podSpec.serviceAccountName(kubeWorkerServiceAccount);
+    }
+
+    containerList.add(container);
+    podSpec.containers(containerList);
+    V1LocalObjectReference imagePullSecret = new V1LocalObjectReference();
+    imagePullSecret.name(kubeImagePullSecret);
+    List<V1LocalObjectReference> imagePullSecretList = new ArrayList<>();
+    imagePullSecretList.add(imagePullSecret);
+    podSpec.imagePullSecrets(imagePullSecretList);
+    podSpec.restartPolicy(kubeWorkerJobRestartPolicy);
+    templateSpec.spec(podSpec);
+    templateSpec.metadata(helperKubeService.getMetadata(workflowName, workflowId, workflowActivityId, taskId, null));
+
+    jobSpec.backoffLimit(kubeWorkerJobBackOffLimit);
+    jobSpec.template(templateSpec);
+    Integer ttl = ONE_DAY_IN_SECONDS * kubeWorkerJobTTLDays;
+    LOGGER.info("Setting Job TTL at " + ttl + " seconds");
+    jobSpec.setTtlSecondsAfterFinished(ttl);
+    body.spec(jobSpec);
+
+    return body;
+  }
 
   @Override
   public V1Job createJob(boolean createLifecycle, String workflowName, String workflowId,
