@@ -18,9 +18,9 @@ import net.boomerangplatform.model.TaskResponse;
 import net.boomerangplatform.model.TaskTemplate;
 
 @Service
-public class ControllerServiceImpl implements ControllerService {
+public class TaskServiceImpl implements TaskService {
 
-  private static final Logger LOGGER = LogManager.getLogger(ControllerServiceImpl.class);
+  private static final Logger LOGGER = LogManager.getLogger(TaskServiceImpl.class);
 
 	@Autowired
 	private ConfigurationServiceImpl configurationService;

@@ -6,11 +6,11 @@ import org.springframework.stereotype.Service;
 import net.boomerangplatform.model.Response;
 import net.boomerangplatform.model.Task;
 import net.boomerangplatform.model.TaskResponse;
-import net.boomerangplatform.service.ControllerService;
+import net.boomerangplatform.service.TaskService;
 
 @Service
 @Profile("mock")
-public class MockControllerService implements ControllerService {
+public class MockControllerService implements TaskService {
 
 	@Override
 	public TaskResponse executeTask(Task task) {

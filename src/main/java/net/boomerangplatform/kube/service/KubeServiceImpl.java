@@ -299,21 +299,25 @@ public class KubeServiceImpl implements KubeService {
       projectPropsVolumeList.add(getVolumeProjection(wfConfigMap));
     }
 
-    // Add Task Configmap Projected Volume
-    V1ConfigMap taskConfigMap = getConfigMap(null, workflowActivityId, taskId);
-    if (taskConfigMap != null && !getConfigMapName(taskConfigMap).isEmpty()) {
-      projectPropsVolumeList.add(getVolumeProjection(taskConfigMap));
-    }
+//    // Add Task Configmap Projected Volume
+//    V1ConfigMap taskConfigMap = getConfigMap(null, workflowActivityId, taskId);
+//    if (taskConfigMap != null && !getConfigMapName(taskConfigMap).isEmpty()) {
+//      projectPropsVolumeList.add(getVolumeProjection(taskConfigMap));
+//    }
 
     // Add all configmap projected volume
     projectedVolPropsSource.sources(projectPropsVolumeList);
     volumeProps.projected(projectedVolPropsSource);
     podSpec.addVolumesItem(volumeProps);
     
+    V1ConfigMap taskConfigMap = getConfigMap(null, workflowActivityId, taskId);
     V1EnvFromSource envAsProps = new V1EnvFromSource();
     V1ConfigMapEnvSource envCMRef = new V1ConfigMapEnvSource();
     envCMRef.setName(getConfigMapName(taskConfigMap));
     envAsProps.configMapRef(envCMRef);
+    envAsProps.prefix("FLOW_");
+    
+    container.addEnvFromItem(envAsProps);
     
     /*
      * The following code is for custom tasks only
@@ -1220,46 +1224,48 @@ public class KubeServiceImpl implements KubeService {
   
 
 
-  protected V1ConfigMap createTaskConfigMapBody(String workflowName, String workflowId,
-      String workflowActivityId, String taskName, String taskId, Map<String, String> inputProps) {
-    V1ConfigMap body = new V1ConfigMap();
-
-    body.metadata(
-        helperKubeService.getMetadata(workflowName, workflowId, workflowActivityId, taskId, helperKubeService.getPrefixCFGMAP()));
-
-    // Create Data
-    Map<String, String> inputsWithFixedKeys = new HashMap<>();
-    Map<String, String> sysProps = new HashMap<>();
-    sysProps.put("task.id", taskId);
-    sysProps.put("task.name", taskName);
-    inputsWithFixedKeys.put("task.input.properties", helperKubeService.createConfigMapProp(inputProps));
-    inputsWithFixedKeys.put("task.system.properties", helperKubeService.createConfigMapProp(sysProps));
-    body.data(inputsWithFixedKeys);
-    return body;
-  }
-
-//  protected V1ConfigMap createWorkflowConfigMapBody(String workflowName, String workflowId,
-//      String workflowActivityId, Map<String, String> inputProps) {
+//  protected V1ConfigMap createTaskConfigMapBody(String workflowName, String workflowId,
+//      String workflowActivityId, String taskName, String taskId, Map<String, String> parameters) {
 //    V1ConfigMap body = new V1ConfigMap();
 //
 //    body.metadata(
-//        helperKubeService.getMetadata(workflowName, workflowId, workflowActivityId, null, helperKubeService.getPrefixCFGMAP()));
+//        helperKubeService.getMetadata(workflowName, workflowId, workflowActivityId, taskId, helperKubeService.getPrefixCFGMAP()));
 //
 //    // Create Data
 //    Map<String, String> inputsWithFixedKeys = new HashMap<>();
 //    Map<String, String> sysProps = new HashMap<>();
-//    sysProps.put("activity.id", workflowActivityId);
-//    sysProps.put("workflow.name", workflowName);
-//    sysProps.put("workflow.id", workflowId);
-//    sysProps.put("controller.service.url", bmrgControllerServiceURL);
-//    inputsWithFixedKeys.put("workflow.input.properties", helperKubeService.createConfigMapProp(inputProps));
-//    inputsWithFixedKeys.put("workflow.system.properties", helperKubeService.createConfigMapProp(sysProps));
+//    sysProps.put("task.id", taskId);
+//    sysProps.put("task.name", taskName);
+//    inputsWithFixedKeys.put("task.input.properties", helperKubeService.createConfigMapProp(parameters));
+//    inputsWithFixedKeys.put("task.system.properties", helperKubeService.createConfigMapProp(sysProps));
 //    body.data(inputsWithFixedKeys);
 //    return body;
 //  }
   
+  protected V1ConfigMap createTaskConfigMapBody(String workflowName, String workflowId,
+      String workflowActivityId, String taskName, String taskId, Map<String, String> parameters) {
+    V1ConfigMap body = new V1ConfigMap();
+
+    body.metadata(
+        helperKubeService.getMetadata(workflowName, workflowId, workflowActivityId, null, helperKubeService.getPrefixCFGMAP()));
+
+    // Create Data
+    Map<String, String> envParameters = new HashMap<>();
+    envParameters.put("FLOW_SYSTEM_ACTIVITY_ID", workflowActivityId);
+    envParameters.put("FLOW_SYSTEM_WORKFLOW_NAME", workflowName);
+    envParameters.put("FLOW_SYSTEM_WORKFLOW_ID", workflowId);
+    envParameters.put("FLOW_SYSTEM_CONTROLLER_URL", bmrgControllerServiceURL);
+    
+    parameters.forEach((k, v) -> {
+      envParameters.put("FLOW_" + k.replaceAll("-", "").replaceAll(" ", "").replaceAll(".", "_").toUpperCase(), v);
+    });
+
+    body.data(envParameters);
+    return body;
+  }
+
   protected V1ConfigMap createWorkflowConfigMapBody(String workflowName, String workflowId,
-      String workflowActivityId, Map<String, String> parameters) {
+      String workflowActivityId, Map<String, String> inputProps) {
     V1ConfigMap body = new V1ConfigMap();
 
     body.metadata(
@@ -1267,15 +1273,13 @@ public class KubeServiceImpl implements KubeService {
 
     // Create Data
     Map<String, String> inputsWithFixedKeys = new HashMap<>();
-    inputsWithFixedKeys.put("FLOW_SYSTEM_ACTIVITY_ID", workflowActivityId);
-    inputsWithFixedKeys.put("FLOW_SYSTEM_WORKFLOW_NAME", workflowName);
-    inputsWithFixedKeys.put("FLOW_SYSTEM_WORKFLOW_ID", workflowId);
-    inputsWithFixedKeys.put("FLOW_SYSTEM_CONTROLLER_URL", bmrgControllerServiceURL);
-    
-    parameters.forEach((k, v) -> {
-      inputsWithFixedKeys.put(k.replaceAll("-", "_").replaceAll(".", "_").toUpperCase(), v);
-    });
-
+    Map<String, String> sysProps = new HashMap<>();
+    sysProps.put("activity.id", workflowActivityId);
+    sysProps.put("workflow.name", workflowName);
+    sysProps.put("workflow.id", workflowId);
+    sysProps.put("controller.service.url", bmrgControllerServiceURL);
+    inputsWithFixedKeys.put("workflow.input.properties", helperKubeService.createConfigMapProp(inputProps));
+    inputsWithFixedKeys.put("workflow.system.properties", helperKubeService.createConfigMapProp(sysProps));
     body.data(inputsWithFixedKeys);
     return body;
   }
