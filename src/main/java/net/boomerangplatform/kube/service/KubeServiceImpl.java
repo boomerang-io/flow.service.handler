@@ -1238,8 +1238,28 @@ public class KubeServiceImpl implements KubeService {
     return body;
   }
 
+//  protected V1ConfigMap createWorkflowConfigMapBody(String workflowName, String workflowId,
+//      String workflowActivityId, Map<String, String> inputProps) {
+//    V1ConfigMap body = new V1ConfigMap();
+//
+//    body.metadata(
+//        helperKubeService.getMetadata(workflowName, workflowId, workflowActivityId, null, helperKubeService.getPrefixCFGMAP()));
+//
+//    // Create Data
+//    Map<String, String> inputsWithFixedKeys = new HashMap<>();
+//    Map<String, String> sysProps = new HashMap<>();
+//    sysProps.put("activity.id", workflowActivityId);
+//    sysProps.put("workflow.name", workflowName);
+//    sysProps.put("workflow.id", workflowId);
+//    sysProps.put("controller.service.url", bmrgControllerServiceURL);
+//    inputsWithFixedKeys.put("workflow.input.properties", helperKubeService.createConfigMapProp(inputProps));
+//    inputsWithFixedKeys.put("workflow.system.properties", helperKubeService.createConfigMapProp(sysProps));
+//    body.data(inputsWithFixedKeys);
+//    return body;
+//  }
+  
   protected V1ConfigMap createWorkflowConfigMapBody(String workflowName, String workflowId,
-      String workflowActivityId, Map<String, String> inputProps) {
+      String workflowActivityId, Map<String, String> parameters) {
     V1ConfigMap body = new V1ConfigMap();
 
     body.metadata(
@@ -1247,13 +1267,15 @@ public class KubeServiceImpl implements KubeService {
 
     // Create Data
     Map<String, String> inputsWithFixedKeys = new HashMap<>();
-    Map<String, String> sysProps = new HashMap<>();
-    sysProps.put("activity.id", workflowActivityId);
-    sysProps.put("workflow.name", workflowName);
-    sysProps.put("workflow.id", workflowId);
-    sysProps.put("controller.service.url", bmrgControllerServiceURL);
-    inputsWithFixedKeys.put("workflow.input.properties", helperKubeService.createConfigMapProp(inputProps));
-    inputsWithFixedKeys.put("workflow.system.properties", helperKubeService.createConfigMapProp(sysProps));
+    inputsWithFixedKeys.put("FLOW_SYSTEM_ACTIVITY_ID", workflowActivityId);
+    inputsWithFixedKeys.put("FLOW_SYSTEM_WORKFLOW_NAME", workflowName);
+    inputsWithFixedKeys.put("FLOW_SYSTEM_WORKFLOW_ID", workflowId);
+    inputsWithFixedKeys.put("FLOW_SYSTEM_CONTROLLER_URL", bmrgControllerServiceURL);
+    
+    parameters.forEach((k, v) -> {
+      inputsWithFixedKeys.put(k.replaceAll("-", "_").replaceAll(".", "_").toUpperCase(), v);
+    });
+
     body.data(inputsWithFixedKeys);
     return body;
   }
