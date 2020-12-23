@@ -239,7 +239,7 @@ public class HelperKubeServiceImpl implements HelperKubeService {
   }
 
   protected String getTaskDebug(TaskConfiguration taskConfiguration) {
-    return taskConfiguration.getDebug() != null ? taskConfiguration.getDebug().toString()
+    return taskConfiguration != null && taskConfiguration.getDebug() != null ? taskConfiguration.getDebug().toString()
         : configurationService.getTaskDebug().toString();
   }
 }

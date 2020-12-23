@@ -12,6 +12,7 @@ import net.boomerangplatform.kube.exception.KubeRuntimeException;
 import net.boomerangplatform.kube.service.KubeServiceImpl;
 import net.boomerangplatform.model.Response;
 import net.boomerangplatform.model.Task;
+import net.boomerangplatform.model.TaskConfiguration;
 import net.boomerangplatform.model.TaskCustom;
 import net.boomerangplatform.model.TaskDeletionEnum;
 import net.boomerangplatform.model.TaskResponse;
@@ -31,12 +32,13 @@ public class TaskServiceImpl implements TaskService {
     @Autowired
     private DeleteServiceImpl deleteService;
 
-	protected TaskDeletionEnum getTaskDeletion(TaskDeletionEnum taskDeletion) {
-		return taskDeletion != null ? taskDeletion : configurationService.getTaskDeletion();
+	protected TaskDeletionEnum getTaskDeletion(TaskConfiguration taskConfiguration) {
+      return taskConfiguration != null && taskConfiguration.getDeletion() != null ? taskConfiguration.getDeletion()
+          : configurationService.getTaskDeletion();
 	}
 	
-	protected Boolean isTaskDeletionNever(TaskDeletionEnum taskDeletion) {
-		return !TaskDeletionEnum.Never.equals(getTaskDeletion(taskDeletion)) ? Boolean.TRUE : Boolean.FALSE;
+	protected Boolean isTaskDeletionNever(TaskConfiguration taskConfiguration) {
+		return !TaskDeletionEnum.Never.equals(getTaskDeletion(taskConfiguration)) ? Boolean.TRUE : Boolean.FALSE;
 	}
     
     @Override
@@ -67,9 +69,7 @@ public class TaskServiceImpl implements TaskService {
               try {
                   kubeService.createTaskConfigMap(task.getWorkflowName(), task.getWorkflowId(),
                           task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(), task.getParameters());
-                  LOGGER.info("Requested creation of configmap...");
                   kubeService.watchConfigMap(null, task.getWorkflowActivityId(), task.getTaskId());
-                  LOGGER.info("Created configmap...");
                   boolean createWatchLifecycle = task.getArguments().contains("shell") ? Boolean.TRUE : Boolean.FALSE;
                   kubeService.createJob(createWatchLifecycle, task.getWorkflowName(), task.getWorkflowId(),
                           task.getWorkflowActivityId(), task.getTaskActivityId(), task.getTaskName(), task.getTaskId(),
@@ -84,8 +84,8 @@ public class TaskServiceImpl implements TaskService {
                   response.setResults(kubeService.getTaskOutPutConfigMapData(task.getWorkflowId(),
                           task.getWorkflowActivityId(), task.getTaskId(), task.getTaskName()));
                   kubeService.deleteConfigMap(null, task.getWorkflowActivityId(), task.getTaskId());
-                  if (isTaskDeletionNever(task.getConfiguration() != null ? task.getConfiguration().getDeletion() : TaskDeletionEnum.Never)) {
-                    deleteService.deleteJob(getTaskDeletion(task.getConfiguration().getDeletion()), task.getWorkflowId(),
+                  if (isTaskDeletionNever(task.getConfiguration())) {
+                    deleteService.deleteJob(getTaskDeletion(task.getConfiguration()), task.getWorkflowId(),
                               task.getWorkflowActivityId(), task.getTaskId());
                   }
                   LOGGER.info("Task (" + task.getTaskId() + ") has completed with code " + response.getCode());
@@ -115,8 +115,8 @@ public class TaskServiceImpl implements TaskService {
                   response.setResults(kubeService.getTaskOutPutConfigMapData(task.getWorkflowId(),
                           task.getWorkflowActivityId(), task.getTaskId(), task.getTaskName()));
                   kubeService.deleteConfigMap(null, task.getWorkflowActivityId(), task.getTaskId());
-                  if (isTaskDeletionNever(task.getConfiguration() != null ? task.getConfiguration().getDeletion() : TaskDeletionEnum.Never)) {
-                    deleteService.deleteJob(getTaskDeletion(task.getConfiguration().getDeletion()), task.getWorkflowId(),
+                  if (isTaskDeletionNever(task.getConfiguration())) {
+                    deleteService.deleteJob(getTaskDeletion(task.getConfiguration()), task.getWorkflowId(),
                         task.getWorkflowActivityId(), task.getTaskId());
                   }
                   LOGGER.info("Task (" + task.getTaskId() + ") has completed with code " + response.getCode());
