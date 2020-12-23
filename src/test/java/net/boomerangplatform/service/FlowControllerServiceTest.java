@@ -220,7 +220,7 @@ public class FlowControllerServiceTest {
     Mockito.doNothing().when(kubeService).patchTaskConfigMap(workflowId, workflowActivityId, taskId,
         taskName, properties);
 
-    Response response = flowControllerService.setJobOutputProperty(workflowId, workflowActivityId,
+    Response response = flowControllerService.setTaskResultParameter(workflowId, workflowActivityId,
         taskId, taskName, "key", "value");
     assertEquals("0", response.getCode());
     assertTrue(response.getMessage().startsWith(
@@ -241,7 +241,7 @@ public class FlowControllerServiceTest {
     Mockito.doThrow(KubeRuntimeException.class).when(kubeService).patchTaskConfigMap(workflowId,
         workflowActivityId, taskId, taskName, properties);
 
-    Response response = flowControllerService.setJobOutputProperty(workflowId, workflowActivityId,
+    Response response = flowControllerService.setTaskResultParameter(workflowId, workflowActivityId,
         taskId, taskName, "key", "value");
     assertEquals("1", response.getCode());
     assertTrue(response.getMessage()
@@ -262,7 +262,7 @@ public class FlowControllerServiceTest {
     Mockito.doNothing().when(kubeService).patchTaskConfigMap(workflowId, workflowActivityId, taskId,
         taskName, properties);
 
-    Response response = flowControllerService.setJobOutputProperties(workflowId, workflowActivityId,
+    Response response = flowControllerService.setTaskResultParameters(workflowId, workflowActivityId,
         taskId, taskName, properties);
     assertEquals("0", response.getCode());
     assertTrue(response.getMessage().startsWith(
@@ -283,7 +283,7 @@ public class FlowControllerServiceTest {
     Mockito.doThrow(KubeRuntimeException.class).when(kubeService).patchTaskConfigMap(workflowId,
         workflowActivityId, taskId, taskName, properties);
 
-    Response response = flowControllerService.setJobOutputProperties(workflowId, workflowActivityId,
+    Response response = flowControllerService.setTaskResultParameters(workflowId, workflowActivityId,
         taskId, taskName, properties);
     assertEquals("1", response.getCode());
     assertTrue(response.getMessage()

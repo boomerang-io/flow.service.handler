@@ -11,32 +11,32 @@ import net.boomerangplatform.model.Response;
 import net.boomerangplatform.service.ControllerService;
 
 @RestController
-@RequestMapping("/controller")
-public class PropertyController {
+@RequestMapping("/controller/results")
+public class ResultsController {
 
   @Autowired
   private ControllerService controllerService;
 
-  @PatchMapping(value = "/property/set")
-  public Response setOutPutProperty(
+  @PatchMapping(value = "/parameter/set")
+  public Response setResultParameter(
       @RequestParam(value = "workflowId", required = true) String workflowId,
       @RequestParam(value = "workflowActivityId", required = true) String workflowActivityId,
       @RequestParam(value = "taskId", required = true) String taskId,
       @RequestParam(value = "taskName", required = true) String taskName,
       @RequestParam(value = "key", required = true) String key,
       @RequestParam(value = "value", required = true) String value) {
-    return controllerService.setJobOutputProperty(workflowId, workflowActivityId, taskId, taskName,
+    return controllerService.setTaskResultParameter(workflowId, workflowActivityId, taskId, taskName,
         key, value);
   }
 
-  @PatchMapping(value = "/properties/set")
-  public Response setOutPutProperties(
+  @PatchMapping(value = "/parameters/set")
+  public Response setResultParameters(
       @RequestParam(value = "workflowId", required = true) String workflowId,
       @RequestParam(value = "workflowActivityId", required = true) String workflowActivityId,
       @RequestParam(value = "taskId", required = true) String taskId,
       @RequestParam(value = "taskName", required = true) String taskName,
       @RequestBody Map<String, String> body) {
-    return controllerService.setJobOutputProperties(workflowId, workflowActivityId, taskId,
+    return controllerService.setTaskResultParameters(workflowId, workflowActivityId, taskId,
         taskName, body);
   }
 }

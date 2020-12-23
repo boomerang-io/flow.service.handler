@@ -28,13 +28,13 @@ public class MockControllerService implements ControllerService {
 //	}
 
 	@Override
-	public Response setJobOutputProperty(String workflowId, String workflowActivityId, String taskId, String taskName,
+	public Response setTaskResultParameter(String workflowId, String workflowActivityId, String taskId, String taskName,
 			String key, String value) {
 		return null;
 	}
 
 	@Override
-	public Response setJobOutputProperties(String workflowId, String workflowActivityId, String taskId, String taskName,
+	public Response setTaskResultParameters(String workflowId, String workflowActivityId, String taskId, String taskName,
 			Map<String, String> properties) {
 		return null;
 	}

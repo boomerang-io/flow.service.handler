@@ -42,12 +42,14 @@ import io.kubernetes.client.apis.BatchV1Api;
 import io.kubernetes.client.apis.CoreV1Api;
 import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.models.V1ConfigMap;
+import io.kubernetes.client.models.V1ConfigMapEnvSource;
 import io.kubernetes.client.models.V1ConfigMapList;
 import io.kubernetes.client.models.V1ConfigMapProjection;
 import io.kubernetes.client.models.V1Container;
 import io.kubernetes.client.models.V1ContainerStatus;
 import io.kubernetes.client.models.V1DeleteOptions;
 import io.kubernetes.client.models.V1EmptyDirVolumeSource;
+import io.kubernetes.client.models.V1EnvFromSource;
 import io.kubernetes.client.models.V1EnvVar;
 import io.kubernetes.client.models.V1HostAlias;
 import io.kubernetes.client.models.V1Job;
@@ -307,6 +309,11 @@ public class KubeServiceImpl implements KubeService {
     projectedVolPropsSource.sources(projectPropsVolumeList);
     volumeProps.projected(projectedVolPropsSource);
     podSpec.addVolumesItem(volumeProps);
+    
+    V1EnvFromSource envAsProps = new V1EnvFromSource();
+    V1ConfigMapEnvSource envCMRef = new V1ConfigMapEnvSource();
+    envCMRef.setName(getConfigMapName(taskConfigMap));
+    envAsProps.configMapRef(envCMRef);
     
     /*
      * The following code is for custom tasks only
