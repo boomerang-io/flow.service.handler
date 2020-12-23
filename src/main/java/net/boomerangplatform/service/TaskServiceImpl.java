@@ -67,7 +67,9 @@ public class TaskServiceImpl implements TaskService {
               try {
                   kubeService.createTaskConfigMap(task.getWorkflowName(), task.getWorkflowId(),
                           task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(), task.getParameters());
+                  LOGGER.info("Requested creation of configmap...");
                   kubeService.watchConfigMap(null, task.getWorkflowActivityId(), task.getTaskId());
+                  LOGGER.info("Created configmap...");
                   boolean createWatchLifecycle = task.getArguments().contains("shell") ? Boolean.TRUE : Boolean.FALSE;
                   kubeService.createJob(createWatchLifecycle, task.getWorkflowName(), task.getWorkflowId(),
                           task.getWorkflowActivityId(), task.getTaskActivityId(), task.getTaskName(), task.getTaskId(),
