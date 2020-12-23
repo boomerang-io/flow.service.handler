@@ -84,7 +84,7 @@ public class TaskServiceImpl implements TaskService {
                   response.setResults(kubeService.getTaskOutPutConfigMapData(task.getWorkflowId(),
                           task.getWorkflowActivityId(), task.getTaskId(), task.getTaskName()));
                   kubeService.deleteConfigMap(null, task.getWorkflowActivityId(), task.getTaskId());
-                  if (isTaskDeletionNever(task.getConfiguration().getDeletion())) {
+                  if (isTaskDeletionNever(task.getConfiguration() != null ? task.getConfiguration().getDeletion() : TaskDeletionEnum.Never)) {
                     deleteService.deleteJob(getTaskDeletion(task.getConfiguration().getDeletion()), task.getWorkflowId(),
                               task.getWorkflowActivityId(), task.getTaskId());
                   }
@@ -115,7 +115,7 @@ public class TaskServiceImpl implements TaskService {
                   response.setResults(kubeService.getTaskOutPutConfigMapData(task.getWorkflowId(),
                           task.getWorkflowActivityId(), task.getTaskId(), task.getTaskName()));
                   kubeService.deleteConfigMap(null, task.getWorkflowActivityId(), task.getTaskId());
-                  if (isTaskDeletionNever(task.getConfiguration().getDeletion())) {
+                  if (isTaskDeletionNever(task.getConfiguration() != null ? task.getConfiguration().getDeletion() : TaskDeletionEnum.Never)) {
                     deleteService.deleteJob(getTaskDeletion(task.getConfiguration().getDeletion()), task.getWorkflowId(),
                         task.getWorkflowActivityId(), task.getTaskId());
                   }
