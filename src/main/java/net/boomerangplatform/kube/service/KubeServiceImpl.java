@@ -315,7 +315,7 @@ public class KubeServiceImpl implements KubeService {
     V1ConfigMapEnvSource envCMRef = new V1ConfigMapEnvSource();
     envCMRef.setName(getConfigMapName(taskConfigMap));
     envAsProps.configMapRef(envCMRef);
-    envAsProps.prefix("FLOW_");
+    envAsProps.prefix("PARAMS_");
     
     container.addEnvFromItem(envAsProps);
     
@@ -1256,9 +1256,9 @@ public class KubeServiceImpl implements KubeService {
     envParameters.put("FLOW_SYSTEM_WORKFLOW_ID", workflowId);
     envParameters.put("FLOW_SYSTEM_CONTROLLER_URL", bmrgControllerServiceURL);
     
-    parameters.forEach((k, v) -> {
-      envParameters.put("FLOW_" + k.replaceAll("-", "").replaceAll(" ", "").replaceAll(".", "_").toUpperCase(), v);
-    });
+    for (Map.Entry<String, String> entry : parameters.entrySet()) {
+      envParameters.put(entry.getKey().replaceAll("-", "").replaceAll(" ", "").replaceAll(".", "_").toUpperCase(), entry.getValue());
+    }
 
     body.data(envParameters);
     return body;
