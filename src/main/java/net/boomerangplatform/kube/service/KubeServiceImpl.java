@@ -1251,12 +1251,13 @@ public class KubeServiceImpl implements KubeService {
 
     // Create Data
     Map<String, String> envParameters = new HashMap<>();
-    envParameters.put("FLOW_SYSTEM_ACTIVITY_ID", workflowActivityId);
-    envParameters.put("FLOW_SYSTEM_WORKFLOW_NAME", workflowName);
-    envParameters.put("FLOW_SYSTEM_WORKFLOW_ID", workflowId);
-    envParameters.put("FLOW_SYSTEM_CONTROLLER_URL", bmrgControllerServiceURL);
+    envParameters.put("SYSTEM_ACTIVITY_ID", workflowActivityId);
+    envParameters.put("SYSTEM_WORKFLOW_NAME", workflowName);
+    envParameters.put("SYSTEM_WORKFLOW_ID", workflowId);
+    envParameters.put("SYSTEM_CONTROLLER_URL", bmrgControllerServiceURL);
     
     for (Map.Entry<String, String> entry : parameters.entrySet()) {
+      LOGGER.info("Key: " + entry.getKey() + ", Value: " + entry.getValue());
       envParameters.put(entry.getKey().replaceAll("-", "").replaceAll(" ", "").replaceAll(".", "_").toUpperCase(), entry.getValue());
     }
 
