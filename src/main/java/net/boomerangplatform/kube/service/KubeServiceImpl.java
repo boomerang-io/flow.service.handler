@@ -199,6 +199,8 @@ public class KubeServiceImpl implements KubeService {
       String taskName, String taskId, List<String> arguments,
       Map<String, String> taskProperties, String image, String command, TaskConfiguration taskConfiguration) {
 
+    LOGGER.info("Initializing body...");
+    
     // Initialize Job Body
     V1Job body = new V1Job();
     body.metadata(
@@ -1258,7 +1260,9 @@ public class KubeServiceImpl implements KubeService {
     
     for (Map.Entry<String, String> entry : parameters.entrySet()) {
       LOGGER.info("Key: " + entry.getKey() + ", Value: " + entry.getValue());
-      envParameters.put(entry.getKey().replaceAll("-", "").replaceAll(" ", "").replaceAll(".", "_").toUpperCase(), entry.getValue());
+      String newKey = entry.getKey().replaceAll("-", "").replaceAll(" ", "").replaceAll(".", "_").toUpperCase();
+      LOGGER.info("New key: " + newKey);
+      envParameters.put(newKey, entry.getValue());
     }
 
     body.data(envParameters);
