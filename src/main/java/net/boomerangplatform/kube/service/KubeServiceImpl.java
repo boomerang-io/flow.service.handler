@@ -1249,7 +1249,7 @@ public class KubeServiceImpl implements KubeService {
     V1ConfigMap body = new V1ConfigMap();
 
     body.metadata(
-        helperKubeService.getMetadata(workflowName, workflowId, workflowActivityId, null, helperKubeService.getPrefixCFGMAP()));
+        helperKubeService.getMetadata(workflowName, workflowId, workflowActivityId, taskId, helperKubeService.getPrefixCFGMAP()));
 
     // Create Data
     Map<String, String> envParameters = new HashMap<>();
