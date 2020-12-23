@@ -301,25 +301,25 @@ public class KubeServiceImpl implements KubeService {
       projectPropsVolumeList.add(getVolumeProjection(wfConfigMap));
     }
 
-//    // Add Task Configmap Projected Volume
-//    V1ConfigMap taskConfigMap = getConfigMap(null, workflowActivityId, taskId);
-//    if (taskConfigMap != null && !getConfigMapName(taskConfigMap).isEmpty()) {
-//      projectPropsVolumeList.add(getVolumeProjection(taskConfigMap));
-//    }
+    // Add Task Configmap Projected Volume
+    V1ConfigMap taskConfigMap = getConfigMap(null, workflowActivityId, taskId);
+    if (taskConfigMap != null && !getConfigMapName(taskConfigMap).isEmpty()) {
+      projectPropsVolumeList.add(getVolumeProjection(taskConfigMap));
+    }
 
     // Add all configmap projected volume
     projectedVolPropsSource.sources(projectPropsVolumeList);
     volumeProps.projected(projectedVolPropsSource);
     podSpec.addVolumesItem(volumeProps);
     
-    V1ConfigMap taskConfigMap = getConfigMap(null, workflowActivityId, taskId);
-    V1EnvFromSource envAsProps = new V1EnvFromSource();
-    V1ConfigMapEnvSource envCMRef = new V1ConfigMapEnvSource();
-    envCMRef.setName(getConfigMapName(taskConfigMap));
-    envAsProps.setConfigMapRef(envCMRef);
-    envAsProps.setPrefix("PARAMS_");
-    
-    container.addEnvFromItem(envAsProps);
+//    V1ConfigMap taskConfigMap = getConfigMap(null, workflowActivityId, taskId);
+//    V1EnvFromSource envAsProps = new V1EnvFromSource();
+//    V1ConfigMapEnvSource envCMRef = new V1ConfigMapEnvSource();
+//    envCMRef.setName(getConfigMapName(taskConfigMap));
+//    envAsProps.setConfigMapRef(envCMRef);
+//    envAsProps.setPrefix("PARAMS_");
+//    
+//    container.addEnvFromItem(envAsProps);
     
     /*
      * The following code is for custom tasks only
@@ -1226,24 +1226,6 @@ public class KubeServiceImpl implements KubeService {
   
 
 
-//  protected V1ConfigMap createTaskConfigMapBody(String workflowName, String workflowId,
-//      String workflowActivityId, String taskName, String taskId, Map<String, String> parameters) {
-//    V1ConfigMap body = new V1ConfigMap();
-//
-//    body.metadata(
-//        helperKubeService.getMetadata(workflowName, workflowId, workflowActivityId, taskId, helperKubeService.getPrefixCFGMAP()));
-//
-//    // Create Data
-//    Map<String, String> inputsWithFixedKeys = new HashMap<>();
-//    Map<String, String> sysProps = new HashMap<>();
-//    sysProps.put("task.id", taskId);
-//    sysProps.put("task.name", taskName);
-//    inputsWithFixedKeys.put("task.input.properties", helperKubeService.createConfigMapProp(parameters));
-//    inputsWithFixedKeys.put("task.system.properties", helperKubeService.createConfigMapProp(sysProps));
-//    body.data(inputsWithFixedKeys);
-//    return body;
-//  }
-  
   protected V1ConfigMap createTaskConfigMapBody(String workflowName, String workflowId,
       String workflowActivityId, String taskName, String taskId, Map<String, String> parameters) {
     V1ConfigMap body = new V1ConfigMap();
@@ -1252,19 +1234,37 @@ public class KubeServiceImpl implements KubeService {
         helperKubeService.getMetadata(workflowName, workflowId, workflowActivityId, taskId, helperKubeService.getPrefixCFGMAP()));
 
     // Create Data
-    Map<String, String> envParameters = new HashMap<>();
-    envParameters.put("SYSTEM_ACTIVITY_ID", workflowActivityId);
-    envParameters.put("SYSTEM_WORKFLOW_NAME", workflowName);
-    envParameters.put("SYSTEM_WORKFLOW_ID", workflowId);
-    envParameters.put("SYSTEM_CONTROLLER_URL", bmrgControllerServiceURL);
-    
-    for (Map.Entry<String, String> entry : parameters.entrySet()) {
-      envParameters.put(entry.getKey().replace("-", "").replace(" ", "").replace(".", "_").toUpperCase(), entry.getValue());
-    }
-
-    body.data(envParameters);
+    Map<String, String> inputsWithFixedKeys = new HashMap<>();
+    Map<String, String> sysProps = new HashMap<>();
+    sysProps.put("task.id", taskId);
+    sysProps.put("task.name", taskName);
+    inputsWithFixedKeys.put("task.input.properties", helperKubeService.createConfigMapProp(parameters));
+    inputsWithFixedKeys.put("task.system.properties", helperKubeService.createConfigMapProp(sysProps));
+    body.data(inputsWithFixedKeys);
     return body;
   }
+  
+//  protected V1ConfigMap createTaskConfigMapBodyFromEnv(String workflowName, String workflowId,
+//      String workflowActivityId, String taskName, String taskId, Map<String, String> parameters) {
+//    V1ConfigMap body = new V1ConfigMap();
+//
+//    body.metadata(
+//        helperKubeService.getMetadata(workflowName, workflowId, workflowActivityId, taskId, helperKubeService.getPrefixCFGMAP()));
+//
+//    // Create Data
+//    Map<String, String> envParameters = new HashMap<>();
+//    envParameters.put("SYSTEM_ACTIVITY_ID", workflowActivityId);
+//    envParameters.put("SYSTEM_WORKFLOW_NAME", workflowName);
+//    envParameters.put("SYSTEM_WORKFLOW_ID", workflowId);
+//    envParameters.put("SYSTEM_CONTROLLER_URL", bmrgControllerServiceURL);
+//    
+//    for (Map.Entry<String, String> entry : parameters.entrySet()) {
+//      envParameters.put(entry.getKey().replace("-", "").replace(" ", "").replace(".", "_").toUpperCase(), entry.getValue());
+//    }
+//
+//    body.data(envParameters);
+//    return body;
+//  }
 
   protected V1ConfigMap createWorkflowConfigMapBody(String workflowName, String workflowId,
       String workflowActivityId, Map<String, String> inputProps) {
