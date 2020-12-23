@@ -1259,10 +1259,7 @@ public class KubeServiceImpl implements KubeService {
     envParameters.put("SYSTEM_CONTROLLER_URL", bmrgControllerServiceURL);
     
     for (Map.Entry<String, String> entry : parameters.entrySet()) {
-      LOGGER.info("Key: " + entry.getKey() + ", Value: " + entry.getValue());
-      String newKey = entry.getKey().replaceAll("-", "").replaceAll(" ", "").replaceAll(".", "_").toUpperCase();
-      LOGGER.info("New key: " + newKey);
-      envParameters.put(newKey, entry.getValue());
+      envParameters.put(entry.getKey().replace("-", "").replace(" ", "").replace(".", "_").toUpperCase();, entry.getValue());
     }
 
     body.data(envParameters);
