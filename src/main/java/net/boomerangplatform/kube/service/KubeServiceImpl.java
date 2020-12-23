@@ -314,8 +314,8 @@ public class KubeServiceImpl implements KubeService {
     V1EnvFromSource envAsProps = new V1EnvFromSource();
     V1ConfigMapEnvSource envCMRef = new V1ConfigMapEnvSource();
     envCMRef.setName(getConfigMapName(taskConfigMap));
-    envAsProps.configMapRef(envCMRef);
-    envAsProps.prefix("PARAMS_");
+    envAsProps.setConfigMapRef(envCMRef);
+    envAsProps.setPrefix("PARAMS_");
     
     container.addEnvFromItem(envAsProps);
     
