@@ -42,14 +42,12 @@ import io.kubernetes.client.apis.BatchV1Api;
 import io.kubernetes.client.apis.CoreV1Api;
 import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.models.V1ConfigMap;
-import io.kubernetes.client.models.V1ConfigMapEnvSource;
 import io.kubernetes.client.models.V1ConfigMapList;
 import io.kubernetes.client.models.V1ConfigMapProjection;
 import io.kubernetes.client.models.V1Container;
 import io.kubernetes.client.models.V1ContainerStatus;
 import io.kubernetes.client.models.V1DeleteOptions;
 import io.kubernetes.client.models.V1EmptyDirVolumeSource;
-import io.kubernetes.client.models.V1EnvFromSource;
 import io.kubernetes.client.models.V1EnvVar;
 import io.kubernetes.client.models.V1HostAlias;
 import io.kubernetes.client.models.V1Job;
@@ -1236,8 +1234,8 @@ public class KubeServiceImpl implements KubeService {
     // Create Data
     Map<String, String> inputsWithFixedKeys = new HashMap<>();
     Map<String, String> sysProps = new HashMap<>();
-    sysProps.put("task.id", taskId);
-    sysProps.put("task.name", taskName);
+    sysProps.put("task-id", taskId);
+    sysProps.put("task-name", taskName);
     inputsWithFixedKeys.put("task.input.properties", helperKubeService.createConfigMapProp(parameters));
     inputsWithFixedKeys.put("task.system.properties", helperKubeService.createConfigMapProp(sysProps));
     body.data(inputsWithFixedKeys);
@@ -1276,10 +1274,7 @@ public class KubeServiceImpl implements KubeService {
     // Create Data
     Map<String, String> inputsWithFixedKeys = new HashMap<>();
     Map<String, String> sysProps = new HashMap<>();
-    sysProps.put("activity.id", workflowActivityId);
-    sysProps.put("workflow.name", workflowName);
-    sysProps.put("workflow.id", workflowId);
-    sysProps.put("controller.service.url", bmrgControllerServiceURL);
+    sysProps.put("controller-service-url", bmrgControllerServiceURL);
     inputsWithFixedKeys.put("workflow.input.properties", helperKubeService.createConfigMapProp(inputProps));
     inputsWithFixedKeys.put("workflow.system.properties", helperKubeService.createConfigMapProp(sysProps));
     body.data(inputsWithFixedKeys);

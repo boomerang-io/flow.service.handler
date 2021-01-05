@@ -179,9 +179,9 @@ public class HelperKubeServiceImpl implements HelperKubeService {
     labels.put("app.kubernetes.io/managed-by", "controller");
     labels.put("boomerang.io/product", bmrgProduct);
     labels.put("boomerang.io/tier", TIER);
-    Optional.ofNullable(workflowId).ifPresent(str -> labels.put("workflow-id", str));
-    Optional.ofNullable(activityId).ifPresent(str -> labels.put("activity-id", str));
-    Optional.ofNullable(taskId).ifPresent(str -> labels.put("task-id", str));
+    Optional.ofNullable(workflowId).ifPresent(str -> labels.put("boomerang.io/workflow-id", str));
+    Optional.ofNullable(activityId).ifPresent(str -> labels.put("boomerang.io/activity-id", str));
+    Optional.ofNullable(taskId).ifPresent(str -> labels.put("boomerang.io/task-id", str));
     return labels;
   }
   
@@ -214,9 +214,9 @@ public class HelperKubeServiceImpl implements HelperKubeService {
 
   protected String getLabelSelector(String workflowId, String activityId, String taskId) {
     StringBuilder labelSelector = new StringBuilder("boomerang.io/product=" + bmrgProduct + ",boomerang.io/tier=" + TIER);
-    Optional.ofNullable(workflowId).ifPresent(str -> labelSelector.append(",workflow-id=" + str));
-    Optional.ofNullable(activityId).ifPresent(str -> labelSelector.append(",activity-id=" + str));
-    Optional.ofNullable(taskId).ifPresent(str -> labelSelector.append(",task-id=" + str));
+    Optional.ofNullable(workflowId).ifPresent(str -> labelSelector.append(",boomerang.io/workflow-id=" + str));
+    Optional.ofNullable(activityId).ifPresent(str -> labelSelector.append(",boomerang.io/activity-id=" + str));
+    Optional.ofNullable(taskId).ifPresent(str -> labelSelector.append(",boomerang.io/task-id=" + str));
 
     LOGGER.info("  labelSelector: " + labelSelector.toString());
     return labelSelector.toString();
