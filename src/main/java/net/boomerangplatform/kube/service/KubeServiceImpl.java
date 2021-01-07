@@ -263,7 +263,7 @@ public class KubeServiceImpl implements KubeService {
     }
     
     if (!getPVCName(helperKubeService.getLabelSelector(workflowId, workflowActivityId, null)).isEmpty()) {
-      container.addVolumeMountsItem(getVolumeMount(helperKubeService.getPrefixVol() + "-workflow", "/workflow"));
+      container.addVolumeMountsItem(getVolumeMount(helperKubeService.getPrefixVol() + "-wf", "/workflow"));
       V1Volume workerVolume = getVolume(helperKubeService.getPrefixVol() + "-wf");
       V1PersistentVolumeClaimVolumeSource workerVolumePVCSource =
           new V1PersistentVolumeClaimVolumeSource();

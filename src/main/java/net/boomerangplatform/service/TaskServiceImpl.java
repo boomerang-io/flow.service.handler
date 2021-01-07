@@ -128,12 +128,12 @@ public class TaskServiceImpl implements TaskService {
     @Override
     public Response setTaskResultParameter(String workflowId, String workflowActivityId, String taskId,
         String taskName, String key, String value) {
-      Response response = new Response("0", "Property has been set against workflow ("
+      Response response = new Response("0", "Parameter has been set against workflow ("
           + workflowActivityId + ") and task (" + taskId + ")");
       try {
-        Map<String, String> properties = new HashMap<>();
-        properties.put(key, value);
-        kubeService.patchTaskConfigMap(workflowId, workflowActivityId, taskId, taskName, properties);
+        Map<String, String> parameters = new HashMap<>();
+        parameters.put(key, value);
+        kubeService.patchTaskConfigMap(workflowId, workflowActivityId, taskId, taskName, parameters);
       } catch (KubeRuntimeException e) {
         throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
       }
@@ -142,13 +142,13 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     public Response setTaskResultParameters(String workflowId, String workflowActivityId,
-        String taskId, String taskName, Map<String, String> properties) {
-      Response response = new Response("0", "Properties have been set against workflow ("
+        String taskId, String taskName, Map<String, String> parameters) {
+      Response response = new Response("0", "Parameters have been set against workflow ("
           + workflowActivityId + ") and task (" + taskId + ")");
 
-      LOGGER.info(properties);
+      LOGGER.info(parameters);
       try {
-        kubeService.patchTaskConfigMap(workflowId, workflowActivityId, taskId, taskName, properties);
+        kubeService.patchTaskConfigMap(workflowId, workflowActivityId, taskId, taskName, parameters);
       } catch (KubeRuntimeException e) {
         throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
       }
