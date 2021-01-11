@@ -1,11 +1,9 @@
 package net.boomerangplatform.model;
 
 import static net.boomerangplatform.util.ListUtil.sanityNullList;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
@@ -49,6 +47,9 @@ public abstract class Task {
 
   @JsonProperty("configuration")
   private TaskConfiguration configuration;
+
+  @JsonProperty("workspaces")
+  private List<TaskWorkspace> workspaces;
 
   public String getWorkflowName() {
     return workflowName;
@@ -146,4 +147,11 @@ public abstract class Task {
 	this.configuration = configuration;
   }
 
+  public List<TaskWorkspace> getWorkspaces() {
+    return workspaces;
+  }
+
+  public void setWorkspaces(List<TaskWorkspace> workspaces) {
+    this.workspaces = workspaces;
+  }
 }
