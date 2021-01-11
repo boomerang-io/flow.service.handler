@@ -252,11 +252,6 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
     Integer loopCount = 1;
     long endTime = System.nanoTime()
         + TimeUnit.NANOSECONDS.convert(kubeApiTimeOut.longValue(), TimeUnit.SECONDS);
-    
-    LOGGER.info("startTime : " + System.nanoTime());
-    LOGGER.info("endTime : " + endTime);
-    LOGGER.info("apiTimeout : " + kubeApiTimeOut.longValue());
-    
     do {
       LOGGER.info("Starting Job Watcher #" + loopCount + " for Task (" + taskId + ")...");
       try {
@@ -272,10 +267,6 @@ public abstract class AbstractKubeServiceImpl implements AbstractKubeService { /
       }
       loopCount++;
     } while (System.nanoTime() < endTime && jobResult == null);
-    
-    LOGGER.info("currentTime : " + System.nanoTime());
-    LOGGER.info("jobResult : " + jobResult);
-    
     if (jobResult == null) {
       // Final catch for a timeout and job still not complete.
       throw new KubeRuntimeException(
