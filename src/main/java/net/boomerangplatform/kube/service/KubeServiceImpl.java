@@ -193,7 +193,7 @@ public class KubeServiceImpl implements KubeService {
   @Value("${kube.worker.storage.data.memory}")
   private Boolean kubeWorkerStorageDataMemory;
 
-  private V1Job createJobBody(boolean createLifecycle, String workflowName, String workflowId, String workflowActivityId, String taskActivityId,
+  private V1Job createJobBody(boolean createLifecycle, String workspaceId, String workflowName, String workflowId, String workflowActivityId, String taskActivityId,
       String taskName, String taskId, List<String> arguments,
       Map<String, String> taskProperties, String image, String command, TaskConfiguration taskConfiguration) {
 
@@ -252,7 +252,7 @@ public class KubeServiceImpl implements KubeService {
      * - /props for mounting config_maps
      * - /data for task storage (optional - needed if using in memory storage)
      */
-    if (checkWorkspacePVCExists(workflowId, true)) {
+    if (checkWorkspacePVCExists(workspaceId, true)) {
       container.addVolumeMountsItem(getVolumeMount(helperKubeService.getPrefixVol() + "-workspace", "/workspace"));
       V1Volume workspaceVolume = getVolume(helperKubeService.getPrefixVol() + "-ws");
       V1PersistentVolumeClaimVolumeSource workerVolumePVCSource =
@@ -386,12 +386,12 @@ public class KubeServiceImpl implements KubeService {
   }
 
   @Override
-  public V1Job createJob(boolean createLifecycle, String workflowName, String workflowId,
+  public V1Job createJob(boolean createLifecycle, String workspaceId, String workflowName, String workflowId,
       String workflowActivityId, String taskActivityId, String taskName, String taskId,
       List<String> arguments, Map<String, String> taskProperties, String image, String command,
       TaskConfiguration taskConfiguration) {
     V1Job body =
-        createJobBody(createLifecycle, workflowName, workflowId, workflowActivityId, taskActivityId,
+        createJobBody(createLifecycle, workspaceId, workflowName, workflowId, workflowActivityId, taskActivityId,
             taskName, taskId, arguments, taskProperties, image, command, taskConfiguration);
 
     LOGGER.info(body);
@@ -944,7 +944,7 @@ public class KubeServiceImpl implements KubeService {
   
   @Override
   public boolean checkWorkspacePVCExists(String workspaceId, boolean failIfNotBound) {
-    return checkPVCExists(helperKubeService.getWorkspaceLabelSelector(workspaceId), failIfNotBound);
+    return workspaceId != null ? checkPVCExists(helperKubeService.getWorkspaceLabelSelector(workspaceId), failIfNotBound) : false;
   }
 
   @Override

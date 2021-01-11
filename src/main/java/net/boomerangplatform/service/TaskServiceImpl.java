@@ -71,7 +71,8 @@ public class TaskServiceImpl implements TaskService {
                           task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(), task.getParameters());
                   kubeService.watchConfigMap(null, task.getWorkflowActivityId(), task.getTaskId());
                   boolean createWatchLifecycle = task.getArguments().contains("shell") ? Boolean.TRUE : Boolean.FALSE;
-                  kubeService.createJob(createWatchLifecycle, task.getWorkflowName(), task.getWorkflowId(),
+                  String workspaceId = task.getWorkspaces() != null && task.getWorkspaces().get(0) != null ? task.getWorkspaces().get(0).getWorkspaceId() : null;
+                  kubeService.createJob(createWatchLifecycle, workspaceId, task.getWorkflowName(), task.getWorkflowId(),
                           task.getWorkflowActivityId(), task.getTaskActivityId(), task.getTaskName(), task.getTaskId(),
                           task.getArguments(), task.getParameters(), task.getImage(), task.getCommand(),
                           task.getConfiguration());
@@ -104,7 +105,8 @@ public class TaskServiceImpl implements TaskService {
                   kubeService.createTaskConfigMap(task.getWorkflowName(), task.getWorkflowId(),
                           task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(), task.getParameters());
                   kubeService.watchConfigMap(null, task.getWorkflowActivityId(), task.getTaskId());
-                  kubeService.createJob(true, task.getWorkflowName(), task.getWorkflowId(), task.getWorkflowActivityId(),
+                  String workspaceId = task.getWorkspaces() != null && task.getWorkspaces().get(0) != null ? task.getWorkspaces().get(0).getWorkspaceId() : null;
+                  kubeService.createJob(true, workspaceId, task.getWorkflowName(), task.getWorkflowId(), task.getWorkflowActivityId(),
                           task.getTaskActivityId(), task.getTaskName(), task.getTaskId(), task.getArguments(),
                           task.getParameters(), task.getImage(), task.getCommand(), task.getConfiguration());
                   kubeService.watchJob(true, task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
