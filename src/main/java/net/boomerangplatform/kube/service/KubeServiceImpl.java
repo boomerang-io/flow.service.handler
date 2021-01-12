@@ -1275,6 +1275,9 @@ public class KubeServiceImpl implements KubeService {
     Map<String, String> inputsWithFixedKeys = new HashMap<>();
     Map<String, String> sysProps = new HashMap<>();
     sysProps.put("controller-service-url", bmrgControllerServiceURL);
+    sysProps.put("workflow-name", workflowName);
+    sysProps.put("workflow-id", workflowId);
+    sysProps.put("workflow-activity-id", workflowActivityId);
     inputsWithFixedKeys.put("workflow.input.properties", helperKubeService.createConfigMapProp(inputProps));
     inputsWithFixedKeys.put("workflow.system.properties", helperKubeService.createConfigMapProp(sysProps));
     body.data(inputsWithFixedKeys);
