@@ -258,7 +258,7 @@ public class KubeServiceImpl implements KubeService {
       V1PersistentVolumeClaimVolumeSource workerVolumePVCSource =
           new V1PersistentVolumeClaimVolumeSource();
       workspaceVolume
-          .persistentVolumeClaim(workerVolumePVCSource.claimName(getPVCName(helperKubeService.getWorkspaceLabelSelector(workflowId))));
+          .persistentVolumeClaim(workerVolumePVCSource.claimName(getPVCName(helperKubeService.getWorkspaceLabelSelector(workspaceId))));
       podSpec.addVolumesItem(workspaceVolume);
     }
     
