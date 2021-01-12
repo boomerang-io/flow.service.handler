@@ -857,7 +857,7 @@ public class KubeServiceImpl implements KubeService {
   public V1ConfigMap createTaskConfigMap(String workflowName, String workflowId,
       String workflowActivityId, String taskName, String taskId, Map<String, String> inputProps) {
     LOGGER.info("ConfigMapBody: " + inputProps);
-    return createConfigMap(createTaskConfigMapBody(workflowName, workflowId, workflowActivityId,
+    return createConfigMap(createTaskConfigMapBody(workflowName, null, workflowActivityId,
         taskName, taskId, inputProps));
   }
 
@@ -1235,7 +1235,11 @@ public class KubeServiceImpl implements KubeService {
     Map<String, String> inputsWithFixedKeys = new HashMap<>();
     Map<String, String> sysProps = new HashMap<>();
     sysProps.put("task-id", taskId);
-    sysProps.put("task-name", taskName);
+    sysProps.put("task-name", taskName);    
+//    sysProps.put("controller-service-url", bmrgControllerServiceURL);
+//    sysProps.put("workflow-name", workflowName);
+//    sysProps.put("workflow-id", workflowId);
+//    sysProps.put("workflow-activity-id", workflowActivityId);
     inputsWithFixedKeys.put("task.input.properties", helperKubeService.createConfigMapProp(parameters));
     inputsWithFixedKeys.put("task.system.properties", helperKubeService.createConfigMapProp(sysProps));
     body.data(inputsWithFixedKeys);
