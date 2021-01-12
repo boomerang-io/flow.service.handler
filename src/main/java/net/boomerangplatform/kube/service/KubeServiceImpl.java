@@ -253,7 +253,7 @@ public class KubeServiceImpl implements KubeService {
      * - /data for task storage (optional - needed if using in memory storage)
      */
     if (checkWorkspacePVCExists(workspaceId, true)) {
-      container.addVolumeMountsItem(getVolumeMount(helperKubeService.getPrefixVol() + "-workspace", "/workspace"));
+      container.addVolumeMountsItem(getVolumeMount(helperKubeService.getPrefixVol() + "-ws", "/workspace"));
       V1Volume workspaceVolume = getVolume(helperKubeService.getPrefixVol() + "-ws");
       V1PersistentVolumeClaimVolumeSource workerVolumePVCSource =
           new V1PersistentVolumeClaimVolumeSource();
