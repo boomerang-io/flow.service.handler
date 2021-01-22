@@ -68,26 +68,27 @@ public class TaskServiceImpl implements TaskService {
           } else {
               try {
                   kubeService.createTaskConfigMap(task.getWorkflowName(), task.getWorkflowId(),
-                          task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(), task.getParameters());
-                  kubeService.watchConfigMap(null, task.getWorkflowActivityId(), task.getTaskId());
+                          task.getTaskActivityId(), task.getTaskName(), task.getTaskId(), task.getParameters());
+                  kubeService.watchConfigMap(null, task.getTaskActivityId(), task.getTaskId());
                   boolean createWatchLifecycle = task.getArguments().contains("shell") ? Boolean.TRUE : Boolean.FALSE;
                   String workspaceId = task.getWorkspaces() != null && task.getWorkspaces().get(0) != null ? task.getWorkspaces().get(0).getWorkspaceId() : null;
                   kubeService.createJob(createWatchLifecycle, workspaceId, task.getWorkflowName(), task.getWorkflowId(),
                           task.getWorkflowActivityId(), task.getTaskActivityId(), task.getTaskName(), task.getTaskId(),
                           task.getArguments(), task.getParameters(), task.getImage(), task.getCommand(),
                           task.getConfiguration());
-                  kubeService.watchJob(createWatchLifecycle, task.getWorkflowId(), task.getWorkflowActivityId(),
+                  kubeService.watchJob(createWatchLifecycle, task.getWorkflowId(), task.getTaskActivityId(),
                           task.getTaskId());
               } catch (KubeRuntimeException e) {
                   LOGGER.info("DEBUG::Task Is Being Set as Failed");
                     throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
               } finally {
+//                Uses the workflowActivityId as the TaskOutput is stored in the Workflow Configmap
                   response.setResults(kubeService.getTaskOutPutConfigMapData(task.getWorkflowId(),
                           task.getWorkflowActivityId(), task.getTaskId(), task.getTaskName()));
-                  kubeService.deleteConfigMap(null, task.getWorkflowActivityId(), task.getTaskId());
+                  kubeService.deleteConfigMap(null, task.getTaskActivityId(), task.getTaskId());
                   if (isTaskDeletionNever(task.getConfiguration())) {
                     deleteService.deleteJob(getTaskDeletion(task.getConfiguration()), task.getWorkflowId(),
-                              task.getWorkflowActivityId(), task.getTaskId());
+                              task.getTaskActivityId(), task.getTaskId());
                   }
                   LOGGER.info("Task (" + task.getTaskId() + ") has completed with code " + response.getCode());
               }
@@ -103,8 +104,8 @@ public class TaskServiceImpl implements TaskService {
           } else {
               try {
                   kubeService.createTaskConfigMap(task.getWorkflowName(), task.getWorkflowId(),
-                          task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(), task.getParameters());
-                  kubeService.watchConfigMap(null, task.getWorkflowActivityId(), task.getTaskId());
+                          task.getTaskActivityId(), task.getTaskName(), task.getTaskId(), task.getParameters());
+                  kubeService.watchConfigMap(null, task.getTaskActivityId(), task.getTaskId());
                   String workspaceId = task.getWorkspaces() != null && task.getWorkspaces().get(0) != null ? task.getWorkspaces().get(0).getWorkspaceId() : null;
                   kubeService.createJob(true, workspaceId, task.getWorkflowName(), task.getWorkflowId(), task.getWorkflowActivityId(),
                           task.getTaskActivityId(), task.getTaskName(), task.getTaskId(), task.getArguments(),
@@ -116,10 +117,10 @@ public class TaskServiceImpl implements TaskService {
               } finally {
                   response.setResults(kubeService.getTaskOutPutConfigMapData(task.getWorkflowId(),
                           task.getWorkflowActivityId(), task.getTaskId(), task.getTaskName()));
-                  kubeService.deleteConfigMap(null, task.getWorkflowActivityId(), task.getTaskId());
+                  kubeService.deleteConfigMap(null, task.getTaskActivityId(), task.getTaskId());
                   if (isTaskDeletionNever(task.getConfiguration())) {
                     deleteService.deleteJob(getTaskDeletion(task.getConfiguration()), task.getWorkflowId(),
-                        task.getWorkflowActivityId(), task.getTaskId());
+                        task.getTaskActivityId(), task.getTaskId());
                   }
                   LOGGER.info("Task (" + task.getTaskId() + ") has completed with code " + response.getCode());
               }

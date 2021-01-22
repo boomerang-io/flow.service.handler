@@ -68,14 +68,13 @@ public class LogServiceImpl implements LogService {
       String workflowActivityId, String taskId, String taskActivityId) {
     StreamingResponseBody srb = null;
     try {
-      if (logKubeService.isKubePodAvailable(workflowId, workflowActivityId, taskId)
+      if (logKubeService.isKubePodAvailable(workflowId, taskActivityId, taskId)
           || "default".equals(loggingType)) {
-        srb = logKubeService.streamPodLog(response, workflowId, workflowActivityId, taskId,
-            taskActivityId);
+        srb = logKubeService.streamPodLog(response, workflowId, taskActivityId, taskId);
       } else if ("elastic".equals(loggingType)) {
         return streamLogsFromElastic(taskActivityId);
       } else if ("loki".equals(loggingType)) {
-        return streamLogsFromLoki(workflowId, workflowActivityId, taskId, taskActivityId);
+        return streamLogsFromLoki(workflowId, taskActivityId, taskId);
       } else {
         return getDefaultErrorMessage(getMessageUnableToAccessLogs());
       }
@@ -86,10 +85,10 @@ public class LogServiceImpl implements LogService {
   }
 
   // TODO: reduce complexity, refactor method
-  private StreamingResponseBody streamLogsFromLoki(String workflowId, String workflowActivityId,
-      String taskId, String taskActivityId) {
+  private StreamingResponseBody streamLogsFromLoki(String workflowId, String activityId,
+      String taskId) {
 
-    LOGGER.info("Streaming logs from loki: " + taskActivityId);
+    LOGGER.info("Streaming logs from loki for task ("+ activityId + ") and activity (" + activityId + ")");
 
 
     return outputStream -> {
@@ -97,7 +96,7 @@ public class LogServiceImpl implements LogService {
       PrintWriter printWriter = new PrintWriter(outputStream);
 
       final String filter =
-          createLokiFilter(workflowId, workflowActivityId, taskId, taskActivityId);
+          createLokiFilter(workflowId, activityId, taskId);
       LOGGER.info("Loki filter: " + filter);
 
       final String encodedQuery = URLEncoder.encode(filter, StandardCharsets.UTF_8);
@@ -178,9 +177,8 @@ public class LogServiceImpl implements LogService {
     };
   }
 
-  private String createLokiFilter(String workflowId, String workflowActivityId, String taskId,
-      String taskActivityId) {
-    return "{bmrg_activity=\"" + workflowActivityId + "\",bmrg_workflow=\"" + workflowId
+  private String createLokiFilter(String workflowId, String activityId, String taskId) {
+    return "{bmrg_activity=\"" + activityId + "\",bmrg_workflow=\"" + workflowId
         + "\",bmrg_task=\"" + taskId + "\",bmrg_container=\"worker-cntr\"}";
   }
 
