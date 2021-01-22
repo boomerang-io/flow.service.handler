@@ -193,10 +193,12 @@ public class KubeServiceImpl implements KubeService {
   @Value("${kube.worker.storage.data.memory}")
   private Boolean kubeWorkerStorageDataMemory;
 
-  private V1Job createJobBody(boolean createLifecycle, String workflowName, String workflowId, String workflowActivityId, String taskActivityId,
+  private V1Job createJobBody(boolean createLifecycle, String workspaceId, String workflowName, String workflowId, String workflowActivityId, String taskActivityId,
       String taskName, String taskId, List<String> arguments,
       Map<String, String> taskProperties, String image, String command, TaskConfiguration taskConfiguration) {
 
+    LOGGER.info("Initializing body...");
+    
     // Initialize Job Body
     V1Job body = new V1Job();
     body.metadata(
@@ -250,18 +252,18 @@ public class KubeServiceImpl implements KubeService {
      * - /props for mounting config_maps
      * - /data for task storage (optional - needed if using in memory storage)
      */
-    if (checkWorkspacePVCExists(workflowId, true)) {
-      container.addVolumeMountsItem(getVolumeMount(helperKubeService.getPrefixVol() + "-workspace", "/workspace"));
+    if (checkWorkspacePVCExists(workspaceId, true)) {
+      container.addVolumeMountsItem(getVolumeMount(helperKubeService.getPrefixVol() + "-ws", "/workspace"));
       V1Volume workspaceVolume = getVolume(helperKubeService.getPrefixVol() + "-ws");
       V1PersistentVolumeClaimVolumeSource workerVolumePVCSource =
           new V1PersistentVolumeClaimVolumeSource();
       workspaceVolume
-          .persistentVolumeClaim(workerVolumePVCSource.claimName(getPVCName(helperKubeService.getWorkspaceLabelSelector(workflowId))));
+          .persistentVolumeClaim(workerVolumePVCSource.claimName(getPVCName(helperKubeService.getWorkspaceLabelSelector(workspaceId))));
       podSpec.addVolumesItem(workspaceVolume);
     }
     
     if (!getPVCName(helperKubeService.getLabelSelector(workflowId, workflowActivityId, null)).isEmpty()) {
-      container.addVolumeMountsItem(getVolumeMount(helperKubeService.getPrefixVol() + "-workflow", "/workflow"));
+      container.addVolumeMountsItem(getVolumeMount(helperKubeService.getPrefixVol() + "-wf", "/workflow"));
       V1Volume workerVolume = getVolume(helperKubeService.getPrefixVol() + "-wf");
       V1PersistentVolumeClaimVolumeSource workerVolumePVCSource =
           new V1PersistentVolumeClaimVolumeSource();
@@ -307,6 +309,15 @@ public class KubeServiceImpl implements KubeService {
     projectedVolPropsSource.sources(projectPropsVolumeList);
     volumeProps.projected(projectedVolPropsSource);
     podSpec.addVolumesItem(volumeProps);
+    
+//    V1ConfigMap taskConfigMap = getConfigMap(null, workflowActivityId, taskId);
+//    V1EnvFromSource envAsProps = new V1EnvFromSource();
+//    V1ConfigMapEnvSource envCMRef = new V1ConfigMapEnvSource();
+//    envCMRef.setName(getConfigMapName(taskConfigMap));
+//    envAsProps.setConfigMapRef(envCMRef);
+//    envAsProps.setPrefix("PARAMS_");
+//    
+//    container.addEnvFromItem(envAsProps);
     
     /*
      * The following code is for custom tasks only
@@ -375,12 +386,12 @@ public class KubeServiceImpl implements KubeService {
   }
 
   @Override
-  public V1Job createJob(boolean createLifecycle, String workflowName, String workflowId,
+  public V1Job createJob(boolean createLifecycle, String workspaceId, String workflowName, String workflowId,
       String workflowActivityId, String taskActivityId, String taskName, String taskId,
       List<String> arguments, Map<String, String> taskProperties, String image, String command,
       TaskConfiguration taskConfiguration) {
     V1Job body =
-        createJobBody(createLifecycle, workflowName, workflowId, workflowActivityId, taskActivityId,
+        createJobBody(createLifecycle, workspaceId, workflowName, workflowId, workflowActivityId, taskActivityId,
             taskName, taskId, arguments, taskProperties, image, command, taskConfiguration);
 
     LOGGER.info(body);
@@ -846,7 +857,7 @@ public class KubeServiceImpl implements KubeService {
   public V1ConfigMap createTaskConfigMap(String workflowName, String workflowId,
       String workflowActivityId, String taskName, String taskId, Map<String, String> inputProps) {
     LOGGER.info("ConfigMapBody: " + inputProps);
-    return createConfigMap(createTaskConfigMapBody(workflowName, workflowId, workflowActivityId,
+    return createConfigMap(createTaskConfigMapBody(workflowName, null, workflowActivityId,
         taskName, taskId, inputProps));
   }
 
@@ -933,7 +944,7 @@ public class KubeServiceImpl implements KubeService {
   
   @Override
   public boolean checkWorkspacePVCExists(String workspaceId, boolean failIfNotBound) {
-    return checkPVCExists(helperKubeService.getWorkspaceLabelSelector(workspaceId), failIfNotBound);
+    return workspaceId != null ? checkPVCExists(helperKubeService.getWorkspaceLabelSelector(workspaceId), failIfNotBound) : false;
   }
 
   @Override
@@ -1214,7 +1225,7 @@ public class KubeServiceImpl implements KubeService {
 
 
   protected V1ConfigMap createTaskConfigMapBody(String workflowName, String workflowId,
-      String workflowActivityId, String taskName, String taskId, Map<String, String> inputProps) {
+      String workflowActivityId, String taskName, String taskId, Map<String, String> parameters) {
     V1ConfigMap body = new V1ConfigMap();
 
     body.metadata(
@@ -1223,13 +1234,39 @@ public class KubeServiceImpl implements KubeService {
     // Create Data
     Map<String, String> inputsWithFixedKeys = new HashMap<>();
     Map<String, String> sysProps = new HashMap<>();
-    sysProps.put("task.id", taskId);
-    sysProps.put("task.name", taskName);
-    inputsWithFixedKeys.put("task.input.properties", helperKubeService.createConfigMapProp(inputProps));
+    sysProps.put("task-id", taskId);
+    sysProps.put("task-name", taskName);    
+//    sysProps.put("controller-service-url", bmrgControllerServiceURL);
+//    sysProps.put("workflow-name", workflowName);
+//    sysProps.put("workflow-id", workflowId);
+//    sysProps.put("workflow-activity-id", workflowActivityId);
+    inputsWithFixedKeys.put("task.input.properties", helperKubeService.createConfigMapProp(parameters));
     inputsWithFixedKeys.put("task.system.properties", helperKubeService.createConfigMapProp(sysProps));
     body.data(inputsWithFixedKeys);
     return body;
   }
+  
+//  protected V1ConfigMap createTaskConfigMapBodyFromEnv(String workflowName, String workflowId,
+//      String workflowActivityId, String taskName, String taskId, Map<String, String> parameters) {
+//    V1ConfigMap body = new V1ConfigMap();
+//
+//    body.metadata(
+//        helperKubeService.getMetadata(workflowName, workflowId, workflowActivityId, taskId, helperKubeService.getPrefixCFGMAP()));
+//
+//    // Create Data
+//    Map<String, String> envParameters = new HashMap<>();
+//    envParameters.put("SYSTEM_ACTIVITY_ID", workflowActivityId);
+//    envParameters.put("SYSTEM_WORKFLOW_NAME", workflowName);
+//    envParameters.put("SYSTEM_WORKFLOW_ID", workflowId);
+//    envParameters.put("SYSTEM_CONTROLLER_URL", bmrgControllerServiceURL);
+//    
+//    for (Map.Entry<String, String> entry : parameters.entrySet()) {
+//      envParameters.put(entry.getKey().replace("-", "").replace(" ", "").replace(".", "_").toUpperCase(), entry.getValue());
+//    }
+//
+//    body.data(envParameters);
+//    return body;
+//  }
 
   protected V1ConfigMap createWorkflowConfigMapBody(String workflowName, String workflowId,
       String workflowActivityId, Map<String, String> inputProps) {
@@ -1241,10 +1278,10 @@ public class KubeServiceImpl implements KubeService {
     // Create Data
     Map<String, String> inputsWithFixedKeys = new HashMap<>();
     Map<String, String> sysProps = new HashMap<>();
-    sysProps.put("activity.id", workflowActivityId);
-    sysProps.put("workflow.name", workflowName);
-    sysProps.put("workflow.id", workflowId);
-    sysProps.put("controller.service.url", bmrgControllerServiceURL);
+    sysProps.put("controller-service-url", bmrgControllerServiceURL);
+    sysProps.put("workflow-name", workflowName);
+    sysProps.put("workflow-id", workflowId);
+    sysProps.put("workflow-activity-id", workflowActivityId);
     inputsWithFixedKeys.put("workflow.input.properties", helperKubeService.createConfigMapProp(inputProps));
     inputsWithFixedKeys.put("workflow.system.properties", helperKubeService.createConfigMapProp(sysProps));
     body.data(inputsWithFixedKeys);

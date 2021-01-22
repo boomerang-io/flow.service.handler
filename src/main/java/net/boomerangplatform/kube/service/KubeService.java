@@ -23,6 +23,7 @@ public interface KubeService {
 
   V1Job createJob(
       boolean createLifecycle,
+      String workspaceId,
       String workflowName,
       String workflowId,
       String workflowActivityId,

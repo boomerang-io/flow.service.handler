@@ -12,15 +12,16 @@ import net.boomerangplatform.kube.exception.KubeRuntimeException;
 import net.boomerangplatform.kube.service.KubeServiceImpl;
 import net.boomerangplatform.model.Response;
 import net.boomerangplatform.model.Task;
+import net.boomerangplatform.model.TaskConfiguration;
 import net.boomerangplatform.model.TaskCustom;
 import net.boomerangplatform.model.TaskDeletionEnum;
 import net.boomerangplatform.model.TaskResponse;
 import net.boomerangplatform.model.TaskTemplate;
 
 @Service
-public class ControllerServiceImpl implements ControllerService {
+public class TaskServiceImpl implements TaskService {
 
-  private static final Logger LOGGER = LogManager.getLogger(ControllerServiceImpl.class);
+  private static final Logger LOGGER = LogManager.getLogger(TaskServiceImpl.class);
 
 	@Autowired
 	private ConfigurationServiceImpl configurationService;
@@ -31,12 +32,13 @@ public class ControllerServiceImpl implements ControllerService {
     @Autowired
     private DeleteServiceImpl deleteService;
 
-	protected TaskDeletionEnum getTaskDeletion(TaskDeletionEnum taskDeletion) {
-		return taskDeletion != null ? taskDeletion : configurationService.getTaskDeletion();
+	protected TaskDeletionEnum getTaskDeletion(TaskConfiguration taskConfiguration) {
+      return taskConfiguration != null && taskConfiguration.getDeletion() != null ? taskConfiguration.getDeletion()
+          : configurationService.getTaskDeletion();
 	}
 	
-	protected Boolean isTaskDeletionNever(TaskDeletionEnum taskDeletion) {
-		return !TaskDeletionEnum.Never.equals(getTaskDeletion(taskDeletion)) ? Boolean.TRUE : Boolean.FALSE;
+	protected Boolean isTaskDeletionNever(TaskConfiguration taskConfiguration) {
+		return !TaskDeletionEnum.Never.equals(getTaskDeletion(taskConfiguration)) ? Boolean.TRUE : Boolean.FALSE;
 	}
     
     @Override
@@ -66,12 +68,13 @@ public class ControllerServiceImpl implements ControllerService {
           } else {
               try {
                   kubeService.createTaskConfigMap(task.getWorkflowName(), task.getWorkflowId(),
-                          task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(), task.getProperties());
+                          task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(), task.getParameters());
                   kubeService.watchConfigMap(null, task.getWorkflowActivityId(), task.getTaskId());
                   boolean createWatchLifecycle = task.getArguments().contains("shell") ? Boolean.TRUE : Boolean.FALSE;
-                  kubeService.createJob(createWatchLifecycle, task.getWorkflowName(), task.getWorkflowId(),
+                  String workspaceId = task.getWorkspaces() != null && task.getWorkspaces().get(0) != null ? task.getWorkspaces().get(0).getWorkspaceId() : null;
+                  kubeService.createJob(createWatchLifecycle, workspaceId, task.getWorkflowName(), task.getWorkflowId(),
                           task.getWorkflowActivityId(), task.getTaskActivityId(), task.getTaskName(), task.getTaskId(),
-                          task.getArguments(), task.getProperties(), task.getImage(), task.getCommand(),
+                          task.getArguments(), task.getParameters(), task.getImage(), task.getCommand(),
                           task.getConfiguration());
                   kubeService.watchJob(createWatchLifecycle, task.getWorkflowId(), task.getWorkflowActivityId(),
                           task.getTaskId());
@@ -79,11 +82,11 @@ public class ControllerServiceImpl implements ControllerService {
                   LOGGER.info("DEBUG::Task Is Being Set as Failed");
                     throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
               } finally {
-                  response.setOutput(kubeService.getTaskOutPutConfigMapData(task.getWorkflowId(),
+                  response.setResults(kubeService.getTaskOutPutConfigMapData(task.getWorkflowId(),
                           task.getWorkflowActivityId(), task.getTaskId(), task.getTaskName()));
                   kubeService.deleteConfigMap(null, task.getWorkflowActivityId(), task.getTaskId());
-                  if (isTaskDeletionNever(task.getConfiguration().getDeletion())) {
-                    deleteService.deleteJob(getTaskDeletion(task.getConfiguration().getDeletion()), task.getWorkflowId(),
+                  if (isTaskDeletionNever(task.getConfiguration())) {
+                    deleteService.deleteJob(getTaskDeletion(task.getConfiguration()), task.getWorkflowId(),
                               task.getWorkflowActivityId(), task.getTaskId());
                   }
                   LOGGER.info("Task (" + task.getTaskId() + ") has completed with code " + response.getCode());
@@ -100,21 +103,22 @@ public class ControllerServiceImpl implements ControllerService {
           } else {
               try {
                   kubeService.createTaskConfigMap(task.getWorkflowName(), task.getWorkflowId(),
-                          task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(), task.getProperties());
+                          task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(), task.getParameters());
                   kubeService.watchConfigMap(null, task.getWorkflowActivityId(), task.getTaskId());
-                  kubeService.createJob(true, task.getWorkflowName(), task.getWorkflowId(), task.getWorkflowActivityId(),
+                  String workspaceId = task.getWorkspaces() != null && task.getWorkspaces().get(0) != null ? task.getWorkspaces().get(0).getWorkspaceId() : null;
+                  kubeService.createJob(true, workspaceId, task.getWorkflowName(), task.getWorkflowId(), task.getWorkflowActivityId(),
                           task.getTaskActivityId(), task.getTaskName(), task.getTaskId(), task.getArguments(),
-                          task.getProperties(), task.getImage(), task.getCommand(), task.getConfiguration());
+                          task.getParameters(), task.getImage(), task.getCommand(), task.getConfiguration());
                   kubeService.watchJob(true, task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId());
               } catch (KubeRuntimeException e) {
                   LOGGER.info("DEBUG::Task Is Being Set as Failed");
                   throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
               } finally {
-                  response.setOutput(kubeService.getTaskOutPutConfigMapData(task.getWorkflowId(),
+                  response.setResults(kubeService.getTaskOutPutConfigMapData(task.getWorkflowId(),
                           task.getWorkflowActivityId(), task.getTaskId(), task.getTaskName()));
                   kubeService.deleteConfigMap(null, task.getWorkflowActivityId(), task.getTaskId());
-                  if (isTaskDeletionNever(task.getConfiguration().getDeletion())) {
-                    deleteService.deleteJob(getTaskDeletion(task.getConfiguration().getDeletion()), task.getWorkflowId(),
+                  if (isTaskDeletionNever(task.getConfiguration())) {
+                    deleteService.deleteJob(getTaskDeletion(task.getConfiguration()), task.getWorkflowId(),
                         task.getWorkflowActivityId(), task.getTaskId());
                   }
                   LOGGER.info("Task (" + task.getTaskId() + ") has completed with code " + response.getCode());
@@ -124,14 +128,14 @@ public class ControllerServiceImpl implements ControllerService {
     }
 
     @Override
-    public Response setJobOutputProperty(String workflowId, String workflowActivityId, String taskId,
+    public Response setTaskResultParameter(String workflowId, String workflowActivityId, String taskId,
         String taskName, String key, String value) {
-      Response response = new Response("0", "Property has been set against workflow ("
+      Response response = new Response("0", "Parameter has been set against workflow ("
           + workflowActivityId + ") and task (" + taskId + ")");
       try {
-        Map<String, String> properties = new HashMap<>();
-        properties.put(key, value);
-        kubeService.patchTaskConfigMap(workflowId, workflowActivityId, taskId, taskName, properties);
+        Map<String, String> parameters = new HashMap<>();
+        parameters.put(key, value);
+        kubeService.patchTaskConfigMap(workflowId, workflowActivityId, taskId, taskName, parameters);
       } catch (KubeRuntimeException e) {
         throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
       }
@@ -139,14 +143,14 @@ public class ControllerServiceImpl implements ControllerService {
     }
 
     @Override
-    public Response setJobOutputProperties(String workflowId, String workflowActivityId,
-        String taskId, String taskName, Map<String, String> properties) {
-      Response response = new Response("0", "Properties have been set against workflow ("
+    public Response setTaskResultParameters(String workflowId, String workflowActivityId,
+        String taskId, String taskName, Map<String, String> parameters) {
+      Response response = new Response("0", "Parameters have been set against workflow ("
           + workflowActivityId + ") and task (" + taskId + ")");
 
-      LOGGER.info(properties);
+      LOGGER.info(parameters);
       try {
-        kubeService.patchTaskConfigMap(workflowId, workflowActivityId, taskId, taskName, properties);
+        kubeService.patchTaskConfigMap(workflowId, workflowActivityId, taskId, taskName, parameters);
       } catch (KubeRuntimeException e) {
         throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
       }

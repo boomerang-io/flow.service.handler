@@ -31,7 +31,7 @@ public class WorklowServiceImpl implements WorkflowService {
           kubeService.watchWorkflowPVC(workflow.getWorkflowId(), workflow.getWorkflowActivityId()).getPhase();
         }
         kubeService.createWorkflowConfigMap(workflow.getWorkflowName(), workflow.getWorkflowId(),
-            workflow.getWorkflowActivityId(), workflow.getProperties());
+            workflow.getWorkflowActivityId(), workflow.getParameters());
         kubeService.watchConfigMap(workflow.getWorkflowId(), workflow.getWorkflowActivityId(), null);
       } catch (ApiException | KubeRuntimeException e) {
             throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);

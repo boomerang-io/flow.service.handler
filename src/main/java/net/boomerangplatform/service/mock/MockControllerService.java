@@ -6,11 +6,11 @@ import org.springframework.stereotype.Service;
 import net.boomerangplatform.model.Response;
 import net.boomerangplatform.model.Task;
 import net.boomerangplatform.model.TaskResponse;
-import net.boomerangplatform.service.ControllerService;
+import net.boomerangplatform.service.TaskService;
 
 @Service
 @Profile("mock")
-public class MockControllerService implements ControllerService {
+public class MockControllerService implements TaskService {
 
 	@Override
 	public TaskResponse executeTask(Task task) {
@@ -28,13 +28,13 @@ public class MockControllerService implements ControllerService {
 //	}
 
 	@Override
-	public Response setJobOutputProperty(String workflowId, String workflowActivityId, String taskId, String taskName,
+	public Response setTaskResultParameter(String workflowId, String workflowActivityId, String taskId, String taskName,
 			String key, String value) {
 		return null;
 	}
 
 	@Override
-	public Response setJobOutputProperties(String workflowId, String workflowActivityId, String taskId, String taskName,
+	public Response setTaskResultParameters(String workflowId, String workflowActivityId, String taskId, String taskName,
 			Map<String, String> properties) {
 		return null;
 	}

@@ -17,7 +17,7 @@ public class Workflow {
   @JsonProperty("storage")
   private Storage storage;
 
-  private Map<String, String> properties;
+  private Map<String, String> parameters;
 
   public String getWorkflowName() {
     return workflowName;
@@ -51,11 +51,11 @@ public class Workflow {
     this.storage = storage;
   }
 
-  public Map<String, String> getProperties() {
-    return properties;
+  public Map<String, String> getParameters() {
+    return parameters;
   }
 
-  public void setProperties(Map<String, String> properties) {
-    this.properties = properties;
+  public void setParameters(Map<String, String> parameters) {
+    this.parameters = parameters;
   }
 }

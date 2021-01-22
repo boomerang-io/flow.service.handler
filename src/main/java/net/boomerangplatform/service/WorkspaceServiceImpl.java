@@ -26,11 +26,11 @@ public class WorkspaceServiceImpl implements WorkspaceService {
           new Response("0", "Workspace (" + workspace.getId() + ") PVC has been created successfully.");
       try {
         LOGGER.info("Workspace: " + workspace.toString());
-        boolean cacheExists = kubeService.checkWorkspacePVCExists(workspace.getId(), false);
-        if (workspace.getStorage().getEnable() && !cacheExists) {
+        boolean pvcExists = kubeService.checkWorkspacePVCExists(workspace.getId(), false);
+        if (workspace.getStorage().getEnable() && !pvcExists) {
           kubeService.createWorkspacePVC(workspace.getName(), workspace.getId(), workspace.getStorage().getSize());
           kubeService.watchWorkspacePVC(workspace.getId());
-        } else if (cacheExists) {
+        } else if (pvcExists) {
           response = new Response("0", "Workspace (" + workspace.getId() + ") PVC already existed.");
         }
       } catch (ApiException | KubeRuntimeException e) {
