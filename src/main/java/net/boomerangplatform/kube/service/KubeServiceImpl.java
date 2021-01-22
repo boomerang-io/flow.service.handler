@@ -1235,8 +1235,8 @@ public class KubeServiceImpl implements KubeService {
     Map<String, String> inputsWithFixedKeys = new HashMap<>();
     Map<String, String> sysProps = new HashMap<>();
     sysProps.put("task-id", taskId);
-    sysProps.put("task-name", taskName);    
-    sysProps.put("task-activity-id", activityId);    
+    sysProps.put("task-name", taskName);
+    sysProps.put("task-activity-id", activityId); 
     inputsWithFixedKeys.put("task.input.properties", helperKubeService.createConfigMapProp(parameters));
     inputsWithFixedKeys.put("task.system.properties", helperKubeService.createConfigMapProp(sysProps));
     body.data(inputsWithFixedKeys);
