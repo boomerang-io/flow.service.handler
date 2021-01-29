@@ -32,9 +32,8 @@ public class LogKubeServiceImpl implements LogKubeService {
   private KubeServiceImpl kubeService;
 
   @Override
-  public String getPodLog(String workflowId, String workflowActivityId, String taskId,
-      String taskActivityId) {
-    String labelSelector = helperKubeService.getLabelSelector(workflowId, workflowActivityId, taskId);
+  public String getPodLog(String workflowId, String activityId, String taskId) {
+    String labelSelector = helperKubeService.getLabelSelector(workflowId, activityId, taskId);
 
     PodLogs logs = new PodLogs();
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -58,8 +57,8 @@ public class LogKubeServiceImpl implements LogKubeService {
     return baos.toString(StandardCharsets.UTF_8);
   }
 
-  public boolean isKubePodAvailable(String workflowId, String workflowActivityId, String taskId) {
-    String labelSelector = helperKubeService.getLabelSelector(workflowId, workflowActivityId, taskId);
+  public boolean isKubePodAvailable(String workflowId, String activityId, String taskId) {
+    String labelSelector = helperKubeService.getLabelSelector(workflowId, activityId, taskId);
 
     try {
       List<V1Pod> allPods = kubeService.getPods(labelSelector);
@@ -79,11 +78,11 @@ public class LogKubeServiceImpl implements LogKubeService {
 
   @Override
   public StreamingResponseBody streamPodLog(HttpServletResponse response, String workflowId,
-      String workflowActivityId, String taskId, String taskActivityId) {
+      String activityId, String taskId) {
 
     LOGGER.info("Stream logs from Kubernetes");
 
-    String labelSelector = helperKubeService.getLabelSelector(workflowId, workflowActivityId, taskId);
+    String labelSelector = helperKubeService.getLabelSelector(workflowId, activityId, taskId);
     StreamingResponseBody responseBody = null;
     try {
       Watch<V1Pod> watch = kubeService.createPodWatch(labelSelector, kubeService.getCoreApi());
