@@ -137,11 +137,11 @@ public class HelperKubeServiceImpl implements HelperKubeService {
   protected void getTolerationAndSelector(V1PodSpec podSpec) {
     V1Toleration nodeTolerationItem = new V1Toleration();
     nodeTolerationItem.key("dedicated");
-    nodeTolerationItem.value("bmrg-worker");
+    nodeTolerationItem.value("bmrg-worker2");
     nodeTolerationItem.effect("NoSchedule");
     nodeTolerationItem.operator("Equal");
     podSpec.addTolerationsItem(nodeTolerationItem);
-    podSpec.putNodeSelectorItem("node-role.kubernetes.io/bmrg-worker", "true");
+    podSpec.putNodeSelectorItem("node-role.kubernetes.io/bmrg-worker2", "true");
   }
 
   /*
