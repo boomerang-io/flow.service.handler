@@ -121,10 +121,10 @@ public class HelperKubeServiceImpl implements HelperKubeService {
    * Passes through optional method inputs to the sub methods which need to handle this.
    */
   protected V1ObjectMeta getMetadata(String workflowName, String workflowId,
-      String workflowActivityId, String taskId, String generateName) {
+      String activityId, String taskId, String generateName) {
     V1ObjectMeta metadata = new V1ObjectMeta();
-    metadata.annotations(createAnnotations(workflowName, workflowId, workflowActivityId, taskId));
-    metadata.labels(createLabels(workflowId, workflowActivityId, taskId));
+    metadata.annotations(createAnnotations(workflowName, workflowId, activityId, taskId));
+    metadata.labels(createLabels(workflowId, activityId, taskId));
     if (StringUtils.isNotBlank(generateName)) {
       metadata.generateName(generateName + "-");
     }
