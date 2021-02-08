@@ -102,7 +102,7 @@ public class HelperKubeServiceImpl implements HelperKubeService {
     if (properties != null && !properties.isEmpty()) {
       properties.forEach((key, value) -> {
         String valueStr = value != null ? value : "";
-        LOGGER.info("  " + key + "=" + valueStr);
+        LOGGER.info("createConfigMapProp() - " + key + "=" + valueStr);
         props.setProperty(key, valueStr);
       });
     }

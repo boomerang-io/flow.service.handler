@@ -62,6 +62,8 @@ public class LogKubeServiceImpl implements LogKubeService {
 
     try {
       List<V1Pod> allPods = kubeService.getPods(labelSelector);
+      
+      LOGGER.debug("Pods Found: " + allPods.size());
 
       if (allPods == null || allPods.isEmpty() || "succeeded".equalsIgnoreCase(allPods.get(0).getStatus().getPhase())
           || "failed".equalsIgnoreCase(allPods.get(0).getStatus().getPhase())) {
