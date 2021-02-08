@@ -1137,7 +1137,7 @@ public class KubeServiceImpl implements KubeService {
   protected List<V1Pod> getPods(String labelSelector) throws ApiException {
     List<V1Pod> pods = null;
 
-    getCoreApi().listNamespacedPod(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null,
+    pods = getCoreApi().listNamespacedPod(kubeNamespace, kubeApiIncludeuninitialized, kubeApiPretty, null,
         null, labelSelector, null, null, TIMEOUT_ONE_MINUTE, false).getItems();
 
     return pods;
