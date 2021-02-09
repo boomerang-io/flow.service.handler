@@ -336,6 +336,7 @@ public class KubeServiceImpl implements KubeService {
           getContainer(kubeLifecycleImage, null)
               .name("lifecycle-cntr")
               .addVolumeMountsItem(getVolumeMount("lifecycle", "/lifecycle"))
+              .addVolumeMountsItem(getVolumeMount(helperKubeService.getPrefixVol() + "-props", "/props"))
               .addArgsItem("lifecycle")
               .addArgsItem("wait");
         lifecycleContainer.env(helperKubeService.createEnvVars(workflowId,taskActivityId,taskName,taskId));
