@@ -3,6 +3,7 @@ package net.boomerangplatform.service;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import io.kubernetes.client.ApiException;
@@ -16,6 +17,16 @@ import net.boomerangplatform.model.Workflow;
 public class WorklowServiceImpl implements WorkflowService {
 
   private static final Logger LOGGER = LogManager.getLogger(WorklowServiceImpl.class);
+  
+  @Value("${kube.workspace.storage.size}")
+  protected String storageSize;
+  
+  @Value("${kube.workspace.storage.class}")
+  protected String storageClassName;
+  
+  @Value("${kube.workspace.storage.accessMode}")
+  protected String storageAccessMode;
+  
     @Autowired
     private KubeServiceImpl kubeService;
 
@@ -26,10 +37,11 @@ public class WorklowServiceImpl implements WorkflowService {
       try {
           LOGGER.info(workflow.toString());
         if (workflow.getWorkflowStorage().getEnable()) {
-//          kubeService.createWorkflowPVC(workflow.getWorkflowName(), workflow.getWorkflowId(),
-//              workflow.getWorkflowActivityId(), workflow.getWorkflowStorage().getSize());
+          String size = workflow.getWorkflowStorage().getSize() == null || workflow.getWorkflowStorage().getSize().isEmpty() ? storageSize : workflow.getWorkflowStorage().getSize();
+          String className = workflow.getWorkflowStorage().getClassName();
+          String accessMode = workflow.getWorkflowStorage().getAccessMode() == null || workflow.getWorkflowStorage().getAccessMode().isEmpty() ? storageAccessMode : workflow.getWorkflowStorage().getAccessMode();
           kubeService.createWorkflowPVC(workflow.getWorkflowName(), workflow.getWorkflowId(),
-              workflow.getWorkflowActivityId(), workflow.getWorkflowStorage().getSize(), "local-path");
+              workflow.getWorkflowActivityId(), size, className, accessMode);
           kubeService.watchWorkflowPVC(workflow.getWorkflowId(), workflow.getWorkflowActivityId()).getPhase();
         }
         kubeService.createWorkflowConfigMap(workflow.getWorkflowName(), workflow.getWorkflowId(),

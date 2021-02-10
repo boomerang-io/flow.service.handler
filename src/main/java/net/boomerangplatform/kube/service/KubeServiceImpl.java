@@ -645,17 +645,17 @@ public class KubeServiceImpl implements KubeService {
   }
   
   @Override
-  public V1PersistentVolumeClaim createWorkspacePVC(String workspaceName, String workspaceId, String pvcSize, String storageClass) throws ApiException {
-    return createPVC(helperKubeService.createWorkspaceAnnotations(workspaceName, workspaceId), helperKubeService.createWorkspaceLabels(workspaceId), pvcSize, storageClass);
+  public V1PersistentVolumeClaim createWorkspacePVC(String workspaceName, String workspaceId, String size, String className, String accessMode) throws ApiException {
+    return createPVC(helperKubeService.createWorkspaceAnnotations(workspaceName, workspaceId), helperKubeService.createWorkspaceLabels(workspaceId), size, className, accessMode);
   }
   
   @Override
   public V1PersistentVolumeClaim createWorkflowPVC(String workflowName, String workflowId,
-      String activityId, String pvcSize, String storageClass) throws ApiException {
-    return createPVC(helperKubeService.createAnnotations(workflowName, workflowId, activityId, null), helperKubeService.createLabels(workflowId, activityId, null), pvcSize, storageClass);
+      String activityId, String size, String className, String accessMode) throws ApiException {
+    return createPVC(helperKubeService.createAnnotations(workflowName, workflowId, activityId, null), helperKubeService.createLabels(workflowId, activityId, null), size, className, accessMode);
   }
 
-  private V1PersistentVolumeClaim createPVC(Map<String, String> annotations, Map<String, String> labels, String pvcSize, String storageClass) throws ApiException {
+  private V1PersistentVolumeClaim createPVC(Map<String, String> annotations, Map<String, String> labels, String size, String className, String accessMode) throws ApiException {
     // Setup
     V1PersistentVolumeClaim body = new V1PersistentVolumeClaim();
 
@@ -669,19 +669,19 @@ public class KubeServiceImpl implements KubeService {
     // Create PVC Spec
     V1PersistentVolumeClaimSpec pvcSpec = new V1PersistentVolumeClaimSpec();
     List<String> pvcAccessModes = new ArrayList<>();
-//    pvcAccessModes.add("ReadWriteMany");
-    pvcAccessModes.add("ReadWriteOnce");
+    pvcAccessModes.add(accessMode);
     pvcSpec.accessModes(pvcAccessModes);
     V1ResourceRequirements pvcResourceReq = new V1ResourceRequirements();
     Map<String, Quantity> pvcRequests = new HashMap<>();
-    if (pvcSize == null || pvcSize.isEmpty()) {
-      pvcSize = kubeWorkerPVCSize;
-    }
-    pvcRequests.put("storage", Quantity.fromString(pvcSize));
+//    if (size == null || size.isEmpty()) {
+//      size = kubeWorkerPVCSize;
+//    }
+    pvcRequests.put("storage", Quantity.fromString(size));
     pvcResourceReq.requests(pvcRequests);
     pvcSpec.resources(pvcResourceReq);
-    if (storageClass != null && !storageClass.isEmpty()) {
-      pvcSpec.storageClassName(storageClass);
+    if (className != null && !className.isEmpty()) {
+//      By not specifying StorageClassName it will use the default set in Kubernetes 
+      pvcSpec.storageClassName(className);
     }
     body.spec(pvcSpec);
 
@@ -690,68 +690,6 @@ public class KubeServiceImpl implements KubeService {
     LOGGER.info(result);
     return result;
   }
-  
-//  private V1PersistentVolume createLocalPV(Map<String, String> annotations, Map<String, String> labels, String pvcSize) throws ApiException {
-//    //Setup
-//    V1PersistentVolume body = new V1PersistentVolume();
-//    
-//    //Create Metadata
-//    V1ObjectMeta metadata = new V1ObjectMeta();
-//    metadata.annotations(annotations);
-//    metadata.labels(labels);
-//    metadata.generateName(helperKubeService.getPrefixPV() + "-");
-//    body.metadata(metadata);
-//    
-//    //Create PV Spec
-//    V1PersistentVolumeSpec pvSpec = new V1PersistentVolumeSpec();
-//    pvSpec.addAccessModesItem("ReadWriteMany");
-//    Map<String, Quantity> pvCapacity = new HashMap<>();
-//    pvCapacity.put("storage", Quantity.fromString(pvcSize));
-//    pvSpec.capacity(pvCapacity);
-//    V1LocalVolumeSource local = new V1LocalVolumeSource();
-//    local.
-//    pvSpec.local(local);
-//    
-//    
-//    body.spec(pvSpec);
-//    
-//    V1PersistentVolume result = getCoreApi().createPersistentVolume(
-//        body, kubeApiIncludeuninitialized, kubeApiPretty, null);
-//    LOGGER.info(result);
-//    return result;
-//  }
-//  
-//  private V1PersistentVolumeClaim createLocalPVC(Map<String, String> annotations, Map<String, String> labels, String pvcSize) throws ApiException {
-//    // Setup
-//    V1PersistentVolumeClaim body = new V1PersistentVolumeClaim();
-//
-//    // Create Metadata
-//    V1ObjectMeta metadata = new V1ObjectMeta();
-//    metadata.annotations(annotations);
-//    metadata.labels(labels);
-//    metadata.generateName(helperKubeService.getPrefixPVC() + "-");
-//    body.metadata(metadata);
-//
-//    // Create PVC Spec
-//    V1PersistentVolumeClaimSpec pvcSpec = new V1PersistentVolumeClaimSpec();
-//    List<String> pvcAccessModes = new ArrayList<>();
-//    pvcAccessModes.add("ReadWriteMany");
-//    pvcSpec.accessModes(pvcAccessModes);
-//    V1ResourceRequirements pvcResourceReq = new V1ResourceRequirements();
-//    Map<String, Quantity> pvcRequests = new HashMap<>();
-//    if (pvcSize == null || pvcSize.isEmpty()) {
-//      pvcSize = kubeWorkerPVCSize;
-//    }
-//    pvcRequests.put("storage", Quantity.fromString(pvcSize));
-//    pvcResourceReq.requests(pvcRequests);
-//    pvcSpec.resources(pvcResourceReq);
-//    body.spec(pvcSpec);
-//
-//    V1PersistentVolumeClaim result = getCoreApi().createNamespacedPersistentVolumeClaim(
-//        kubeNamespace, body, kubeApiIncludeuninitialized, kubeApiPretty, null);
-//    LOGGER.info(result);
-//    return result;
-//  }
   
   @Override
   public V1PersistentVolumeClaimStatus watchWorkspacePVC(String workspaceId) {

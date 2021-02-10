@@ -23,7 +23,7 @@ The controller and the workers need to run with special RBAC for their specific 
 - Client: https://github.com/kubernetes-client/java
 - Examples: https://github.com/kubernetes-client/java/blob/master/examples/src/main/java/io/kubernetes/client/examples
 - API: https://github.com/kubernetes-client/java/tree/master/kubernetes/src/main/java/io/kubernetes/client/apis
-- Docs: https://github.com/kubernetes-client/java/tree/master/kubernetes/docs
+- API Object Docs: https://github.com/kubernetes-client/java/tree/master/kubernetes/docs
 
 ### Kubernetes ConfigMap
 

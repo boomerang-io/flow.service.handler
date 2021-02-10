@@ -18,8 +18,14 @@ public class WorkspaceServiceImpl implements WorkspaceService {
 
   private static final Logger LOGGER = LogManager.getLogger(WorkspaceServiceImpl.class);
   
-  @Value("${kube.workspace.pvc.size}")
-  protected String pvcSize;
+  @Value("${kube.workspace.storage.size}")
+  protected String storageSize;
+  
+  @Value("${kube.workspace.storage.class}")
+  protected String storageClassName;
+  
+  @Value("${kube.workspace.storage.accessMode}")
+  protected String storageAccessMode;
 
     @Autowired
     private KubeServiceImpl kubeService;
@@ -32,8 +38,10 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         LOGGER.info("Workspace: " + workspace.toString());
         boolean pvcExists = kubeService.checkWorkspacePVCExists(workspace.getId(), false);
         if (workspace.getStorage().getEnable() && !pvcExists) {
-//          kubeService.createWorkspacePVC(workspace.getName(), workspace.getId(), workspace.getStorage().getSize());
-          kubeService.createWorkspacePVC(workspace.getName(), workspace.getId(), pvcSize, null);
+          String size = workspace.getStorage().getSize() == null || workspace.getStorage().getSize().isEmpty() ? storageSize : workspace.getStorage().getSize();
+          String className = workspace.getStorage().getClassName();
+          String accessMode = workspace.getStorage().getAccessMode() == null || workspace.getStorage().getAccessMode().isEmpty() ? storageAccessMode : workspace.getStorage().getAccessMode();
+          kubeService.createWorkspacePVC(workspace.getName(), workspace.getId(), size, className, accessMode);
           kubeService.watchWorkspacePVC(workspace.getId());
         } else if (pvcExists) {
           response = new Response("0", "Workspace (" + workspace.getId() + ") PVC already existed.");
