@@ -72,10 +72,10 @@ public interface KubeService {
       TaskDeletionEnum taskDeletion, String workflowId, String workflowActivityId, String taskId);
 
   V1PersistentVolumeClaim createWorkspacePVC(String workspaceName, String workspaceId,
-      String pvcSize) throws ApiException;
+      String pvcSize, String storageClass) throws ApiException;
 
   V1PersistentVolumeClaim createWorkflowPVC(String workflowName, String workflowId,
-      String workflowActivityId, String pvcSize) throws ApiException;
+      String activityId, String pvcSize, String storageClass) throws ApiException;
 
   V1PersistentVolumeClaimStatus watchWorkspacePVC(String workspaceId);
 

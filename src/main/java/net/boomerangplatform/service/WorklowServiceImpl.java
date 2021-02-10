@@ -26,8 +26,10 @@ public class WorklowServiceImpl implements WorkflowService {
       try {
           LOGGER.info(workflow.toString());
         if (workflow.getWorkflowStorage().getEnable()) {
+//          kubeService.createWorkflowPVC(workflow.getWorkflowName(), workflow.getWorkflowId(),
+//              workflow.getWorkflowActivityId(), workflow.getWorkflowStorage().getSize());
           kubeService.createWorkflowPVC(workflow.getWorkflowName(), workflow.getWorkflowId(),
-              workflow.getWorkflowActivityId(), workflow.getWorkflowStorage().getSize());
+              workflow.getWorkflowActivityId(), workflow.getWorkflowStorage().getSize(), "local-path");
           kubeService.watchWorkflowPVC(workflow.getWorkflowId(), workflow.getWorkflowActivityId()).getPhase();
         }
         kubeService.createWorkflowConfigMap(workflow.getWorkflowName(), workflow.getWorkflowId(),

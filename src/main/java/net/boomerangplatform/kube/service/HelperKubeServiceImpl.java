@@ -63,6 +63,10 @@ public class HelperKubeServiceImpl implements HelperKubeService {
     return bmrgProduct + "-pvc";
   }
   
+  protected String getPrefixPV() {
+    return bmrgProduct + "-pv";
+  }
+  
   protected String getPrefixCFGMAP() {
     return bmrgProduct + "-cfg";
   }

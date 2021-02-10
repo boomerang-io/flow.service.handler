@@ -33,7 +33,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         boolean pvcExists = kubeService.checkWorkspacePVCExists(workspace.getId(), false);
         if (workspace.getStorage().getEnable() && !pvcExists) {
 //          kubeService.createWorkspacePVC(workspace.getName(), workspace.getId(), workspace.getStorage().getSize());
-          kubeService.createWorkspacePVC(workspace.getName(), workspace.getId(), pvcSize);
+          kubeService.createWorkspacePVC(workspace.getName(), workspace.getId(), pvcSize, null);
           kubeService.watchWorkspacePVC(workspace.getId());
         } else if (pvcExists) {
           response = new Response("0", "Workspace (" + workspace.getId() + ") PVC already existed.");
