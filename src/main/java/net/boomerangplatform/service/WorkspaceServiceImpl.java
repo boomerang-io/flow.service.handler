@@ -3,6 +3,7 @@ package net.boomerangplatform.service;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import io.kubernetes.client.ApiException;
@@ -16,6 +17,9 @@ import net.boomerangplatform.model.Workspace;
 public class WorkspaceServiceImpl implements WorkspaceService {
 
   private static final Logger LOGGER = LogManager.getLogger(WorkspaceServiceImpl.class);
+  
+  @Value("${kube.workspace.pvc.size}")
+  protected String pvcSize;
 
     @Autowired
     private KubeServiceImpl kubeService;
@@ -28,7 +32,8 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         LOGGER.info("Workspace: " + workspace.toString());
         boolean pvcExists = kubeService.checkWorkspacePVCExists(workspace.getId(), false);
         if (workspace.getStorage().getEnable() && !pvcExists) {
-          kubeService.createWorkspacePVC(workspace.getName(), workspace.getId(), workspace.getStorage().getSize());
+//          kubeService.createWorkspacePVC(workspace.getName(), workspace.getId(), workspace.getStorage().getSize());
+          kubeService.createWorkspacePVC(workspace.getName(), workspace.getId(), pvcSize);
           kubeService.watchWorkspacePVC(workspace.getId());
         } else if (pvcExists) {
           response = new Response("0", "Workspace (" + workspace.getId() + ") PVC already existed.");
