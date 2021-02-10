@@ -784,7 +784,7 @@ public class KubeServiceImpl implements KubeService {
         LOGGER.info(String.format("%s : %s%n", item.type, item.object.getMetadata().getName()));
         LOGGER.info(item.object.getStatus());
         result = item.object.getStatus();
-        if (result != null && result.getPhase() != null && "Bound".equals(result.getPhase())) {
+        if (result != null && result.getPhase() != null && ("Bound".equals(result.getPhase()) || "Pending".equals(result.getPhase()))) {
           break;
         }
       }
