@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Pattern;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
@@ -83,10 +82,6 @@ public class KubeServiceImpl implements KubeService {
   private static final Logger LOGGER = LogManager.getLogger(KubeService.class);
   
   protected static final String TIER = "worker";
-
-  private static final int PROPERTY_SIZE = 2;
-
-  private static final Pattern PATTERN_PROPERTIES = Pattern.compile("\\s*\\n\\s*");
 
   private static final int TIMEOUT = 600;
 
@@ -913,17 +908,6 @@ public class KubeServiceImpl implements KubeService {
     } catch (IOException e) {
       return new HashMap<String, String>();
     }
-
-//    Map<String, String> properties = 
-//        PATTERN_PROPERTIES.splitAsStream(dataString.trim()).map(s -> s.split("=", PROPERTY_SIZE))
-//            .collect(Collectors.toMap(a -> a[0], a -> a.length > 1 ? a[1] : ""));
-    
-//    final Properties p = new Properties();
-//    p.load(new StringReader(s));
-//    return p;
-//
-//    LOGGER.info("  properties: " + properties.toString());
-//    return properties;
   }
 
   @Override
@@ -1160,7 +1144,6 @@ public class KubeServiceImpl implements KubeService {
 
     if (configMap.getData().get(key) != null) {
       configMapDataProp = configMap.getData().get(key);
-      LOGGER.info(" ConfigMap Input Properties Data: " + configMapDataProp);
     }
     return configMapDataProp;
   }
