@@ -129,12 +129,13 @@ public class HelperKubeServiceImpl implements HelperKubeService {
       props.load(new StringReader(properties));
     }
     props.list(System.out);
-//    props.forEach((key, value) -> {
-//      String valueStr = value != null ? value : "";
-//      LOGGER.info("createConfigMapProp() - " + key + "=" + valueStr);
-//      props.setProperty(key, valueStr);
-//    });
-    return new HashMap<String, String>();
+    Map<String, String> propsMap = new HashMap<>();
+    for (Map.Entry<Object, Object> e : props.entrySet()) {
+      String key = (String)e.getKey();
+      String value = (String)e.getValue();
+      propsMap.put(key, value);
+    }
+    return propsMap;
   }
 
   /*
