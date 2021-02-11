@@ -131,9 +131,6 @@ public class KubeServiceImpl implements KubeService {
   @Value("${kube.image.pullSecret}")
   protected String kubeImagePullSecret;
 
-  @Value("${kube.workflow.pvc.size}")
-  protected String kubeWorkerPVCSize;
-
   @Value("${kube.worker.job.backOffLimit}")
   protected Integer kubeWorkerJobBackOffLimit;
 
