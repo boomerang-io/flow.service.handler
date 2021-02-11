@@ -1,6 +1,7 @@
 package net.boomerangplatform.kube.service;
 
 import java.io.IOException;
+import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -119,6 +120,21 @@ public class HelperKubeServiceImpl implements HelperKubeService {
     }
 
     return propsSW.toString();
+  }
+  
+  protected Map<String, String> getConfigMapProp(String properties) throws IOException {
+    LOGGER.info("Retrieving ConfigMap Properties File");
+    Properties props = new Properties();
+    if (properties != null && !properties.isEmpty()) {
+      props.load(new StringReader(properties));
+    }
+    props.list(System.out);
+//    props.forEach((key, value) -> {
+//      String valueStr = value != null ? value : "";
+//      LOGGER.info("createConfigMapProp() - " + key + "=" + valueStr);
+//      props.setProperty(key, valueStr);
+//    });
+    return new HashMap<String, String>();
   }
 
   /*

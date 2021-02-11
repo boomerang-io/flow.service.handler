@@ -14,7 +14,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
@@ -909,13 +908,22 @@ public class KubeServiceImpl implements KubeService {
     V1ConfigMap wfConfigMap = getConfigMap(workflowId, activityId, null);
     String fileName = taskName.replace(" ", "") + ".output.properties";
     String dataString = getConfigMapDataProp(wfConfigMap, fileName);
+    try {
+      return helperKubeService.getConfigMapProp(dataString);
+    } catch (IOException e) {
+      return new HashMap<String, String>();
+    }
 
-    Map<String, String> properties =
-        PATTERN_PROPERTIES.splitAsStream(dataString.trim()).map(s -> s.split("=", PROPERTY_SIZE))
-            .collect(Collectors.toMap(a -> a[0], a -> a.length > 1 ? a[1] : ""));
-
-    LOGGER.info("  properties: " + properties.toString());
-    return properties;
+//    Map<String, String> properties = 
+//        PATTERN_PROPERTIES.splitAsStream(dataString.trim()).map(s -> s.split("=", PROPERTY_SIZE))
+//            .collect(Collectors.toMap(a -> a[0], a -> a.length > 1 ? a[1] : ""));
+    
+//    final Properties p = new Properties();
+//    p.load(new StringReader(s));
+//    return p;
+//
+//    LOGGER.info("  properties: " + properties.toString());
+//    return properties;
   }
 
   @Override
