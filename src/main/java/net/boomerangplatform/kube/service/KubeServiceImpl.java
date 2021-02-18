@@ -158,9 +158,6 @@ public class KubeServiceImpl implements KubeService {
   @Value("${controller.service.host}")
   protected String bmrgControllerServiceURL;
   
-  @Value("${boomerang.product}")
-  private String bmrgProduct;
-
   @Autowired
   protected HelperKubeServiceImpl helperKubeService;
 
