@@ -48,7 +48,7 @@ public class HelperKubeServiceImpl implements HelperKubeService {
   @Value("${proxy.ignore}")
   protected String proxyIgnore;
   
-  @Value("${boomerang.product}")
+  @Value("${boomerang.product:bmrg-flow}")
   protected String bmrgProduct;
 
   @Autowired
