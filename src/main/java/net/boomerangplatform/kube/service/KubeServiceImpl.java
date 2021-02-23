@@ -182,7 +182,7 @@ public class KubeServiceImpl implements KubeService {
   private Boolean kubeWorkerStorageDataMemory;
 
   private V1Job createJobBody(boolean createLifecycle, String workspaceId, String workflowName, String workflowId, String workflowActivityId, String taskActivityId,
-      String taskName, String taskId, List<String> arguments,
+      String taskName, String taskId, Map<String, String> customLabels, List<String> arguments,
       Map<String, String> taskProperties, String image, String command, TaskConfiguration taskConfiguration) {
 
     LOGGER.info("Initializing body...");
@@ -190,7 +190,7 @@ public class KubeServiceImpl implements KubeService {
     // Initialize Job Body
     V1Job body = new V1Job();
     body.metadata(
-        helperKubeService.getMetadata(workflowName, workflowId, taskActivityId, taskId, helperKubeService.getPrefixJob() + "-" + taskActivityId));
+        helperKubeService.getMetadata(workflowName, workflowId, taskActivityId, taskId, helperKubeService.getPrefixJob() + "-" + taskActivityId, customLabels));
 
     // Create Spec
     V1JobSpec jobSpec = new V1JobSpec();
@@ -363,7 +363,7 @@ public class KubeServiceImpl implements KubeService {
     podSpec.imagePullSecrets(imagePullSecretList);
     podSpec.restartPolicy(kubeWorkerJobRestartPolicy);
     templateSpec.spec(podSpec);
-    templateSpec.metadata(helperKubeService.getMetadata(workflowName, workflowId, taskActivityId, taskId, null));
+    templateSpec.metadata(helperKubeService.getMetadata(workflowName, workflowId, taskActivityId, taskId, null, null));
 
     jobSpec.backoffLimit(kubeWorkerJobBackOffLimit);
     jobSpec.template(templateSpec);
@@ -377,12 +377,12 @@ public class KubeServiceImpl implements KubeService {
 
   @Override
   public V1Job createJob(boolean createLifecycle, String workspaceId, String workflowName, String workflowId,
-      String workflowActivityId, String taskActivityId, String taskName, String taskId,
+      String workflowActivityId, String taskActivityId, String taskName, String taskId, Map<String, String> customLabels,
       List<String> arguments, Map<String, String> taskProperties, String image, String command,
       TaskConfiguration taskConfiguration) {
     V1Job body =
         createJobBody(createLifecycle, workspaceId, workflowName, workflowId, workflowActivityId, taskActivityId,
-            taskName, taskId, arguments, taskProperties, image, command, taskConfiguration);
+            taskName, taskId, customLabels, arguments, taskProperties, image, command, taskConfiguration);
 
     LOGGER.info(body);
 
@@ -633,14 +633,14 @@ public class KubeServiceImpl implements KubeService {
   }
   
   @Override
-  public V1PersistentVolumeClaim createWorkspacePVC(String workspaceName, String workspaceId, String size, String className, String accessMode) throws ApiException {
-    return createPVC(helperKubeService.createWorkspaceAnnotations(workspaceName, workspaceId), helperKubeService.createWorkspaceLabels(workspaceId), size, className, accessMode);
+  public V1PersistentVolumeClaim createWorkspacePVC(String workspaceName, String workspaceId, Map<String, String> customLabels, String size, String className, String accessMode) throws ApiException {
+    return createPVC(helperKubeService.createWorkspaceAnnotations(workspaceName, workspaceId), helperKubeService.createWorkspaceLabels(workspaceId, customLabels), size, className, accessMode);
   }
   
   @Override
   public V1PersistentVolumeClaim createWorkflowPVC(String workflowName, String workflowId,
-      String activityId, String size, String className, String accessMode) throws ApiException {
-    return createPVC(helperKubeService.createAnnotations(workflowName, workflowId, activityId, null), helperKubeService.createLabels(workflowId, activityId, null), size, className, accessMode);
+      String activityId, Map<String, String> customLabels, String size, String className, String accessMode) throws ApiException {
+    return createPVC(helperKubeService.createAnnotations(workflowName, workflowId, activityId, null), helperKubeService.createLabels(workflowId, activityId, null, customLabels), size, className, accessMode);
   }
 
   private V1PersistentVolumeClaim createPVC(Map<String, String> annotations, Map<String, String> labels, String size, String className, String accessMode) throws ApiException {
@@ -842,17 +842,17 @@ public class KubeServiceImpl implements KubeService {
 
   @Override
   public V1ConfigMap createWorkflowConfigMap(String workflowName, String workflowId,
-      String activityId, Map<String, String> inputProps) {
+      String activityId, Map<String, String> customLabels, Map<String, String> inputProps) {
     return createConfigMap(
-        createWorkflowConfigMapBody(workflowName, workflowId, activityId, inputProps));
+        createWorkflowConfigMapBody(workflowName, workflowId, activityId, customLabels, inputProps));
   }
 
   @Override
   public V1ConfigMap createTaskConfigMap(String workflowName, String workflowId,
-      String activityId, String taskName, String taskId, Map<String, String> inputProps) {
+      String activityId, String taskName, String taskId, Map<String, String> customLabels, Map<String, String> inputProps) {
     LOGGER.info("ConfigMapBody: " + inputProps);
     return createConfigMap(createTaskConfigMapBody(workflowName, null, activityId,
-        taskName, taskId, inputProps));
+        taskName, taskId, customLabels, inputProps));
   }
 
   private V1ConfigMap createConfigMap(V1ConfigMap body) {
@@ -1216,11 +1216,11 @@ public class KubeServiceImpl implements KubeService {
 
 
   protected V1ConfigMap createTaskConfigMapBody(String workflowName, String workflowId,
-      String activityId, String taskName, String taskId, Map<String, String> parameters) {
+      String activityId, String taskName, String taskId, Map<String, String> customLabels, Map<String, String> parameters) {
     V1ConfigMap body = new V1ConfigMap();
 
     body.metadata(
-        helperKubeService.getMetadata(workflowName, workflowId, activityId, taskId, helperKubeService.getPrefixCFGMAP()));
+        helperKubeService.getMetadata(workflowName, workflowId, activityId, taskId, helperKubeService.getPrefixCFGMAP(), customLabels));
 
     // Create Data
     Map<String, String> inputsWithFixedKeys = new HashMap<>();
@@ -1257,11 +1257,11 @@ public class KubeServiceImpl implements KubeService {
 //  }
 
   protected V1ConfigMap createWorkflowConfigMapBody(String workflowName, String workflowId,
-      String activityId, Map<String, String> inputProps) {
+      String activityId, Map<String, String> customLabels, Map<String, String> inputProps) {
     V1ConfigMap body = new V1ConfigMap();
 
     body.metadata(
-        helperKubeService.getMetadata(workflowName, workflowId, activityId, null, helperKubeService.getPrefixCFGMAP()));
+        helperKubeService.getMetadata(workflowName, workflowId, activityId, null, helperKubeService.getPrefixCFGMAP(), customLabels));
 
     // Create Data
     Map<String, String> inputsWithFixedKeys = new HashMap<>();

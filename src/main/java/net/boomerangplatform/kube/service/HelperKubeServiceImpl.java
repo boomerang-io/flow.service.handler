@@ -142,10 +142,10 @@ public class HelperKubeServiceImpl implements HelperKubeService {
    * Passes through optional method inputs to the sub methods which need to handle this.
    */
   protected V1ObjectMeta getMetadata(String workflowName, String workflowId,
-      String activityId, String taskId, String generateName) {
+      String activityId, String taskId, String generateName, Map<String, String> labels) {
     V1ObjectMeta metadata = new V1ObjectMeta();
     metadata.annotations(createAnnotations(workflowName, workflowId, activityId, taskId));
-    metadata.labels(createLabels(workflowId, activityId, taskId));
+    metadata.labels(createLabels(workflowId, activityId, taskId, labels));
     if (StringUtils.isNotBlank(generateName)) {
       metadata.generateName(generateName + "-");
     }
@@ -192,7 +192,7 @@ public class HelperKubeServiceImpl implements HelperKubeService {
     return labels;
   }
 
-  protected Map<String, String> createLabels(String workflowId, String activityId, String taskId) {
+  protected Map<String, String> createLabels(String workflowId, String activityId, String taskId, Map<String, String> customLabels) {
     Map<String, String> labels = new HashMap<>();
     labels.put("app.kubernetes.io/name", TIER);
     labels.put("app.kubernetes.io/instance", TIER + "-" + workflowId);
@@ -203,10 +203,11 @@ public class HelperKubeServiceImpl implements HelperKubeService {
     Optional.ofNullable(workflowId).ifPresent(str -> labels.put("boomerang.io/workflow-id", str));
     Optional.ofNullable(activityId).ifPresent(str -> labels.put("boomerang.io/activity-id", str));
     Optional.ofNullable(taskId).ifPresent(str -> labels.put("boomerang.io/task-id", str));
+    Optional.ofNullable(customLabels).ifPresent(lbl -> labels.putAll(lbl));
     return labels;
   }
   
-  protected Map<String, String> createWorkspaceLabels(String workspaceId) {
+  protected Map<String, String> createWorkspaceLabels(String workspaceId, Map<String, String> customLabels) {
     Map<String, String> labels = new HashMap<>();
     labels.put("app.kubernetes.io/name", TIER);
     labels.put("app.kubernetes.io/instance", TIER + "-" + workspaceId);
@@ -215,6 +216,7 @@ public class HelperKubeServiceImpl implements HelperKubeService {
     labels.put("boomerang.io/product", bmrgProduct);
     labels.put("boomerang.io/tier", TIER);
     labels.put("boomerang.io/workspace-id", workspaceId);
+    Optional.ofNullable(customLabels).ifPresent(lbl -> labels.putAll(lbl));
     return labels;
   }
 
