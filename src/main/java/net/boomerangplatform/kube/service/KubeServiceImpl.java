@@ -363,7 +363,7 @@ public class KubeServiceImpl implements KubeService {
     podSpec.imagePullSecrets(imagePullSecretList);
     podSpec.restartPolicy(kubeWorkerJobRestartPolicy);
     templateSpec.spec(podSpec);
-    templateSpec.metadata(helperKubeService.getMetadata(workflowName, workflowId, taskActivityId, taskId, null, null));
+    templateSpec.metadata(helperKubeService.getMetadata(workflowName, workflowId, taskActivityId, taskId, null, customLabels));
 
     jobSpec.backoffLimit(kubeWorkerJobBackOffLimit);
     jobSpec.template(templateSpec);
