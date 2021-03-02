@@ -8,21 +8,32 @@ public class TaskConfiguration {
 
   private Boolean debug;
 
+  private Boolean lifecycle;
+
   private TaskDeletionEnum deletion;
 
-	public Boolean getDebug() {
-		return debug ;
-	}
+  public Boolean getDebug() {
+    return debug;
+  }
 
-	public void setDebug(Boolean debug) {
-		this.debug = debug;
-	}
+  public void setDebug(Boolean debug) {
+    this.debug = debug;
+  }
 
-	public TaskDeletionEnum getDeletion() {
-		return deletion ;
-	}
+  public Boolean getLifecycle() {
+    return lifecycle;
+  }
 
-	public void setDeletion(TaskDeletionEnum deletion) {
-		this.deletion = deletion;
-	}
+  public void setLifecycle(Boolean lifecycle) {
+    this.lifecycle = lifecycle;
+  }
+
+  public TaskDeletionEnum getDeletion() {
+    return deletion;
+  }
+
+  public void setDeletion(TaskDeletionEnum deletion) {
+    this.deletion = deletion;
+  }
+
 }
