@@ -41,7 +41,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
           String size = workspace.getStorage().getSize() == null || workspace.getStorage().getSize().isEmpty() ? storageSize : workspace.getStorage().getSize();
           String className = workspace.getStorage().getClassName();
           String accessMode = workspace.getStorage().getAccessMode() == null || workspace.getStorage().getAccessMode().isEmpty() ? storageAccessMode : workspace.getStorage().getAccessMode();
-          kubeService.createWorkspacePVC(workspace.getName(), workspace.getId(), size, className, accessMode);
+          kubeService.createWorkspacePVC(workspace.getName(), workspace.getId(), workspace.getLabels(), size, className, accessMode);
           kubeService.watchWorkspacePVC(workspace.getId());
         } else if (pvcExists) {
           response = new Response("0", "Workspace (" + workspace.getId() + ") PVC already existed.");

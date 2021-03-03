@@ -41,11 +41,11 @@ public class WorklowServiceImpl implements WorkflowService {
           String className = workflow.getWorkflowStorage().getClassName();
           String accessMode = workflow.getWorkflowStorage().getAccessMode() == null || workflow.getWorkflowStorage().getAccessMode().isEmpty() ? storageAccessMode : workflow.getWorkflowStorage().getAccessMode();
           kubeService.createWorkflowPVC(workflow.getWorkflowName(), workflow.getWorkflowId(),
-              workflow.getWorkflowActivityId(), size, className, accessMode);
+              workflow.getWorkflowActivityId(), workflow.getLabels(), size, className, accessMode);
           kubeService.watchWorkflowPVC(workflow.getWorkflowId(), workflow.getWorkflowActivityId()).getPhase();
         }
         kubeService.createWorkflowConfigMap(workflow.getWorkflowName(), workflow.getWorkflowId(),
-            workflow.getWorkflowActivityId(), workflow.getParameters());
+            workflow.getWorkflowActivityId(), workflow.getLabels(), workflow.getParameters());
         kubeService.watchConfigMap(workflow.getWorkflowId(), workflow.getWorkflowActivityId(), null);
       } catch (ApiException | KubeRuntimeException e) {
             throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
