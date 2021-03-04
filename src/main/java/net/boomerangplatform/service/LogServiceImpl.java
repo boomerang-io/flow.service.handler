@@ -68,9 +68,9 @@ public class LogServiceImpl implements LogService {
       String workflowActivityId, String taskId, String taskActivityId) {
     StreamingResponseBody srb = null;
     try {
-      if (logKubeService.isKubePodAvailable(workflowId, taskActivityId, taskId)
+      if (logKubeService.isKubePodAvailable(workflowId, workflowActivityId, taskId, taskActivityId)
           || "default".equals(loggingType)) {
-        srb = logKubeService.streamPodLog(response, workflowId, taskActivityId, taskId);
+        srb = logKubeService.streamPodLog(response, workflowId, workflowActivityId, taskId, taskActivityId);
       } else if ("elastic".equals(loggingType)) {
         return streamLogsFromElastic(taskActivityId);
       } else if ("loki".equals(loggingType)) {

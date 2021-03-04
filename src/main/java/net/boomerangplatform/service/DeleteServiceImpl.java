@@ -18,13 +18,13 @@ public class DeleteServiceImpl implements DeleteService {
    */
   @Override
   @Async
-  public void deleteJob(TaskDeletionEnum taskDeletion, String workflowId, String workflowActivityId, String taskId) {
+  public void deleteJob(TaskDeletionEnum taskDeletion, String workflowId, String workflowActivityId, String taskId, String taskActivityId) {
     try {
       Thread.sleep(10000);
     } catch (InterruptedException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();
     }
-    kubeService.deleteJob(taskDeletion,workflowId,workflowActivityId, taskId);
+    kubeService.deleteJob(taskDeletion,workflowId,workflowActivityId, taskId, taskActivityId);
   }
 }
