@@ -17,10 +17,6 @@ import net.boomerangplatform.model.TaskConfiguration;
 import net.boomerangplatform.model.TaskDeletionEnum;
 
 public interface KubeService {
-
-  V1ConfigMap createWorkflowConfigMap(
-      String workflowName, String workflowId, String workflowActivityId, Map<String, String> data);
-
   V1Job createJob(
       boolean createLifecycle,
       String workspaceId,
@@ -30,6 +26,7 @@ public interface KubeService {
       String taskActivityId,
       String taskName,
       String taskId,
+      Map<String, String> customLabels,
       List<String> arguments,
       Map<String, String> properties,
       String image,
@@ -43,6 +40,7 @@ public interface KubeService {
       String taskName,
       String taskId,
       String taskActivityId,
+      Map<String, String> customLabels,
       Map<String, String> inputProps);
 
   Map<String, String> getTaskOutPutConfigMapData(
@@ -68,11 +66,11 @@ public interface KubeService {
   V1Status deleteJob(
       TaskDeletionEnum taskDeletion, String workflowId, String workflowActivityId, String taskId, String taskActivityId);
 
-  V1PersistentVolumeClaim createWorkspacePVC(String workspaceName, String workspaceId,
+  V1PersistentVolumeClaim createWorkspacePVC(String workspaceName, String workspaceId, Map<String, String> customLabels,
       String size, String className, String accessMode) throws ApiException;
 
   V1PersistentVolumeClaim createWorkflowPVC(String workflowName, String workflowId,
-      String activityId, String size, String className, String accessMode) throws ApiException;
+      String activityId, Map<String, String> customLabels, String size, String className, String accessMode) throws ApiException;
 
   V1PersistentVolumeClaimStatus watchWorkspacePVC(String workspaceId);
 
@@ -97,4 +95,6 @@ public interface KubeService {
 
   V1Status deleteWorkflowConfigMap(String workflowId, String workflowActivityId);
 
+  V1ConfigMap createWorkflowConfigMap(String workflowName, String workflowId, String activityId,
+      Map<String, String> customLabels, Map<String, String> inputProps);
 }

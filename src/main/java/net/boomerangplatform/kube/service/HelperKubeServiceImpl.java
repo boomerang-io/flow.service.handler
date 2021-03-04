@@ -48,7 +48,7 @@ public class HelperKubeServiceImpl implements HelperKubeService {
   @Value("${proxy.ignore}")
   protected String proxyIgnore;
   
-  @Value("${boomerang.product}")
+  @Value("${boomerang.product:bmrg-flow}")
   protected String bmrgProduct;
 
   @Autowired
@@ -142,10 +142,10 @@ public class HelperKubeServiceImpl implements HelperKubeService {
    * Passes through optional method inputs to the sub methods which need to handle this.
    */
   protected V1ObjectMeta getMetadata(String tier, String workflowName, String workflowId,
-      String workflowActivityId, String taskId, String taskActivityId, String generateName) {
+      String workflowActivityId, String taskId, String taskActivityId, String generateName, Map<String, String> labels) {
     V1ObjectMeta metadata = new V1ObjectMeta();
     metadata.annotations(createAnnotations(tier, workflowName, workflowId, workflowActivityId, taskId, taskActivityId));
-    metadata.labels(createLabels(tier, workflowId, workflowActivityId, taskId, taskActivityId));
+    metadata.labels(createLabels(tier, workflowId, workflowActivityId, taskId, taskActivityId, labels));
     if (StringUtils.isNotBlank(generateName)) {
       metadata.generateName(generateName + "-");
     }
@@ -192,7 +192,7 @@ public class HelperKubeServiceImpl implements HelperKubeService {
     return labels;
   }
 
-  protected Map<String, String> createLabels(String tier, String workflowId, String workflowActivityId, String taskId, String taskActivityId) {
+  protected Map<String, String> createLabels(String tier, String workflowId, String workflowActivityId, String taskId, String taskActivityId, Map<String, String> customLabels) {
     Map<String, String> labels = new HashMap<>();
     labels.put("app.kubernetes.io/name", bmrgProduct);
     labels.put("app.kubernetes.io/instance", bmrgProduct + "-" + workflowId);
@@ -203,10 +203,11 @@ public class HelperKubeServiceImpl implements HelperKubeService {
     Optional.ofNullable(workflowActivityId).ifPresent(str -> labels.put("boomerang.io/workflow-activity-id", str));
     Optional.ofNullable(taskId).ifPresent(str -> labels.put("boomerang.io/task-id", str));
     Optional.ofNullable(taskActivityId).ifPresent(str -> labels.put("boomerang.io/task-activity-id", str));
+    Optional.ofNullable(customLabels).ifPresent(lbl -> labels.putAll(lbl));
     return labels;
   }
   
-  protected Map<String, String> createWorkspaceLabels(String workspaceId) {
+  protected Map<String, String> createWorkspaceLabels(String workspaceId, Map<String, String> customLabels) {
     Map<String, String> labels = new HashMap<>();
     labels.put("app.kubernetes.io/name", bmrgProduct);
     labels.put("app.kubernetes.io/instance", bmrgProduct + "-" + workspaceId);
@@ -214,6 +215,7 @@ public class HelperKubeServiceImpl implements HelperKubeService {
     labels.put("boomerang.io/product", bmrgProduct);
     labels.put("boomerang.io/tier", "workspace");
     labels.put("boomerang.io/workspace-id", workspaceId);
+    Optional.ofNullable(customLabels).ifPresent(lbl -> labels.putAll(lbl));
     return labels;
   }
 

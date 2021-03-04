@@ -39,6 +39,9 @@ public abstract class Task {
   @JsonProperty("command")
   private String command;
 
+  @JsonProperty("labels")
+  private Map<String, String> labels = new HashMap<>();
+
   @JsonProperty("parameters")
   private Map<String, String> parameters = new HashMap<>();
 
@@ -89,6 +92,18 @@ public abstract class Task {
 
   public void setTaskName(String taskName) {
     this.taskName = taskName;
+  }
+
+  public Map<String, String> getLabels() {
+    return labels;
+  }
+
+  public void setLabels(Map<String, String> labels) {
+    this.labels = labels;
+  }
+
+  public void setLabel(String name, String value) {
+    this.labels.put(name, value);
   }
 
   public void setParameters(Map<String, String> parameters) {
