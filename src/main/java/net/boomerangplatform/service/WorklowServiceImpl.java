@@ -46,7 +46,7 @@ public class WorklowServiceImpl implements WorkflowService {
         }
         kubeService.createWorkflowConfigMap(workflow.getWorkflowName(), workflow.getWorkflowId(),
             workflow.getWorkflowActivityId(), workflow.getParameters());
-        kubeService.watchConfigMap(workflow.getWorkflowId(), workflow.getWorkflowActivityId(), null);
+        kubeService.watchWorkflowConfigMap(workflow.getWorkflowId(), workflow.getWorkflowActivityId());
       } catch (ApiException | KubeRuntimeException e) {
             throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
       }
@@ -59,7 +59,7 @@ public class WorklowServiceImpl implements WorkflowService {
           + ") has been terminated successfully.");
       try {
         kubeService.deleteWorkflowPVC(workflow.getWorkflowId(), workflow.getWorkflowActivityId());
-        kubeService.deleteConfigMap(workflow.getWorkflowId(), workflow.getWorkflowActivityId(), null);
+        kubeService.deleteWorkflowConfigMap(workflow.getWorkflowId(), workflow.getWorkflowActivityId());
       } catch (KubeRuntimeException e) {
             throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
       }

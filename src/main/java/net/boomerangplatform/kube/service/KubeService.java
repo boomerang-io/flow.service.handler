@@ -36,17 +36,14 @@ public interface KubeService {
       String command,
       TaskConfiguration configuration);
 
-  V1ConfigMap watchConfigMap(String workflowId, String workflowActivityId, String taskId);
-
   V1ConfigMap createTaskConfigMap(
       String workflowName,
       String workflowId,
       String workflowActivityId,
       String taskName,
       String taskId,
+      String taskActivityId,
       Map<String, String> inputProps);
-
-  V1Status deleteConfigMap(String workflowId, String workflowActivityId, String taskId);
 
   Map<String, String> getTaskOutPutConfigMapData(
       String workflowId, String workflowActivityId, String taskId, String taskName);
@@ -69,7 +66,7 @@ public interface KubeService {
       Map<String, String> properties);
 
   V1Status deleteJob(
-      TaskDeletionEnum taskDeletion, String workflowId, String workflowActivityId, String taskId);
+      TaskDeletionEnum taskDeletion, String workflowId, String workflowActivityId, String taskId, String taskActivityId);
 
   V1PersistentVolumeClaim createWorkspacePVC(String workspaceName, String workspaceId,
       String size, String className, String accessMode) throws ApiException;
@@ -82,11 +79,22 @@ public interface KubeService {
   V1PersistentVolumeClaimStatus watchWorkflowPVC(String workflowId, String workflowActivityId);
 
   boolean checkWorkflowPVCExists(String workflowId, String workflowActivityId, String taskId,
-      boolean failIfNotBound);
+      String taskActivityId, boolean failIfNotBound);
 
   boolean checkWorkspacePVCExists(String workspaceId, boolean failIfNotBound);
 
   V1Status deleteWorkspacePVC(String workspaceId);
 
   V1Status deleteWorkflowPVC(String workflowId, String workflowActivityId);
+
+  V1ConfigMap watchTaskConfigMap(String workflowId, String workflowActivityId, String taskId,
+      String taskActivityId);
+
+  V1ConfigMap watchWorkflowConfigMap(String workflowId, String workflowActivityId);
+
+  V1Status deleteTaskConfigMap(String workflowId, String workflowActivityId, String taskId,
+      String taskActivityId);
+
+  V1Status deleteWorkflowConfigMap(String workflowId, String workflowActivityId);
+
 }

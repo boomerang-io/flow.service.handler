@@ -161,11 +161,6 @@ public class KubeServiceImpl implements KubeService {
   @Value("${boomerang.product}")
   private String bmrgProduct;
 
-  @Autowired
-  protected HelperKubeServiceImpl helperKubeService;
-
-  private ApiClient apiClient; // NOSONAR
-
   @Value("${kube.lifecycle.image}")
   private String kubeLifecycleImage;
   
@@ -184,6 +179,11 @@ public class KubeServiceImpl implements KubeService {
   @Value("${kube.worker.storage.data.memory}")
   private Boolean kubeWorkerStorageDataMemory;
 
+  @Autowired
+  protected HelperKubeServiceImpl helperKubeService;
+
+  private ApiClient apiClient; // NOSONAR
+
   private V1Job createJobBody(boolean createLifecycle, String workspaceId, String workflowName, String workflowId, String workflowActivityId, String taskActivityId,
       String taskName, String taskId, List<String> arguments,
       Map<String, String> taskProperties, String image, String command, TaskConfiguration taskConfiguration) {
@@ -193,7 +193,7 @@ public class KubeServiceImpl implements KubeService {
     // Initialize Job Body
     V1Job body = new V1Job();
     body.metadata(
-        helperKubeService.getMetadata(workflowName, workflowId, taskActivityId, taskId, helperKubeService.getPrefixJob() + "-" + taskActivityId));
+        helperKubeService.getMetadata("worker", workflowName, workflowId, workflowActivityId, taskId, taskActivityId, helperKubeService.getPrefixJob() + "-" + taskActivityId));
 
     // Create Spec
     V1JobSpec jobSpec = new V1JobSpec();
@@ -206,7 +206,7 @@ public class KubeServiceImpl implements KubeService {
     if (proxyEnabled) {
       envVars.addAll(helperKubeService.createProxyEnvVars());
     }
-    envVars.addAll(helperKubeService.createEnvVars(workflowId,taskActivityId,taskName,taskId));
+    envVars.addAll(helperKubeService.createEnvVars(workflowId,workflowActivityId,taskName,taskId,taskActivityId));
     envVars.add(helperKubeService.createEnvVar("DEBUG", helperKubeService.getTaskDebug(taskConfiguration)));
     envVars.add(helperKubeService.createEnvVar("CI", "true"));
     container.env(envVars);
@@ -253,13 +253,13 @@ public class KubeServiceImpl implements KubeService {
       podSpec.addVolumesItem(workspaceVolume);
     }
     
-    if (!getPVCName(helperKubeService.getLabelSelector(workflowId, workflowActivityId, null)).isEmpty()) {
+    if (!getPVCName(helperKubeService.getLabelSelector("workflow", workflowId, workflowActivityId, null, null)).isEmpty()) {
       container.addVolumeMountsItem(getVolumeMount(helperKubeService.getPrefixVol() + "-wf", "/workflow"));
       V1Volume workerVolume = getVolume(helperKubeService.getPrefixVol() + "-wf");
       V1PersistentVolumeClaimVolumeSource workerVolumePVCSource =
           new V1PersistentVolumeClaimVolumeSource();
       workerVolume.persistentVolumeClaim(
-          workerVolumePVCSource.claimName(getPVCName(helperKubeService.getLabelSelector(workflowId, workflowActivityId, null))));
+          workerVolumePVCSource.claimName(getPVCName(helperKubeService.getLabelSelector("workflow", workflowId, workflowActivityId, null, null))));
       podSpec.addVolumesItem(workerVolume);
     }
     
@@ -285,13 +285,13 @@ public class KubeServiceImpl implements KubeService {
     List<V1VolumeProjection> projectPropsVolumeList = new ArrayList<>();
 
     // Add Workflow Configmap Projected Volume
-    V1ConfigMap wfConfigMap = getConfigMap(workflowId, workflowActivityId, null);
+    V1ConfigMap wfConfigMap = getConfigMap(helperKubeService.getLabelSelector("worker", workflowId, workflowActivityId, null, null));
     if (wfConfigMap != null && !getConfigMapName(wfConfigMap).isEmpty()) {
       projectPropsVolumeList.add(getVolumeProjection(wfConfigMap));
     }
 
     // Add Task Configmap Projected Volume
-    V1ConfigMap taskConfigMap = getConfigMap(null, taskActivityId, taskId);
+    V1ConfigMap taskConfigMap = getConfigMap(helperKubeService.getLabelSelector("worker", workflowId, workflowActivityId, taskId, taskActivityId));
     if (taskConfigMap != null && !getConfigMapName(taskConfigMap).isEmpty()) {
       projectPropsVolumeList.add(getVolumeProjection(taskConfigMap));
     }
@@ -311,7 +311,7 @@ public class KubeServiceImpl implements KubeService {
 //    container.addEnvFromItem(envAsProps);
     
     /*
-     * The following code is for custom tasks only
+     * The following code is for tasks with Lifecycle enabled.
      */
     if (createLifecycle) {
       List<V1Container> initContainers = new ArrayList<>();
@@ -330,7 +330,7 @@ public class KubeServiceImpl implements KubeService {
               .addVolumeMountsItem(getVolumeMount(helperKubeService.getPrefixVol() + "-props", "/props"))
               .addArgsItem("lifecycle")
               .addArgsItem("wait");
-        lifecycleContainer.env(helperKubeService.createEnvVars(workflowId,taskActivityId,taskName,taskId));
+        lifecycleContainer.env(helperKubeService.createEnvVars(workflowId,workflowActivityId,taskName,taskId,taskActivityId));
         lifecycleContainer.addEnvItem(helperKubeService.createEnvVar("DEBUG", helperKubeService.getTaskDebug(taskConfiguration)));
         containerList.add(lifecycleContainer);
         container.addVolumeMountsItem(getVolumeMount("lifecycle", "/lifecycle"));
@@ -344,7 +344,7 @@ public class KubeServiceImpl implements KubeService {
       helperKubeService.getTolerationAndSelector(podSpec);
     }
 
-    helperKubeService.getPodAntiAffinity(podSpec, helperKubeService.createAntiAffinityLabels());
+    helperKubeService.getPodAntiAffinity(podSpec, helperKubeService.createAntiAffinityLabels("worker"));
 
     if (!kubeWorkerHostAliases.isEmpty()) {
       Type listHostAliasType = new TypeToken<List<V1HostAlias>>() {}.getType();
@@ -366,7 +366,7 @@ public class KubeServiceImpl implements KubeService {
     podSpec.imagePullSecrets(imagePullSecretList);
     podSpec.restartPolicy(kubeWorkerJobRestartPolicy);
     templateSpec.spec(podSpec);
-    templateSpec.metadata(helperKubeService.getMetadata(workflowName, workflowId, taskActivityId, taskId, null));
+    templateSpec.metadata(helperKubeService.getMetadata("worker", workflowName, workflowId, workflowActivityId, taskId, taskActivityId, null));
 
     jobSpec.backoffLimit(kubeWorkerJobBackOffLimit);
     jobSpec.template(templateSpec);
@@ -424,9 +424,9 @@ public class KubeServiceImpl implements KubeService {
     return jobResult;
   }
 
-  public V1Job watchJob(boolean watchLifecycle, String workflowId, String activityId,
-      String taskId) {
-    String labelSelector = helperKubeService.getLabelSelector(workflowId, activityId, taskId);
+  public V1Job watchJob(boolean watchLifecycle, String workflowId, String workflowActivityId,
+      String taskId, String taskActivityId) {
+    String labelSelector = helperKubeService.getLabelSelector("worker", workflowId, workflowActivityId, taskId, taskActivityId);
     V1Job jobResult = null;
 
     // Since upgrade to Java11 the watcher stops listening for events (irrespective of timeout) and
@@ -550,9 +550,9 @@ public class KubeServiceImpl implements KubeService {
   }
 
   @Override
-  public String getPodLog(String workflowId, String activityId, String taskId,
+  public String getPodLog(String workflowId, String workflowActivityId, String taskId,
       String taskActivityId) {
-    String labelSelector = helperKubeService.getLabelSelector(workflowId, activityId, taskId);
+    String labelSelector = helperKubeService.getLabelSelector("worker", workflowId, workflowActivityId, taskId, taskActivityId);
 
     PodLogs logs = new PodLogs();
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -578,8 +578,8 @@ public class KubeServiceImpl implements KubeService {
     return baos.toString(StandardCharsets.UTF_8);
   }
 
-  public boolean isKubePodAvailable(String workflowId, String activityId, String taskId) {
-    String labelSelector = helperKubeService.getLabelSelector(workflowId, activityId, taskId);
+  public boolean isKubePodAvailable(String workflowId, String workflowActivityId, String taskId, String taskActivityId) {
+    String labelSelector = helperKubeService.getLabelSelector("worker", workflowId, workflowActivityId, taskId, taskActivityId);
 
     try {
       List<V1Pod> allPods =
@@ -601,11 +601,11 @@ public class KubeServiceImpl implements KubeService {
 
   @Override
   public StreamingResponseBody streamPodLog(HttpServletResponse response, String workflowId,
-      String activityId, String taskId, String taskActivityId) {
+      String workflowActivityId, String taskId, String taskActivityId) {
 
     LOGGER.info("Stream logs from Kubernetes");
 
-    String labelSelector = helperKubeService.getLabelSelector(workflowId, activityId, taskId);
+    String labelSelector = helperKubeService.getLabelSelector("worker", workflowId, workflowActivityId, taskId, taskActivityId);
     StreamingResponseBody responseBody = null;
     try {
       Watch<V1Pod> watch = createPodWatch(labelSelector, getCoreApi());
@@ -642,8 +642,8 @@ public class KubeServiceImpl implements KubeService {
   
   @Override
   public V1PersistentVolumeClaim createWorkflowPVC(String workflowName, String workflowId,
-      String activityId, String size, String className, String accessMode) throws ApiException {
-    return createPVC(helperKubeService.createAnnotations(workflowName, workflowId, activityId, null), helperKubeService.createLabels(workflowId, activityId, null), size, className, accessMode);
+      String workflowActivityId, String size, String className, String accessMode) throws ApiException {
+    return createPVC(helperKubeService.createAnnotations("workflow", workflowName, workflowId, workflowActivityId, null, null), helperKubeService.createLabels("workflow", workflowId, workflowActivityId, null, null), size, className, accessMode);
   }
 
   private V1PersistentVolumeClaim createPVC(Map<String, String> annotations, Map<String, String> labels, String size, String className, String accessMode) throws ApiException {
@@ -689,8 +689,8 @@ public class KubeServiceImpl implements KubeService {
   }
   
   @Override
-  public V1PersistentVolumeClaimStatus watchWorkflowPVC(String workflowId, String activityId) {
-    return watchPVC(helperKubeService.getLabelSelector(workflowId, activityId, null));
+  public V1PersistentVolumeClaimStatus watchWorkflowPVC(String workflowId, String workflowActivityId) {
+    return watchPVC(helperKubeService.getLabelSelector("workflow", workflowId, workflowActivityId, null, null));
   }
 
   private V1PersistentVolumeClaimStatus watchPVC(String labelSelector) {
@@ -758,8 +758,8 @@ public class KubeServiceImpl implements KubeService {
   }
   
   @Override
-  public V1Status deleteWorkflowPVC(String workflowId, String activityId) {
-    return deletePVC(helperKubeService.getLabelSelector(workflowId, activityId, null));
+  public V1Status deleteWorkflowPVC(String workflowId, String workflowActivityId) {
+    return deletePVC(helperKubeService.getLabelSelector("workflow", workflowId, workflowActivityId, null, null));
   }
 
   private V1Status deletePVC(String labelSelector) {
@@ -790,9 +790,9 @@ public class KubeServiceImpl implements KubeService {
     return result;
   }
 
-  protected String getJobName(boolean onlyOnSuccess, String workflowId, String activityId,
-      String taskId) {
-    String labelSelector = helperKubeService.getLabelSelector(workflowId, activityId, taskId);
+  protected String getJobName(boolean onlyOnSuccess, String workflowId, String workflowActivityId,
+      String taskId, String taskActivityId) {
+    String labelSelector = helperKubeService.getLabelSelector("worker", workflowId, workflowActivityId, taskId, taskActivityId);
 
     try {
       V1JobList listOfJobs =
@@ -813,13 +813,13 @@ public class KubeServiceImpl implements KubeService {
   }
 
   @Override
-  public V1Status deleteJob(TaskDeletionEnum taskDeletion, String workflowId, String activityId,
-      String taskId) {
+  public V1Status deleteJob(TaskDeletionEnum taskDeletion, String workflowId, String workflowActivityId,
+      String taskId, String taskActivityId) {
     V1DeleteOptions deleteOptions = new V1DeleteOptions();
     deleteOptions.setPropagationPolicy("Background");
     V1Status result = new V1Status();
     String jobName = getJobName(TaskDeletionEnum.OnSuccess.equals(taskDeletion) ? true : false,
-        workflowId, activityId, taskId);
+        workflowId, workflowActivityId, taskId, taskActivityId);
     if (!jobName.isEmpty()) {
       try {
         LOGGER.info("Deleting Job ( " + jobName + ")...");
@@ -852,10 +852,10 @@ public class KubeServiceImpl implements KubeService {
 
   @Override
   public V1ConfigMap createTaskConfigMap(String workflowName, String workflowId,
-      String activityId, String taskName, String taskId, Map<String, String> inputProps) {
+      String workflowActivityId, String taskName, String taskId, String taskActivityId, Map<String, String> inputProps) {
     LOGGER.info("ConfigMapBody: " + inputProps);
-    return createConfigMap(createTaskConfigMapBody(workflowName, null, activityId,
-        taskName, taskId, inputProps));
+    return createConfigMap(createTaskConfigMapBody(workflowName, null, workflowActivityId,
+        taskName, taskId, taskActivityId, inputProps));
   }
 
   private V1ConfigMap createConfigMap(V1ConfigMap body) {
@@ -870,11 +870,18 @@ public class KubeServiceImpl implements KubeService {
     }
     return result;
   }
-
+  
   @Override
-  public V1ConfigMap watchConfigMap(String workflowId, String activityId, String taskId) {
-    String labelSelector = helperKubeService.getLabelSelector(workflowId, activityId, taskId);
+  public V1ConfigMap watchWorkflowConfigMap(String workflowId, String workflowActivityId) {
+    return watchConfigMap(helperKubeService.getLabelSelector("workflow", workflowId, workflowActivityId, null, null));
+  }
+  
+  @Override
+  public V1ConfigMap watchTaskConfigMap(String workflowId, String workflowActivityId, String taskId, String taskActivityId) {
+    return watchConfigMap(helperKubeService.getLabelSelector("worker", workflowId, workflowActivityId, taskId, taskActivityId));
+  }
 
+  private V1ConfigMap watchConfigMap(String labelSelector) {
     try {
       Watch<V1ConfigMap> watch = Watch.createWatch(createWatcherApiClient(),
           getCoreApi().listNamespacedConfigMapCall(kubeNamespace, kubeApiIncludeuninitialized,
@@ -888,9 +895,9 @@ public class KubeServiceImpl implements KubeService {
   }
 
   @Override
-  public void patchTaskConfigMap(String workflowId, String activityId, String taskId,
+  public void patchTaskConfigMap(String workflowId, String workflowActivityId, String taskId,
       String taskName, Map<String, String> properties) {
-    V1ConfigMap wfConfigMap = getConfigMap(workflowId, activityId, null);
+    V1ConfigMap wfConfigMap = getConfigMap(helperKubeService.getLabelSelector("workflow", workflowId, workflowActivityId, null, null));
     String fileName = taskName + ".output.properties";
     patchConfigMap(getConfigMapName(wfConfigMap), fileName,
         getConfigMapDataProp(wfConfigMap, fileName), helperKubeService.createConfigMapProp(properties));
@@ -898,9 +905,8 @@ public class KubeServiceImpl implements KubeService {
 
   @Override
   public Map<String, String> getTaskOutPutConfigMapData(String workflowId,
-      String activityId, String taskId, String taskName) {
-    LOGGER.info("  taskName: " + taskName);
-    V1ConfigMap wfConfigMap = getConfigMap(workflowId, activityId, null);
+      String workflowActivityId, String taskId, String taskName) {
+    V1ConfigMap wfConfigMap = getConfigMap(helperKubeService.getLabelSelector("workflow", workflowId, workflowActivityId, null, null));
     String fileName = taskName.replace(" ", "") + ".output.properties";
     String dataString = getConfigMapDataProp(wfConfigMap, fileName);
     try {
@@ -911,12 +917,20 @@ public class KubeServiceImpl implements KubeService {
   }
 
   @Override
-  public V1Status deleteConfigMap(String workflowId, String activityId, String taskId) {
+  public V1Status deleteWorkflowConfigMap(String workflowId, String workflowActivityId) {
+    return deleteConfigMap(getConfigMapName(getConfigMap(helperKubeService.getLabelSelector("workflow", workflowId, workflowActivityId, null, null))));
+  }
+
+  @Override
+  public V1Status deleteTaskConfigMap(String workflowId, String workflowActivityId, String taskId, String taskActivityId) {
+    return deleteConfigMap(getConfigMapName(getConfigMap(helperKubeService.getLabelSelector("worker", workflowId, workflowActivityId, taskId, taskActivityId))));
+  }
+
+  private V1Status deleteConfigMap(String configMapName) {
     V1DeleteOptions deleteOptions = new V1DeleteOptions();
     V1Status result = new V1Status();
 
     try {
-      String configMapName = getConfigMapName(getConfigMap(workflowId, activityId, taskId));
       LOGGER.info("Deleting ConfigMap (" + configMapName + ")...");
       result = getCoreApi().deleteNamespacedConfigMap(configMapName, kubeNamespace, kubeApiPretty,
           deleteOptions, null, null, null, null);
@@ -943,9 +957,9 @@ public class KubeServiceImpl implements KubeService {
   }
 
   @Override
-  public boolean checkWorkflowPVCExists(String workflowId, String activityId, String taskId,
+  public boolean checkWorkflowPVCExists(String workflowId, String workflowActivityId, String taskId, String taskActivityId,
       boolean failIfNotBound) {
-    return checkPVCExists(helperKubeService.getLabelSelector(workflowId, activityId, taskId), failIfNotBound);
+    return checkPVCExists(helperKubeService.getLabelSelector("workflow", workflowId, workflowActivityId, taskId, taskActivityId), failIfNotBound);
   }
   
   private boolean checkPVCExists(String labelSelector, boolean failIfNotBound) {
@@ -962,10 +976,8 @@ public class KubeServiceImpl implements KubeService {
     return isPVCExists;
   }
 
-  protected V1ConfigMap getConfigMap(String workflowId, String activityId, String taskId) {
+  private V1ConfigMap getConfigMap(String labelSelector) {
     V1ConfigMap configMap = null;
-
-    String labelSelector = helperKubeService.getLabelSelector(workflowId, activityId, taskId);
     try {
       V1ConfigMapList configMapList =
           getCoreApi().listNamespacedConfigMap(kubeNamespace, kubeApiIncludeuninitialized,
@@ -975,14 +987,7 @@ public class KubeServiceImpl implements KubeService {
             + configMapList.getItems().stream().reduce("", (configMapNames, cm) -> configMapNames +=
                 cm.getMetadata().getName() + "(" + cm.getMetadata().getCreationTimestamp() + ")",
                 String::concat));
-        if (!Optional.ofNullable(taskId).isPresent()) {
-          Optional<V1ConfigMap> configMapOptional = configMapList.getItems().stream()
-              .filter(cm -> !cm.getMetadata().getLabels().containsKey("task-id")).findFirst();
-          configMap = configMapOptional.isPresent() ? configMapOptional.get()
-              : configMapList.getItems().get(0);
-        } else {
-          configMap = configMapList.getItems().get(0);
-        }
+        configMap = configMapList.getItems().get(0);
         LOGGER.info(" getConfigMap() - chosen configmap: " + configMap.getMetadata().getName() + "("
             + configMap.getMetadata().getCreationTimestamp() + ")");
       }
@@ -1218,19 +1223,23 @@ public class KubeServiceImpl implements KubeService {
   
 
 
-  protected V1ConfigMap createTaskConfigMapBody(String workflowName, String workflowId,
-      String activityId, String taskName, String taskId, Map<String, String> parameters) {
+  protected V1ConfigMap createTaskConfigMapBody(String workflowName, String workflowId, 
+      String workflowActivityId, String taskName, String taskId, String taskActivityId, Map<String, String> parameters) {
     V1ConfigMap body = new V1ConfigMap();
 
     body.metadata(
-        helperKubeService.getMetadata(workflowName, workflowId, activityId, taskId, helperKubeService.getPrefixCFGMAP()));
+        helperKubeService.getMetadata("worker", workflowName, workflowId, workflowActivityId, taskId, taskActivityId, helperKubeService.getPrefixCFGMAP()));
 
     // Create Data
     Map<String, String> inputsWithFixedKeys = new HashMap<>();
     Map<String, String> sysProps = new HashMap<>();
     sysProps.put("task-id", taskId);
     sysProps.put("task-name", taskName);
-    sysProps.put("task-activity-id", activityId); 
+    sysProps.put("task-activity-id", taskActivityId);
+    sysProps.put("controller-service-url", bmrgControllerServiceURL);
+    sysProps.put("workflow-name", workflowName);
+    sysProps.put("workflow-id", workflowId);
+    sysProps.put("workflow-activity-id", workflowActivityId);
     inputsWithFixedKeys.put("task.input.properties", helperKubeService.createConfigMapProp(parameters));
     inputsWithFixedKeys.put("task.system.properties", helperKubeService.createConfigMapProp(sysProps));
     body.data(inputsWithFixedKeys);
@@ -1260,11 +1269,11 @@ public class KubeServiceImpl implements KubeService {
 //  }
 
   protected V1ConfigMap createWorkflowConfigMapBody(String workflowName, String workflowId,
-      String activityId, Map<String, String> inputProps) {
+      String workflowActivityId, Map<String, String> inputProps) {
     V1ConfigMap body = new V1ConfigMap();
 
     body.metadata(
-        helperKubeService.getMetadata(workflowName, workflowId, activityId, null, helperKubeService.getPrefixCFGMAP()));
+        helperKubeService.getMetadata("workflow", workflowName, workflowId, workflowActivityId, null, null, helperKubeService.getPrefixCFGMAP()));
 
     // Create Data
     Map<String, String> inputsWithFixedKeys = new HashMap<>();
@@ -1272,7 +1281,7 @@ public class KubeServiceImpl implements KubeService {
     sysProps.put("controller-service-url", bmrgControllerServiceURL);
     sysProps.put("workflow-name", workflowName);
     sysProps.put("workflow-id", workflowId);
-    sysProps.put("workflow-activity-id", activityId);
+    sysProps.put("workflow-activity-id", workflowActivityId);
     inputsWithFixedKeys.put("workflow.input.properties", helperKubeService.createConfigMapProp(inputProps));
     inputsWithFixedKeys.put("workflow.system.properties", helperKubeService.createConfigMapProp(sysProps));
     body.data(inputsWithFixedKeys);

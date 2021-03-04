@@ -5,13 +5,17 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 
 public interface LogKubeService {
 
-  String getPodLog(
-      String workflowId, String activityId, String taskId);
+  String getPodLog(String workflowId, String workflowActivityId, String taskId,
+      String taskActivityId);
 
   StreamingResponseBody streamPodLog(
       HttpServletResponse response,
       String workflowId,
-      String activityId,
-      String taskId);
+      String workflowActivityId,
+      String taskId,
+      String taskActivityId);
+
+  boolean isKubePodAvailable(String workflowId, String workflowActivityId, String taskId,
+      String taskActivityId);
 
 }

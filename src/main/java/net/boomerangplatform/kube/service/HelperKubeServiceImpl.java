@@ -141,11 +141,11 @@ public class HelperKubeServiceImpl implements HelperKubeService {
   /*
    * Passes through optional method inputs to the sub methods which need to handle this.
    */
-  protected V1ObjectMeta getMetadata(String workflowName, String workflowId,
-      String activityId, String taskId, String generateName) {
+  protected V1ObjectMeta getMetadata(String tier, String workflowName, String workflowId,
+      String workflowActivityId, String taskId, String taskActivityId, String generateName) {
     V1ObjectMeta metadata = new V1ObjectMeta();
-    metadata.annotations(createAnnotations(workflowName, workflowId, activityId, taskId));
-    metadata.labels(createLabels(workflowId, activityId, taskId));
+    metadata.annotations(createAnnotations(tier, workflowName, workflowId, workflowActivityId, taskId, taskActivityId));
+    metadata.labels(createLabels(tier, workflowId, workflowActivityId, taskId, taskActivityId));
     if (StringUtils.isNotBlank(generateName)) {
       metadata.generateName(generateName + "-");
     }
@@ -185,44 +185,42 @@ public class HelperKubeServiceImpl implements HelperKubeService {
     podSpec.affinity(podAffinity);
   }
 
-  protected Map<String, String> createAntiAffinityLabels() {
+  protected Map<String, String> createAntiAffinityLabels(String tier) {
     Map<String, String> labels = new HashMap<>();
     labels.put("boomerang.io/product", bmrgProduct);
-    labels.put("boomerang.io/tier", TIER);
+    labels.put("boomerang.io/tier", tier);
     return labels;
   }
 
-  protected Map<String, String> createLabels(String workflowId, String activityId, String taskId) {
+  protected Map<String, String> createLabels(String tier, String workflowId, String workflowActivityId, String taskId, String taskActivityId) {
     Map<String, String> labels = new HashMap<>();
-    labels.put("app.kubernetes.io/name", TIER);
-    labels.put("app.kubernetes.io/instance", TIER + "-" + workflowId);
-    labels.put("app.kubernetes.io/part-of", bmrgProduct);
+    labels.put("app.kubernetes.io/name", bmrgProduct);
+    labels.put("app.kubernetes.io/instance", bmrgProduct + "-" + workflowId);
     labels.put("app.kubernetes.io/managed-by", "controller");
     labels.put("boomerang.io/product", bmrgProduct);
-    labels.put("boomerang.io/tier", TIER);
+    labels.put("boomerang.io/tier", tier);
     Optional.ofNullable(workflowId).ifPresent(str -> labels.put("boomerang.io/workflow-id", str));
-    Optional.ofNullable(activityId).ifPresent(str -> labels.put("boomerang.io/activity-id", str));
+    Optional.ofNullable(workflowActivityId).ifPresent(str -> labels.put("boomerang.io/workflow-activity-id", str));
     Optional.ofNullable(taskId).ifPresent(str -> labels.put("boomerang.io/task-id", str));
+    Optional.ofNullable(taskActivityId).ifPresent(str -> labels.put("boomerang.io/task-activity-id", str));
     return labels;
   }
   
   protected Map<String, String> createWorkspaceLabels(String workspaceId) {
     Map<String, String> labels = new HashMap<>();
-    labels.put("app.kubernetes.io/name", TIER);
-    labels.put("app.kubernetes.io/instance", TIER + "-" + workspaceId);
-    labels.put("app.kubernetes.io/part-of", bmrgProduct);
+    labels.put("app.kubernetes.io/name", bmrgProduct);
+    labels.put("app.kubernetes.io/instance", bmrgProduct + "-" + workspaceId);
     labels.put("app.kubernetes.io/managed-by", "controller");
     labels.put("boomerang.io/product", bmrgProduct);
-    labels.put("boomerang.io/tier", TIER);
+    labels.put("boomerang.io/tier", "workspace");
     labels.put("boomerang.io/workspace-id", workspaceId);
     return labels;
   }
 
-  protected Map<String, String> createAnnotations(String workflowName, String workflowId,
-      String activityId, String taskId) {
+  protected Map<String, String> createAnnotations(String tier, String workflowName, String workflowId, String workflowActivityId, String taskId, String taskActivityId) {
     Map<String, String> annotations = new HashMap<>();
     annotations.put("boomerang.io/workflow-name", workflowName);
-    annotations.put("boomerang.io/selector", getLabelSelector(workflowId, activityId, taskId));
+    annotations.put("boomerang.io/selector", getLabelSelector(tier, workflowId, workflowActivityId, taskId, taskActivityId));
     return annotations;
   }
   
@@ -233,28 +231,30 @@ public class HelperKubeServiceImpl implements HelperKubeService {
     return annotations;
   }
 
-  protected String getLabelSelector(String workflowId, String activityId, String taskId) {
-    StringBuilder labelSelector = new StringBuilder("boomerang.io/product=" + bmrgProduct + ",boomerang.io/tier=" + TIER);
+  protected String getLabelSelector(String tier, String workflowId, String workflowActivityId, String taskId, String taskActivityId) {
+    StringBuilder labelSelector = new StringBuilder("boomerang.io/product=" + bmrgProduct + ",boomerang.io/tier=" + tier);
     Optional.ofNullable(workflowId).ifPresent(str -> labelSelector.append(",boomerang.io/workflow-id=" + str));
-    Optional.ofNullable(activityId).ifPresent(str -> labelSelector.append(",boomerang.io/activity-id=" + str));
+    Optional.ofNullable(workflowActivityId).ifPresent(str -> labelSelector.append(",boomerang.io/workflow-activity-id=" + str));
     Optional.ofNullable(taskId).ifPresent(str -> labelSelector.append(",boomerang.io/task-id=" + str));
+    Optional.ofNullable(taskActivityId).ifPresent(str -> labelSelector.append(",boomerang.io/task-activity-id=" + str));
 
     LOGGER.info("  labelSelector: " + labelSelector.toString());
     return labelSelector.toString();
   }
   
   protected String getWorkspaceLabelSelector(String workspaceId) {
-    StringBuilder labelSelector = new StringBuilder("boomerang.io/product=" + bmrgProduct + ",boomerang.io/tier=" + TIER + ",boomerang.io/workspace-id=" + workspaceId);
+    StringBuilder labelSelector = new StringBuilder("boomerang.io/product=" + bmrgProduct + ",boomerang.io/tier=workspace,boomerang.io/workspace-id=" + workspaceId);
 
     LOGGER.info("  labelSelector: " + labelSelector.toString());
     return labelSelector.toString();
   }
 
-  protected List<V1EnvVar> createEnvVars(String workflowId,String activityId,String taskName,String taskId){
+  protected List<V1EnvVar> createEnvVars(String workflowId, String workflowActivityId, String taskName, String taskId, String taskActivityId){
       List<V1EnvVar> envVars = new ArrayList<>();
       envVars.add(createEnvVar("BMRG_WORKFLOW_ID", workflowId));
-      envVars.add(createEnvVar("BMRG_ACTIVITY_ID", activityId));
+      envVars.add(createEnvVar("BMRG_WORKFLOW_ACTIVITY_ID", workflowActivityId));
       envVars.add(createEnvVar("BMRG_TASK_ID", taskId));
+      envVars.add(createEnvVar("BMRG_TASK_ACTIVITY_ID", taskActivityId));
       envVars.add(createEnvVar("BMRG_TASK_NAME", taskName.replace(" ", "")));
       return envVars;
   }
