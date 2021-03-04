@@ -854,7 +854,7 @@ public class KubeServiceImpl implements KubeService {
   public V1ConfigMap createTaskConfigMap(String workflowName, String workflowId,
       String workflowActivityId, String taskName, String taskId, String taskActivityId, Map<String, String> customLabels, Map<String, String> inputProps) {
     LOGGER.info("ConfigMapBody: " + inputProps);
-    return createConfigMap(createTaskConfigMapBody(workflowName, null, workflowActivityId,
+    return createConfigMap(createTaskConfigMapBody(workflowName, workflowId, workflowActivityId,
         taskName, taskId, taskActivityId, customLabels, inputProps));
   }
 
