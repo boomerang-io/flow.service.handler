@@ -81,7 +81,7 @@ public class KubeServiceImpl implements KubeService {
 
   private static final Logger LOGGER = LogManager.getLogger(KubeService.class);
   
-  protected static final String TIER = "worker";
+//  protected static final String TIER = "worker";
 
   private static final int TIMEOUT = 600;
 
@@ -126,22 +126,22 @@ public class KubeServiceImpl implements KubeService {
   protected String kubeImagePullSecret;
 
   @Value("${kube.worker.job.backOffLimit}")
-  protected Integer kubeWorkerJobBackOffLimit;
+  protected Integer kubeJobBackOffLimit;
 
   @Value("${kube.worker.job.restartPolicy}")
-  protected String kubeWorkerJobRestartPolicy;
+  protected String kubeJobRestartPolicy;
 
   @Value("${kube.worker.job.ttlDays}")
-  protected Integer kubeWorkerJobTTLDays;
+  protected Integer kubeJobTTLDays;
 
   @Value("${kube.worker.hostaliases}")
-  protected String kubeWorkerHostAliases;
+  protected String kubeJobHostAliases;
 
   @Value("${kube.worker.node.dedicated}")
-  protected Boolean kubeWorkerDedicatedNodes;
+  protected Boolean kubeJobDedicatedNodes;
 
   @Value("${kube.worker.serviceaccount}")
-  protected String kubeWorkerServiceAccount;
+  protected String kubeJobServiceAccount;
 
   @Value("${proxy.enable}")
   protected Boolean proxyEnabled;
@@ -193,7 +193,7 @@ public class KubeServiceImpl implements KubeService {
     // Initialize Job Body
     V1Job body = new V1Job();
     body.metadata(
-        helperKubeService.getMetadata("worker", workflowName, workflowId, workflowActivityId, taskId, taskActivityId, helperKubeService.getPrefixJob() + "-" + taskActivityId, customLabels));
+        helperKubeService.getMetadata("task", workflowName, workflowId, workflowActivityId, taskId, taskActivityId, helperKubeService.getPrefixJob() + "-" + taskActivityId, customLabels));
 
     // Create Spec
     V1JobSpec jobSpec = new V1JobSpec();
@@ -285,13 +285,13 @@ public class KubeServiceImpl implements KubeService {
     List<V1VolumeProjection> projectPropsVolumeList = new ArrayList<>();
 
     // Add Workflow Configmap Projected Volume
-    V1ConfigMap wfConfigMap = getConfigMap(helperKubeService.getLabelSelector("worker", workflowId, workflowActivityId, null, null));
+    V1ConfigMap wfConfigMap = getConfigMap(helperKubeService.getLabelSelector("task", workflowId, workflowActivityId, null, null));
     if (wfConfigMap != null && !getConfigMapName(wfConfigMap).isEmpty()) {
       projectPropsVolumeList.add(getVolumeProjection(wfConfigMap));
     }
 
     // Add Task Configmap Projected Volume
-    V1ConfigMap taskConfigMap = getConfigMap(helperKubeService.getLabelSelector("worker", workflowId, workflowActivityId, taskId, taskActivityId));
+    V1ConfigMap taskConfigMap = getConfigMap(helperKubeService.getLabelSelector("task", workflowId, workflowActivityId, taskId, taskActivityId));
     if (taskConfigMap != null && !getConfigMapName(taskConfigMap).isEmpty()) {
       projectPropsVolumeList.add(getVolumeProjection(taskConfigMap));
     }
@@ -340,21 +340,21 @@ public class KubeServiceImpl implements KubeService {
         podSpec.addVolumesItem(lifecycleVol);
     }
     
-    if (kubeWorkerDedicatedNodes) {
+    if (kubeJobDedicatedNodes) {
       helperKubeService.getTolerationAndSelector(podSpec);
     }
 
-    helperKubeService.getPodAntiAffinity(podSpec, helperKubeService.createAntiAffinityLabels("worker"));
+    helperKubeService.getPodAntiAffinity(podSpec, helperKubeService.createAntiAffinityLabels("task"));
 
-    if (!kubeWorkerHostAliases.isEmpty()) {
+    if (!kubeJobHostAliases.isEmpty()) {
       Type listHostAliasType = new TypeToken<List<V1HostAlias>>() {}.getType();
       List<V1HostAlias> hostAliasList =
-          new Gson().fromJson(kubeWorkerHostAliases, listHostAliasType);
+          new Gson().fromJson(kubeJobHostAliases, listHostAliasType);
       podSpec.hostAliases(hostAliasList);
     }
 
-    if (!kubeWorkerServiceAccount.isEmpty()) {
-      podSpec.serviceAccountName(kubeWorkerServiceAccount);
+    if (!kubeJobServiceAccount.isEmpty()) {
+      podSpec.serviceAccountName(kubeJobServiceAccount);
     }
 
     containerList.add(container);
@@ -364,13 +364,13 @@ public class KubeServiceImpl implements KubeService {
     List<V1LocalObjectReference> imagePullSecretList = new ArrayList<>();
     imagePullSecretList.add(imagePullSecret);
     podSpec.imagePullSecrets(imagePullSecretList);
-    podSpec.restartPolicy(kubeWorkerJobRestartPolicy);
+    podSpec.restartPolicy(kubeJobRestartPolicy);
     templateSpec.spec(podSpec);
-    templateSpec.metadata(helperKubeService.getMetadata("worker", workflowName, workflowId, workflowActivityId, taskId, taskActivityId, null, customLabels));
+    templateSpec.metadata(helperKubeService.getMetadata("task", workflowName, workflowId, workflowActivityId, taskId, taskActivityId, null, customLabels));
 
-    jobSpec.backoffLimit(kubeWorkerJobBackOffLimit);
+    jobSpec.backoffLimit(kubeJobBackOffLimit);
     jobSpec.template(templateSpec);
-    Integer ttl = ONE_DAY_IN_SECONDS * kubeWorkerJobTTLDays;
+    Integer ttl = ONE_DAY_IN_SECONDS * kubeJobTTLDays;
     LOGGER.info("Setting Job TTL at " + ttl + " seconds");
     jobSpec.setTtlSecondsAfterFinished(ttl);
     body.spec(jobSpec);
@@ -426,7 +426,7 @@ public class KubeServiceImpl implements KubeService {
 
   public V1Job watchJob(boolean watchLifecycle, String workflowId, String workflowActivityId,
       String taskId, String taskActivityId) {
-    String labelSelector = helperKubeService.getLabelSelector("worker", workflowId, workflowActivityId, taskId, taskActivityId);
+    String labelSelector = helperKubeService.getLabelSelector("task", workflowId, workflowActivityId, taskId, taskActivityId);
     V1Job jobResult = null;
 
     // Since upgrade to Java11 the watcher stops listening for events (irrespective of timeout) and
@@ -436,7 +436,7 @@ public class KubeServiceImpl implements KubeService {
     long endTime = System.nanoTime()
         + TimeUnit.NANOSECONDS.convert(kubeApiTimeOut.longValue(), TimeUnit.SECONDS);
     do {
-      LOGGER.info("Starting Job Watcher #" + loopCount + " for Task (" + taskId + ")...");
+      LOGGER.info("Starting Task Watcher #" + loopCount + " for Task (" + taskId + ")...");
       try {
         Watch<V1Job> watch = createJobWatch(getBatchApi(), labelSelector);
         if (watchLifecycle) {
@@ -476,7 +476,7 @@ public class KubeServiceImpl implements KubeService {
         if (item.object.getStatus().getContainerStatuses() != null) {
           for (V1ContainerStatus containerStatus : item.object.getStatus().getContainerStatuses()) {
             LOGGER.info("Container Status: " + containerStatus.toString());
-            if ("worker-cntr".equalsIgnoreCase(containerStatus.getName())
+            if ("task-cntr".equalsIgnoreCase(containerStatus.getName())
                 && containerStatus.getState().getTerminated() != null) {
               LOGGER.info("-----------------------------------------------");
               LOGGER.info("------- Executing Lifecycle Termination -------");
@@ -489,7 +489,7 @@ public class KubeServiceImpl implements KubeService {
               }
               pod = item.object;
               break;
-            } else if ("worker-cntr".equalsIgnoreCase(containerStatus.getName())
+            } else if ("task-cntr".equalsIgnoreCase(containerStatus.getName())
                 && containerStatus.getState().getWaiting() != null 
 //                && "CreateContainerError".equalsIgnoreCase(containerStatus.getState().getWaiting().getReason())) {
                   && ArrayUtils.contains(waitingErrorReasons, containerStatus.getState().getWaiting().getReason())) {
@@ -552,7 +552,7 @@ public class KubeServiceImpl implements KubeService {
   @Override
   public String getPodLog(String workflowId, String workflowActivityId, String taskId,
       String taskActivityId) {
-    String labelSelector = helperKubeService.getLabelSelector("worker", workflowId, workflowActivityId, taskId, taskActivityId);
+    String labelSelector = helperKubeService.getLabelSelector("task", workflowId, workflowActivityId, taskId, taskActivityId);
 
     PodLogs logs = new PodLogs();
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -566,7 +566,7 @@ public class KubeServiceImpl implements KubeService {
       if (!listOfPods.isEmpty()) {
         pod = listOfPods.get(0);
         InputStream is = logs.streamNamespacedPodLog(pod.getMetadata().getNamespace(),
-            pod.getMetadata().getName(), "worker-cntr");
+            pod.getMetadata().getName(), "task-cntr");
 
         ByteStreams.copy(is, baos);
       }
@@ -579,7 +579,7 @@ public class KubeServiceImpl implements KubeService {
   }
 
   public boolean isKubePodAvailable(String workflowId, String workflowActivityId, String taskId, String taskActivityId) {
-    String labelSelector = helperKubeService.getLabelSelector("worker", workflowId, workflowActivityId, taskId, taskActivityId);
+    String labelSelector = helperKubeService.getLabelSelector("task", workflowId, workflowActivityId, taskId, taskActivityId);
 
     try {
       List<V1Pod> allPods =
@@ -605,7 +605,7 @@ public class KubeServiceImpl implements KubeService {
 
     LOGGER.info("Stream logs from Kubernetes");
 
-    String labelSelector = helperKubeService.getLabelSelector("worker", workflowId, workflowActivityId, taskId, taskActivityId);
+    String labelSelector = helperKubeService.getLabelSelector("task", workflowId, workflowActivityId, taskId, taskActivityId);
     StreamingResponseBody responseBody = null;
     try {
       Watch<V1Pod> watch = createPodWatch(labelSelector, getCoreApi());
@@ -792,7 +792,7 @@ public class KubeServiceImpl implements KubeService {
 
   protected String getJobName(boolean onlyOnSuccess, String workflowId, String workflowActivityId,
       String taskId, String taskActivityId) {
-    String labelSelector = helperKubeService.getLabelSelector("worker", workflowId, workflowActivityId, taskId, taskActivityId);
+    String labelSelector = helperKubeService.getLabelSelector("task", workflowId, workflowActivityId, taskId, taskActivityId);
 
     try {
       V1JobList listOfJobs =
@@ -878,7 +878,7 @@ public class KubeServiceImpl implements KubeService {
   
   @Override
   public V1ConfigMap watchTaskConfigMap(String workflowId, String workflowActivityId, String taskId, String taskActivityId) {
-    return watchConfigMap(helperKubeService.getLabelSelector("worker", workflowId, workflowActivityId, taskId, taskActivityId));
+    return watchConfigMap(helperKubeService.getLabelSelector("task", workflowId, workflowActivityId, taskId, taskActivityId));
   }
 
   private V1ConfigMap watchConfigMap(String labelSelector) {
@@ -923,7 +923,7 @@ public class KubeServiceImpl implements KubeService {
 
   @Override
   public V1Status deleteTaskConfigMap(String workflowId, String workflowActivityId, String taskId, String taskActivityId) {
-    return deleteConfigMap(getConfigMapName(getConfigMap(helperKubeService.getLabelSelector("worker", workflowId, workflowActivityId, taskId, taskActivityId))));
+    return deleteConfigMap(getConfigMapName(getConfigMap(helperKubeService.getLabelSelector("task", workflowId, workflowActivityId, taskId, taskActivityId))));
   }
 
   private V1Status deleteConfigMap(String configMapName) {
@@ -1071,7 +1071,7 @@ public class KubeServiceImpl implements KubeService {
     container.image(image);
     LOGGER.info("Container Command: " + command);
     Optional.ofNullable(command).filter(str -> !str.isEmpty()).ifPresent(str -> container.addCommandItem(str));
-    container.name("worker-cntr");
+    container.name("task-cntr");
     container.imagePullPolicy(kubeImagePullPolicy);
     V1SecurityContext securityContext = new V1SecurityContext();
     securityContext.setPrivileged(true);
@@ -1125,9 +1125,9 @@ public class KubeServiceImpl implements KubeService {
         jobResult = item.object;
         break;
       } else if (item.object.getStatus().getFailed() != null
-          && item.object.getStatus().getFailed() >= kubeWorkerJobBackOffLimit) {
+          && item.object.getStatus().getFailed() >= kubeJobBackOffLimit) {
         throw new KubeRuntimeException("Task (" + taskId + ") has failed to execute "
-            + kubeWorkerJobBackOffLimit + " times triggering failure.");
+            + kubeJobBackOffLimit + " times triggering failure.");
       }
     }
 
@@ -1226,7 +1226,7 @@ public class KubeServiceImpl implements KubeService {
     V1ConfigMap body = new V1ConfigMap();
 
     body.metadata(
-        helperKubeService.getMetadata("worker", workflowName, workflowId, workflowActivityId, taskId, taskActivityId, helperKubeService.getPrefixCFGMAP(), customLabels));
+        helperKubeService.getMetadata("task", workflowName, workflowId, workflowActivityId, taskId, taskActivityId, helperKubeService.getPrefixCFGMAP(), customLabels));
 
     // Create Data
     Map<String, String> inputsWithFixedKeys = new HashMap<>();

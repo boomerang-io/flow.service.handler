@@ -33,7 +33,7 @@ public class LogKubeServiceImpl implements LogKubeService {
 
   @Override
   public String getPodLog(String workflowId, String workflowActivityId, String taskId, String taskActivityId) {
-    String labelSelector = helperKubeService.getLabelSelector("worker", workflowId, workflowActivityId, taskId, taskActivityId);
+    String labelSelector = helperKubeService.getLabelSelector("task", workflowId, workflowActivityId, taskId, taskActivityId);
 
     PodLogs logs = new PodLogs();
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -45,7 +45,7 @@ public class LogKubeServiceImpl implements LogKubeService {
       if (allPods != null && !allPods.isEmpty()) {
         pod = allPods.get(0);
         InputStream is = logs.streamNamespacedPodLog(pod.getMetadata().getNamespace(),
-            pod.getMetadata().getName(), "worker-cntr");
+            pod.getMetadata().getName(), "task-cntr");
 
         ByteStreams.copy(is, baos);
       }
@@ -59,7 +59,7 @@ public class LogKubeServiceImpl implements LogKubeService {
 
   @Override
   public boolean isKubePodAvailable(String workflowId, String workflowActivityId, String taskId, String taskActivityId) {
-    String labelSelector = helperKubeService.getLabelSelector("worker", workflowId, workflowActivityId, taskId, taskActivityId);
+    String labelSelector = helperKubeService.getLabelSelector("task", workflowId, workflowActivityId, taskId, taskActivityId);
 
     try {
       List<V1Pod> allPods = kubeService.getPods(labelSelector);
@@ -83,7 +83,7 @@ public class LogKubeServiceImpl implements LogKubeService {
 
     LOGGER.info("Stream logs from Kubernetes");
 
-    String labelSelector = helperKubeService.getLabelSelector("worker", workflowId, workflowActivityId, taskId, taskActivityId);
+    String labelSelector = helperKubeService.getLabelSelector("task", workflowId, workflowActivityId, taskId, taskActivityId);
     StreamingResponseBody responseBody = null;
     try {
       Watch<V1Pod> watch = kubeService.createPodWatch(labelSelector, kubeService.getCoreApi());

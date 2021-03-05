@@ -179,7 +179,7 @@ public class LogServiceImpl implements LogService {
 
   private String createLokiFilter(String workflowId, String taskId, String taskActivityId) {
     return "{bmrg_task_activity=\"" + taskActivityId + "\",bmrg_workflow=\"" + workflowId
-        + "\",bmrg_task=\"" + taskId + "\",bmrg_container=\"worker-cntr\"}";
+        + "\",bmrg_task=\"" + taskId + "\",bmrg_container=\"task-cntr\"}";
   }
 
   private StreamingResponseBody streamLogsFromElastic(String activityId) {
@@ -207,7 +207,7 @@ public class LogServiceImpl implements LogService {
           helperKubeService.getPrefixJob() + "-" + activityId + "-*");
 
       MatchPhraseQueryBuilder containerName =
-          QueryBuilders.matchPhraseQuery("kubernetes.container_name", "worker-cntr");
+          QueryBuilders.matchPhraseQuery("kubernetes.container_name", "task-cntr");
       BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(podName).must(containerName);
 
       searchSourceBuilder.query(queryBuilder);

@@ -32,7 +32,7 @@ public class HelperKubeServiceImpl implements HelperKubeService {
 
   private static final Logger LOGGER = LogManager.getLogger(HelperKubeService.class);
   
-  protected static final String TIER = "worker";
+//  protected static final String TIER = "worker";
 
   private static final String EXCEPTION = "Exception: ";
 
@@ -57,7 +57,7 @@ public class HelperKubeServiceImpl implements HelperKubeService {
 //  Utilized by LogServiceImpl
   @Override
   public String getPrefixJob() {
-    return bmrgProduct + "-" + TIER;
+    return bmrgProduct + "-task";
   }
   
   protected String getPrefixPVC() {
