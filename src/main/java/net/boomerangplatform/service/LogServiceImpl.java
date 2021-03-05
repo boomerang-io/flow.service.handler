@@ -74,7 +74,7 @@ public class LogServiceImpl implements LogService {
       } else if ("elastic".equals(loggingType)) {
         return streamLogsFromElastic(taskActivityId);
       } else if ("loki".equals(loggingType)) {
-        return streamLogsFromLoki(workflowId, taskActivityId, taskId);
+        return streamLogsFromLoki(workflowId, taskId, taskActivityId);
       } else {
         return getDefaultErrorMessage(getMessageUnableToAccessLogs());
       }
@@ -85,10 +85,10 @@ public class LogServiceImpl implements LogService {
   }
 
   // TODO: reduce complexity, refactor method
-  private StreamingResponseBody streamLogsFromLoki(String workflowId, String activityId,
-      String taskId) {
+  private StreamingResponseBody streamLogsFromLoki(String workflowId,
+      String taskId, String taskActivityId) {
 
-    LOGGER.info("Streaming logs from loki for task ("+ activityId + ") and activity (" + activityId + ")");
+    LOGGER.info("Streaming logs from loki for task ("+ taskId + ") and activity (" + taskActivityId + ")");
 
 
     return outputStream -> {
@@ -96,7 +96,7 @@ public class LogServiceImpl implements LogService {
       PrintWriter printWriter = new PrintWriter(outputStream);
 
       final String filter =
-          createLokiFilter(workflowId, activityId, taskId);
+          createLokiFilter(workflowId, taskId, taskActivityId);
       LOGGER.info("Loki filter: " + filter);
 
       final String encodedQuery = URLEncoder.encode(filter, StandardCharsets.UTF_8);
@@ -177,8 +177,8 @@ public class LogServiceImpl implements LogService {
     };
   }
 
-  private String createLokiFilter(String workflowId, String activityId, String taskId) {
-    return "{bmrg_activity=\"" + activityId + "\",bmrg_workflow=\"" + workflowId
+  private String createLokiFilter(String workflowId, String taskId, String taskActivityId) {
+    return "{bmrg_task_activity=\"" + taskActivityId + "\",bmrg_workflow=\"" + workflowId
         + "\",bmrg_task=\"" + taskId + "\",bmrg_container=\"worker-cntr\"}";
   }
 
