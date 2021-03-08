@@ -285,7 +285,7 @@ public class KubeServiceImpl implements KubeService {
     List<V1VolumeProjection> projectPropsVolumeList = new ArrayList<>();
 
     // Add Workflow Configmap Projected Volume
-    V1ConfigMap wfConfigMap = getConfigMap(helperKubeService.getLabelSelector("task", workflowId, workflowActivityId, null, null));
+    V1ConfigMap wfConfigMap = getConfigMap(helperKubeService.getLabelSelector("workflow", workflowId, workflowActivityId, null, null));
     if (wfConfigMap != null && !getConfigMapName(wfConfigMap).isEmpty()) {
       projectPropsVolumeList.add(getVolumeProjection(wfConfigMap));
     }
