@@ -6,10 +6,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import io.kubernetes.client.ApiException;
+import io.fabric8.kubernetes.client.KubernetesClientException;
+import net.boomerangplatform.error.BoomerangError;
 import net.boomerangplatform.error.BoomerangException;
 import net.boomerangplatform.kube.exception.KubeRuntimeException;
-import net.boomerangplatform.kube.service.KubeServiceImpl;
+import net.boomerangplatform.kube.service.NewKubeServiceImpl;
 import net.boomerangplatform.model.Response;
 import net.boomerangplatform.model.Workflow;
 
@@ -27,8 +28,13 @@ public class WorklowServiceImpl implements WorkflowService {
   @Value("${kube.workspace.storage.accessMode}")
   protected String storageAccessMode;
   
+  @Value("${kube.timeout.waitUntil}")
+  protected long waitUntilTimeout;
+  
+  
+  
     @Autowired
-    private KubeServiceImpl kubeService;
+    private NewKubeServiceImpl kubeService;
 
     @Override
     public Response createWorkflow(Workflow workflow) {
@@ -41,14 +47,21 @@ public class WorklowServiceImpl implements WorkflowService {
           String className = workflow.getWorkflowStorage().getClassName();
           String accessMode = workflow.getWorkflowStorage().getAccessMode() == null || workflow.getWorkflowStorage().getAccessMode().isEmpty() ? storageAccessMode : workflow.getWorkflowStorage().getAccessMode();
           kubeService.createWorkflowPVC(workflow.getWorkflowName(), workflow.getWorkflowId(),
-              workflow.getWorkflowActivityId(), workflow.getLabels(), size, className, accessMode);
-          kubeService.watchWorkflowPVC(workflow.getWorkflowId(), workflow.getWorkflowActivityId()).getPhase();
+              workflow.getWorkflowActivityId(), workflow.getLabels(), size, className, accessMode, waitUntilTimeout);
+        } else {
+          response = new Response("0", "Workflow Activity (" +workflow.getWorkflowActivityId() + ") created without storage.");
         }
         kubeService.createWorkflowConfigMap(workflow.getWorkflowName(), workflow.getWorkflowId(),
             workflow.getWorkflowActivityId(), workflow.getLabels(), workflow.getParameters());
-        kubeService.watchWorkflowConfigMap(workflow.getWorkflowId(), workflow.getWorkflowActivityId());
-      } catch (ApiException | KubeRuntimeException e) {
-            throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
+      } catch (KubeRuntimeException | KubernetesClientException | InterruptedException e) {
+        LOGGER.error(e.getMessage());
+        throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
+      } catch (IllegalArgumentException e) {
+        if (e.getMessage().contains("condition not found")) {
+          throw new BoomerangException(e, BoomerangError.PVC_CREATE_CONDITION_NOT_MET, "" + waitUntilTimeout);
+        } else {
+          throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
       }
       return response;
     }
@@ -60,7 +73,7 @@ public class WorklowServiceImpl implements WorkflowService {
       try {
         kubeService.deleteWorkflowPVC(workflow.getWorkflowId(), workflow.getWorkflowActivityId());
         kubeService.deleteWorkflowConfigMap(workflow.getWorkflowId(), workflow.getWorkflowActivityId());
-      } catch (KubeRuntimeException e) {
+      } catch (Exception e) {
             throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
       }
       return response;

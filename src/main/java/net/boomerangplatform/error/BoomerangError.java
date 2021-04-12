@@ -1,11 +1,12 @@
 package net.boomerangplatform.error;
 
+import java.text.MessageFormat;
 import org.springframework.http.HttpStatus;
 
 public enum BoomerangError {
   
   /** Add reusable error list here. */
-  TEAM_NAME_ALREADY_EXISTS(100, "TEAM_NAME_ALREADY_EXISTS", HttpStatus.BAD_REQUEST);
+  PVC_CREATE_CONDITION_NOT_MET(100, "Unable to create PVC with a status of Bound or Pending within {0} seconds.", HttpStatus.INTERNAL_SERVER_ERROR);
 
   private final int code;
   private final String description;
@@ -16,8 +17,8 @@ public enum BoomerangError {
     return code;
   }
 
-  public String getDescription() {
-    return description;
+  public String getDescription(Object... args) {
+    return MessageFormat.format(description, args);
   }
 
 
@@ -30,6 +31,4 @@ public enum BoomerangError {
     this.description = description;
     this.httpStatus = httpStatus;
   }
-
-
 }

@@ -1,7 +1,7 @@
-package net.boomerangplatform.kube.service;
-
-public interface HelperKubeService {
-
-  String getPrefixJob();
-
-}
+//package net.boomerangplatform.kube.service;
+//
+//public interface HelperKubeService {
+//
+//  String getPrefixJob();
+//
+//}

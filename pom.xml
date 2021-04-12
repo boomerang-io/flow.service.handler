@@ -125,10 +125,14 @@
 			<version>5.6.1</version>
 		</dependency>
 		<dependency>
-			<groupId>io.kubernetes</groupId>
-			<artifactId>client-java</artifactId>
-			<version>5.0.0</version>
-			<scope>compile</scope>
+		  <groupId>io.fabric8</groupId>
+		  <artifactId>kubernetes-client</artifactId>
+		  <version>5.3.0</version>
+		</dependency>
+		<dependency>
+		  <groupId>io.fabric8</groupId>
+		  <artifactId>tekton-client</artifactId>
+		  <version>5.3.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
