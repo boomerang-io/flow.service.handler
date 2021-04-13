@@ -13,7 +13,12 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import io.fabric8.kubernetes.api.model.Affinity;
 import io.fabric8.kubernetes.api.model.EnvVar;
+import io.fabric8.kubernetes.api.model.LabelSelector;
+import io.fabric8.kubernetes.api.model.PodAffinityTerm;
+import io.fabric8.kubernetes.api.model.PodAntiAffinity;
+import io.fabric8.kubernetes.api.model.WeightedPodAffinityTerm;
 import net.boomerangplatform.model.TaskConfiguration;
 import net.boomerangplatform.service.ConfigurationService;
 
@@ -172,33 +177,34 @@ public class NewHelperKubeServiceImpl {
   // podSpec.putNodeSelectorItem("node-role.kubernetes.io/bmrg-worker", "true");
   // }
   //
-  // /*
-  // * Sets the pod anti affinity
-  // */
-  // protected void getPodAntiAffinity(V1PodSpec podSpec, Map<String, String> labels) {
-  // V1LabelSelector labelSelector = new V1LabelSelector();
-  // labelSelector.setMatchLabels(labels);
-  // V1PodAffinityTerm podAntiAffinityPreferredTerm = new V1PodAffinityTerm();
-  // podAntiAffinityPreferredTerm.setLabelSelector(labelSelector);
-  // podAntiAffinityPreferredTerm.setTopologyKey("kubernetes.io/hostname");
-  // V1WeightedPodAffinityTerm podAntiAffinityPreferred = new V1WeightedPodAffinityTerm();
-  // podAntiAffinityPreferred.setWeight(100);
-  // podAntiAffinityPreferred.setPodAffinityTerm(podAntiAffinityPreferredTerm);
-  // V1PodAntiAffinity podAntiAffinity = new V1PodAntiAffinity();
-  // podAntiAffinity
-  // .addPreferredDuringSchedulingIgnoredDuringExecutionItem(podAntiAffinityPreferred);
-  // V1Affinity podAffinity = new V1Affinity();
-  // podAffinity.setPodAntiAffinity(podAntiAffinity);
-  // podSpec.affinity(podAffinity);
-  // }
-  //
-  // protected Map<String, String> createAntiAffinityLabels(String tier) {
-  // Map<String, String> labels = new HashMap<>();
-  // labels.put("boomerang.io/product", bmrgProduct);
-  // labels.put("boomerang.io/tier", tier);
-  // return labels;
-  // }
-  //
+   /*
+   * Sets the pod anti affinity
+   */
+   protected Affinity getPodAffinity(Map<String, String> labels) {
+     Affinity affinity = new Affinity();
+     PodAntiAffinity podAntiAffinity = new PodAntiAffinity();
+     List<WeightedPodAffinityTerm> weightedPodAffinityTerms = new ArrayList<>();
+     LabelSelector labelSelector = new LabelSelector();
+     labelSelector.setMatchLabels(labels);
+     PodAffinityTerm podAffinityTerm = new PodAffinityTerm();
+     podAffinityTerm.setLabelSelector(labelSelector);
+     podAffinityTerm.setTopologyKey("kubernetes.io/hostname");
+     WeightedPodAffinityTerm weightedPodAffinityTerm = new WeightedPodAffinityTerm();
+     weightedPodAffinityTerm.setWeight(100);
+     weightedPodAffinityTerm.setPodAffinityTerm(podAffinityTerm);
+     weightedPodAffinityTerms.add(weightedPodAffinityTerm);
+     podAntiAffinity.setPreferredDuringSchedulingIgnoredDuringExecution(weightedPodAffinityTerms);
+     affinity.setPodAntiAffinity(podAntiAffinity);
+     return affinity;
+   }
+  
+  protected Map<String, String> createAntiAffinityLabels(String tier) {
+    Map<String, String> labels = new HashMap<>();
+    labels.put("boomerang.io/product", bmrgProduct);
+    labels.put("boomerang.io/tier", tier);
+    return labels;
+  }
+
 
   private Map<String, String> getLabels(String tier, String workspaceId, String workflowId,
       String workflowActivityId, String taskId, String taskActivityId,

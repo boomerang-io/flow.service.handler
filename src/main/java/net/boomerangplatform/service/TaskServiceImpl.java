@@ -82,13 +82,13 @@ public class TaskServiceImpl implements TaskService {
                     throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
               } finally {
 //                Uses the workflowActivityId as the TaskOutput is stored in the Workflow Configmap
-                  response.setResults(kubeService.getTaskOutPutConfigMapData(task.getWorkflowId(),
-                          task.getWorkflowActivityId(), task.getTaskId(), task.getTaskName()));
-                  kubeService.deleteTaskConfigMap(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId(), task.getTaskActivityId());
-                  if (isTaskDeletionNever(task.getConfiguration())) {
-                    deleteService.deleteJob(getTaskDeletion(task.getConfiguration()), task.getWorkflowId(),
-                              task.getWorkflowActivityId(), task.getTaskId(), task.getTaskActivityId());
-                  }
+//                  response.setResults(kubeService.getTaskOutPutConfigMapData(task.getWorkflowId(),
+//                          task.getWorkflowActivityId(), task.getTaskId(), task.getTaskName()));
+//                  kubeService.deleteTaskConfigMap(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId(), task.getTaskActivityId());
+//                  if (isTaskDeletionNever(task.getConfiguration())) {
+//                    deleteService.deleteJob(getTaskDeletion(task.getConfiguration()), task.getWorkflowId(),
+//                              task.getWorkflowActivityId(), task.getTaskId(), task.getTaskActivityId());
+//                  }
                   LOGGER.info("Task (" + task.getTaskId() + ") has completed with code " + response.getCode());
               }
           }
@@ -137,7 +137,7 @@ public class TaskServiceImpl implements TaskService {
       try {
         Map<String, String> parameters = new HashMap<>();
         parameters.put(key, value);
-        kubeService.patchTaskConfigMap(workflowId, workflowActivityId, taskId, taskName, parameters);
+//        kubeService.patchTaskConfigMap(workflowId, workflowActivityId, taskId, taskName, parameters);
       } catch (KubeRuntimeException e) {
         throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
       }
@@ -152,7 +152,7 @@ public class TaskServiceImpl implements TaskService {
 
       LOGGER.info(parameters);
       try {
-        kubeService.patchTaskConfigMap(workflowId, workflowActivityId, taskId, taskName, parameters);
+//        kubeService.patchTaskConfigMap(workflowId, workflowActivityId, taskId, taskName, parameters);
       } catch (KubeRuntimeException e) {
         throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
       }

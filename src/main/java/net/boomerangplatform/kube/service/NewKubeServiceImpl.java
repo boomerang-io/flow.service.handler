@@ -1,5 +1,6 @@
 package net.boomerangplatform.kube.service;
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -10,17 +11,29 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
+import io.fabric8.kubernetes.api.model.ConfigMapList;
+import io.fabric8.kubernetes.api.model.ConfigMapProjection;
+import io.fabric8.kubernetes.api.model.Container;
+import io.fabric8.kubernetes.api.model.EmptyDirVolumeSource;
 import io.fabric8.kubernetes.api.model.EnvVar;
+import io.fabric8.kubernetes.api.model.HostAlias;
+import io.fabric8.kubernetes.api.model.LocalObjectReference;
 import io.fabric8.kubernetes.api.model.PersistentVolumeClaim;
 import io.fabric8.kubernetes.api.model.PersistentVolumeClaimBuilder;
 import io.fabric8.kubernetes.api.model.PersistentVolumeClaimList;
-import io.fabric8.kubernetes.api.model.PodSpec;
-import io.fabric8.kubernetes.api.model.PodSpecBuilder;
+import io.fabric8.kubernetes.api.model.PersistentVolumeClaimVolumeSource;
+import io.fabric8.kubernetes.api.model.ProjectedVolumeSource;
 import io.fabric8.kubernetes.api.model.Quantity;
 import io.fabric8.kubernetes.api.model.ResourceRequirements;
 import io.fabric8.kubernetes.api.model.SecurityContext;
+import io.fabric8.kubernetes.api.model.Toleration;
+import io.fabric8.kubernetes.api.model.Volume;
+import io.fabric8.kubernetes.api.model.VolumeMount;
+import io.fabric8.kubernetes.api.model.VolumeProjection;
 import io.fabric8.kubernetes.api.model.batch.Job;
 import io.fabric8.kubernetes.api.model.batch.JobBuilder;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
@@ -38,12 +51,29 @@ public class NewKubeServiceImpl {
 
   @Autowired
   protected NewHelperKubeServiceImpl helperKubeService;
+    
+  protected static final Integer ONE_DAY_IN_SECONDS = 86400; // 60*60*24
 
   @Value("${kube.namespace}")
   protected String kubeNamespace;
   
   @Value("${kube.image.pullPolicy}")
   protected String kubeImagePullPolicy;
+
+  @Value("${kube.image.pullSecret}")
+  protected String kubeImagePullSecret;
+
+  @Value("${kube.worker.job.backOffLimit}")
+  protected Integer kubeJobBackOffLimit;
+
+  @Value("${kube.worker.job.restartPolicy}")
+  protected String kubeJobRestartPolicy;
+    
+  @Value("${kube.worker.job.ttlDays}")
+  protected Integer kubeJobTTLDays;
+
+  @Value("${kube.worker.serviceaccount}")
+  protected String kubeJobServiceAccount;
 
   @Value("${kube.resource.limit.ephemeral-storage}")
   private String kubeResourceLimitEphemeralStorage;
@@ -59,6 +89,15 @@ public class NewKubeServiceImpl {
 
   @Value("${kube.worker.storage.data.memory}")
   private Boolean kubeWorkerStorageDataMemory;
+  
+  @Value("${kube.lifecycle.image}")
+  private String kubeLifecycleImage;
+
+  @Value("${kube.worker.node.dedicated}")
+  protected Boolean kubeJobDedicatedNodes;
+
+  @Value("${kube.worker.hostaliases}")
+  protected String kubeHostAliases;
 
   @Value("${kube.worker.debug}")
   private Boolean taskEnableDebug;
@@ -100,6 +139,29 @@ public class NewKubeServiceImpl {
       return false;
     }
     return pvcExists;
+  }
+  
+  protected String getPVCName(Map<String, String> labels) {
+    try {
+      PersistentVolumeClaimList pvcList =
+          client.persistentVolumeClaims().withLabels(labels).list();
+
+      LOGGER.info("PVC List: " + pvcList.toString());
+      
+      if (!pvcList.getItems().isEmpty()) {
+        LOGGER.info(" PVCs() - Found " + pvcList.getItems().size() + " persistentvolumeclaims: "
+            + pvcList.getItems().stream().reduce("", (pvcNames, pvc) -> pvcNames +=
+                pvc.getMetadata().getName() + "(" + pvc.getMetadata().getCreationTimestamp() + ")",
+                String::concat));
+        if (pvcList.getItems().get(0).getMetadata().getName() != null) {
+          LOGGER.info(" Chosen PVC Name: " + pvcList.getItems().get(0).getMetadata().getName());
+          return pvcList.getItems().get(0).getMetadata().getName();
+        }
+      }
+    } catch (Exception e) {
+      LOGGER.error(e);
+    }
+    return "";
   }
 
   public PersistentVolumeClaim createWorkspacePVC(String workspaceName, String workspaceId,
@@ -180,30 +242,6 @@ public class NewKubeServiceImpl {
     LOGGER.debug(client.persistentVolumeClaims().list().toString());
 
     client.persistentVolumeClaims().withLabels(labels).delete();
-    // V1DeleteOptions deleteOptions = new V1DeleteOptions();
-    // // deleteOptions.setPropagationPolicy("Background");
-    // V1Status result = new V1Status();
-    // String pvcName = getPVCName(labelSelector);
-    // if (!pvcName.isEmpty()) {
-    // LOGGER.info("Deleting PVC (" + pvcName + ")...");
-    // try {
-    // result = getCoreApi().deleteNamespacedPersistentVolumeClaim(pvcName, kubeNamespace,
-    // kubeApiPretty, deleteOptions, null, null, null, null);
-    // } catch (JsonSyntaxException e) {
-    // if (e.getCause() instanceof IllegalStateException) {
-    // IllegalStateException ise = (IllegalStateException) e.getCause();
-    // if (ise.getMessage() != null
-    // && ise.getMessage().contains("Expected a string but was BEGIN_OBJECT")) {
-    // LOGGER.error(
-    // "Catching exception because of issue https://github.com/kubernetes-client/java/issues/86");
-    // } else {
-    // LOGGER.error("Exception when running deletePVC()", e);
-    // }
-    // }
-    // } catch (ApiException e) {
-    // LOGGER.error("Exception when running deletePVC()", e);
-    // }
-    // }
   }
 
   public ConfigMap createWorkflowConfigMap(String workflowName, String workflowId,
@@ -219,6 +257,8 @@ public class NewKubeServiceImpl {
       helperKubeService.createConfigMapProp(inputProps));
   dataMap.put("workflow.system.properties",
       helperKubeService.createConfigMapProp(sysProps));
+  
+//  Watch cmWatcher = watchWorkflowConfigMap(client, helperKubeService.getWorkflowLabels(workflowId, workflowActivityId, customLabels));
     
 //  try (Watch ignored = watchWorkflowConfigMap(client,
 //      helperKubeService.getWorkflowLabels(workflowId, workflowActivityId, customLabels));) {
@@ -235,32 +275,32 @@ public class NewKubeServiceImpl {
     return result;
   }
   
-//  private static Watch watchWorkflowConfigMap(KubernetesClient client, Map<String, String> labels) {
-//    
-//    return client.configMaps().withLabels(labels).watch(new Watcher<ConfigMap>() {
-//      @Override
-//      public void eventReceived(Action action, ConfigMap resource) {
-//        LOGGER.info("Watch event received {}: {}", action.name(), resource.getMetadata().getName());
-//        switch (action.name()) {
-//          case "DELETED":
-//            LOGGER.info(resource.getMetadata().getName() + "got deleted");
-//              break;
-//        }
-//      }
-//
-//      @Override
-//      public void onClose(WatcherException e) {
-//        LOGGER.error("Watch error received: {}", e.getMessage(), e);
-//        //Cause the pod to restart
-//        System.exit(1);
-//      }
-//
-//      @Override
-//      public void onClose() {
-//        LOGGER.info("Watch gracefully closed");
-//      }
-//    });
-//  }
+  private static Watch watchWorkflowConfigMap(KubernetesClient client, Map<String, String> labels) {
+    
+    return client.configMaps().withLabels(labels).watch(new Watcher<ConfigMap>() {
+      @Override
+      public void eventReceived(Action action, ConfigMap resource) {
+        LOGGER.info("Watch event received {}: {}", action.name(), resource.getMetadata().getName());
+        switch (action.name()) {
+          case "DELETED":
+            LOGGER.info(resource.getMetadata().getName() + "got deleted");
+              break;
+        }
+      }
+
+      @Override
+      public void onClose(WatcherException e) {
+        LOGGER.error("Watch error received: {}", e.getMessage(), e);
+        //Cause the pod to restart
+        System.exit(1);
+      }
+
+      @Override
+      public void onClose() {
+        LOGGER.info("Watch gracefully closed");
+      }
+    });
+  }
   
 public ConfigMap createTaskConfigMap(String workflowName, String workflowId,
     String workflowActivityId, String taskName, String taskId, String taskActivityId,
@@ -326,7 +366,29 @@ public ConfigMap createTaskConfigMap(String workflowName, String workflowId,
     client.configMaps().withLabels(labels).delete();
   }
   
-  private Job createJob(boolean createLifecycleWatcher, String workspaceId, String workflowName,
+  private String getConfigMapName(Map<String, String> labels) {
+  try {
+    ConfigMapList configMapList = client.configMaps().withLabels(labels).list();
+
+    LOGGER.info("ConfigMap List: " + configMapList.toString());
+    
+    if (!configMapList.getItems().isEmpty()) {
+      LOGGER.info(" ConfigMaps() - Found " + configMapList.getItems().size() + " persistentvolumeclaims: "
+          + configMapList.getItems().stream().reduce("", (cmNames, cm) -> cmNames +=
+              cm.getMetadata().getName() + "(" + cm.getMetadata().getCreationTimestamp() + ")",
+              String::concat));
+      if (configMapList.getItems().get(0).getMetadata().getName() != null) {
+        LOGGER.info(" Chosen ConfigMap Name: " + configMapList.getItems().get(0).getMetadata().getName());
+        return configMapList.getItems().get(0).getMetadata().getName();
+      }
+    }
+  } catch (Exception e) {
+    LOGGER.error(e);
+  }
+  return "";
+  }
+  
+  public Job createJob(boolean createLifecycleWatcher, String workspaceId, String workflowName,
       String workflowId, String workflowActivityId, String taskActivityId, String taskName,
       String taskId, Map<String, String> customLabels, List<String> arguments,
       Map<String, String> taskProperties, String image, String command,
@@ -379,183 +441,228 @@ public ConfigMap createTaskConfigMap(String workflowName, String workflowId,
     resources.setLimits(resourceLimits);
     
     /*
+     * Create volumes and Volume Mounts
+     * - /workspace for cross workflow persistence such as caches (optional if mounted prior) 
+     * - /workflow for workflow based sharing between tasks (optional if mounted prior) 
+     * - /props for mounting config_maps 
+     * - /data for task storage (optional - needed if using in memory storage)
+     */
+    List<VolumeMount> volumeMounts = new ArrayList<>();
+    List<Volume> volumes = new ArrayList<>();
+    if (checkWorkspacePVCExists(workspaceId, true)) {
+      VolumeMount wsVolumeMount = new VolumeMount();
+      wsVolumeMount.setName(helperKubeService.getPrefixVol() + "-ws");
+      wsVolumeMount.setMountPath("/workspace");
+      volumeMounts.add(wsVolumeMount);
+
+      Volume wsVolume = new Volume();
+      wsVolume.setName(helperKubeService.getPrefixVol() + "-ws");
+      PersistentVolumeClaimVolumeSource wsPVCVolumeSource = new PersistentVolumeClaimVolumeSource();
+      wsPVCVolumeSource.setClaimName(getPVCName(helperKubeService.getWorkspaceLabels(workspaceId, customLabels)));
+      wsVolume.setPersistentVolumeClaim(wsPVCVolumeSource);
+      volumes.add(wsVolume);
+    }
+
+    if (!getPVCName(helperKubeService.getWorkflowLabels(workflowId, workflowActivityId, customLabels)).isEmpty()) {
+      VolumeMount wfVolumeMount = new VolumeMount();
+      wfVolumeMount.setName(helperKubeService.getPrefixVol() + "-wf");
+      wfVolumeMount.setMountPath("/workflow");
+      volumeMounts.add(wfVolumeMount);
+      
+      Volume wfVolume = new Volume();
+      wfVolume.setName(helperKubeService.getPrefixVol() + "-wf");
+      PersistentVolumeClaimVolumeSource wfPVCVolumeSource = new PersistentVolumeClaimVolumeSource();
+      wfPVCVolumeSource.setClaimName(getPVCName(helperKubeService.getWorkflowLabels(workflowId, workflowActivityId, customLabels)));
+      wfVolume.setPersistentVolumeClaim(wfPVCVolumeSource);
+      volumes.add(wfVolume);
+    }
+    
+    /*
+     * The following code is integrated to the helm chart and CICD properties It allows for
+     * containers that breach the standard ephemeral-storage size by off-loading to memory See:
+     * https://kubernetes.io/docs/concepts/storage/volumes/#emptydir
+     */
+    VolumeMount dataVolumeMount = new VolumeMount();
+    dataVolumeMount.setName(helperKubeService.getPrefixVol() + "-data");
+    dataVolumeMount.setMountPath("/data");
+    volumeMounts.add(dataVolumeMount);
+    
+    Volume dataVolume = new Volume();
+    dataVolume.setName(helperKubeService.getPrefixVol() + "-data");
+    EmptyDirVolumeSource dataEmptyDirVolumeSource = new EmptyDirVolumeSource();
+    if (kubeWorkerStorageDataMemory
+        && Boolean.valueOf(taskProperties.get("worker.storage.data.memory"))) {
+      LOGGER.info("Setting /data to in memory storage...");
+      dataEmptyDirVolumeSource.setMedium("Memory");
+    }
+    dataVolume.setEmptyDir(dataEmptyDirVolumeSource);
+    volumes.add(dataVolume);
+
+    /*
+     * Creation of property projected volume to mount workflow and task configmaps
+     */
+    VolumeMount propsVolumeMount = new VolumeMount();
+    propsVolumeMount.setName(helperKubeService.getPrefixVol() + "-props");
+    propsVolumeMount.setMountPath("/props");
+    volumeMounts.add(propsVolumeMount);
+    
+    Volume propsVolume = new Volume();
+    propsVolume.setName(helperKubeService.getPrefixVol() + "-props");
+    ProjectedVolumeSource projectedVolPropsSource = new ProjectedVolumeSource();
+    List<VolumeProjection> projectPropsVolumeList = new ArrayList<>();
+    VolumeProjection wfCMVolumeProjection = new VolumeProjection();
+    ConfigMapProjection projectedWFConfigMap = new ConfigMapProjection();
+    projectedWFConfigMap.setName(getConfigMapName(helperKubeService.getWorkflowLabels(workflowId, workflowActivityId, customLabels)));
+    wfCMVolumeProjection.setConfigMap(projectedWFConfigMap);    
+    projectPropsVolumeList.add(wfCMVolumeProjection);
+    VolumeProjection taskCMVolumeProjection = new VolumeProjection();
+    ConfigMapProjection projectedTaskConfigMap = new ConfigMapProjection();
+    projectedTaskConfigMap.setName(getConfigMapName(helperKubeService.getTaskLabels( workflowId, workflowActivityId, taskId, taskActivityId, customLabels)));
+    taskCMVolumeProjection.setConfigMap(projectedTaskConfigMap);    
+    projectPropsVolumeList.add(taskCMVolumeProjection);
+    projectedVolPropsSource.setSources(projectPropsVolumeList);
+    propsVolume.setProjected(projectedVolPropsSource);
+    volumes.add(propsVolume);
+    
+    /*
+     * Create the main task container
+     */
+    List<Container> containers = new ArrayList<>();
+    Container taskContainer = new Container();
+    taskContainer.setName("task-cntr");
+    taskContainer.setImage(image);
+    List<String> commands = new ArrayList<>();
+    if (command != null && !command.isEmpty()) {
+      commands.add(command);
+    }
+    taskContainer.setCommand(commands);
+    taskContainer.setImagePullPolicy(kubeImagePullPolicy);
+    taskContainer.setArgs(arguments);
+    taskContainer.setEnv(envVars);
+    taskContainer.setVolumeMounts(volumeMounts);
+    taskContainer.setSecurityContext(securityContext);
+    taskContainer.setResources(resources);
+    containers.add(taskContainer);
+    
+    /*
+     * The following code is for tasks with Lifecycle Watcher enabled.
+     * - initContainer
+     * - lifecycleContainer
+     */
+    List<Container> initContainers = new ArrayList<>();
+    if (createLifecycleWatcher) {
+      Container initContainer = new Container();
+      initContainer.setName("init-cntr");
+      initContainer.setImage(kubeLifecycleImage);
+      initContainer.setImagePullPolicy(kubeImagePullPolicy);
+      List<String> initArgs = new ArrayList<>();
+      initArgs.add("lifecycle");
+      initArgs.add("init");
+      initContainer.setArgs(initArgs);
+      List<VolumeMount> lifecycleVolumeMounts = new ArrayList<>();
+      VolumeMount lifecycleVolumeMount = new VolumeMount();
+      lifecycleVolumeMount.setName(helperKubeService.getPrefixVol() + "-lifecycle");
+      lifecycleVolumeMount.setMountPath("/lifecycle");
+      lifecycleVolumeMounts.add(lifecycleVolumeMount);
+      initContainer.setVolumeMounts(lifecycleVolumeMounts);
+      initContainers.add(initContainer);
+      
+      Container lifecycleContainer = new Container();
+      lifecycleContainer.setName("lifecycle-cntr");
+      lifecycleContainer.setImage(kubeLifecycleImage);
+      lifecycleContainer.setImagePullPolicy(kubeImagePullPolicy);
+      List<String> lifecycleArgs = new ArrayList<>();
+      lifecycleArgs.add("lifecycle");
+      lifecycleArgs.add("wait");
+      lifecycleContainer.setArgs(lifecycleArgs);
+      lifecycleVolumeMounts.add(propsVolumeMount);
+      lifecycleContainer.setVolumeMounts(lifecycleVolumeMounts);
+      List<EnvVar> lifecyleEnvVars = new ArrayList<>();
+      lifecyleEnvVars.addAll(helperKubeService.createEnvVars(workflowId, workflowActivityId, taskName, taskId, taskActivityId));
+      lifecyleEnvVars.add(helperKubeService.createEnvVar("DEBUG", taskEnableDebug.toString()));
+      lifecycleContainer.setEnv(lifecyleEnvVars);
+      containers.add(lifecycleContainer);
+
+      Volume lifecycleVol = new Volume();
+      lifecycleVol.setName(helperKubeService.getPrefixVol() + "-lifecycle");
+      EmptyDirVolumeSource lifecycleEmptyDirVolumeSource = new EmptyDirVolumeSource();
+      lifecycleVol.setEmptyDir(lifecycleEmptyDirVolumeSource);
+      volumes.add(lifecycleVol);
+    }
+    
+    /*
+     * Configure Node Selector and Tolerations if defined
+     */
+    List<Toleration> tolerations = new ArrayList<>();
+    Map<String, String> nodeSelectors = new HashMap<>();
+    if (kubeJobDedicatedNodes) {
+      Toleration toleration = new Toleration();
+      toleration.setKey("dedicated");
+      toleration.setValue("bmrg-worker");
+      toleration.setEffect("NoSchedule");
+      toleration.setOperator("Equal");
+      tolerations.add(toleration);
+      nodeSelectors.put("node-role.kubernetes.io/bmrg-worker", "true");
+    }
+    
+    /*
+     * Create Host Aliases if defined
+     */
+    List<HostAlias> hostAliases = new ArrayList<>();
+    if (!kubeHostAliases.isEmpty()) {
+      Type listHostAliasType = new TypeToken<List<HostAlias>>() {}.getType();
+      List<HostAlias> hostAliasList = new Gson().fromJson(kubeHostAliases, listHostAliasType);
+      LOGGER.debug("Host Alias List Size: " + hostAliasList.size());
+    }
+    
+    /*
+     * Define Image Pull Secrets
+     */
+    LocalObjectReference imagePullSecret = new LocalObjectReference();
+    imagePullSecret.setName(kubeImagePullSecret);
+    List<LocalObjectReference> imagePullSecrets = new ArrayList<>();
+    imagePullSecrets.add(imagePullSecret);
+
+    /*
      * Job Specification builder
      */
     Job job = new JobBuilder()
         .withApiVersion("batch/v1")
         .withNewMetadata()
-        .withGenerateName(helperKubeService.getPrefixTask() + "-")
+        .withGenerateName(helperKubeService.getPrefixTask() + "-" + taskActivityId + "-")
         .withLabels(helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskId, taskActivityId, customLabels))
         .withAnnotations(helperKubeService.getAnnotations("task", workflowName, workflowId,
             workflowActivityId, taskId, taskActivityId))
         .endMetadata()
         .withNewSpec()
         .withNewTemplate()
+        .withNewMetadata()
+        .withLabels(helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskId, taskActivityId, customLabels))
+        .withAnnotations(helperKubeService.getAnnotations("task", workflowName, workflowId,
+            workflowActivityId, taskId, taskActivityId))
+        .endMetadata()
         .withNewSpec()
-        .addNewContainer()
-        .withName("task-cntr")
-        .withImage(image)
-        .withCommand(command != null && !command.isEmpty() ? command : "")
-        .withArgs(arguments)
-        .withImagePullPolicy(kubeImagePullPolicy)
-        .withSecurityContext(securityContext)
-        .withEnv(envVars)
-        .withResources(resources)
-        .endContainer()
-        .withRestartPolicy("Never")
+        .withInitContainers(initContainers)
+        .withContainers(containers)
+        .withVolumes(volumes)
+        .withRestartPolicy(kubeJobRestartPolicy)
+        .withTolerations(tolerations)
+        .withNodeSelector(nodeSelectors)
+        .withAffinity(helperKubeService.getPodAffinity(helperKubeService.createAntiAffinityLabels("task")))
+        .withHostAliases(hostAliases)
+        .withNewServiceAccountName(kubeJobServiceAccount)
+        .withImagePullSecrets(imagePullSecrets)
         .endSpec()
         .endTemplate()
+        .withBackoffLimit(kubeJobBackOffLimit)
+        .withTtlSecondsAfterFinished(ONE_DAY_IN_SECONDS * kubeJobTTLDays)
         .endSpec()
         .build();
+    
+    Job result = client.batch().jobs().create(job);
+    
+//    client.batch().jobs().withLabels(helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskId, taskActivityId, customLabels)).waitUntilReady(amount, timeUnit)
 
-    /*
-     * Create volumes 
-     * - /workspace for cross workflow persistence such as caches (optional if mounted prior) 
-     * - /workflow for workflow based sharing between tasks (optional if mounted prior) 
-     * - /props for mounting config_maps 
-     * - /data for task storage (optional - needed if using in memory storage)
-     */
-    if (checkWorkspacePVCExists(workspaceId, true)) {
-      container.addVolumeMountsItem(
-          getVolumeMount(helperKubeService.getPrefixVol() + "-ws", "/workspace"));
-      V1Volume workspaceVolume = getVolume(helperKubeService.getPrefixVol() + "-ws");
-      V1PersistentVolumeClaimVolumeSource workerVolumePVCSource =
-          new V1PersistentVolumeClaimVolumeSource();
-      workspaceVolume.persistentVolumeClaim(workerVolumePVCSource
-          .claimName(getPVCName(helperKubeService.getWorkspaceLabelSelector(workspaceId))));
-      podSpec.addVolumesItem(workspaceVolume);
-    }
-
-    if (!getPVCName(
-        helperKubeService.getLabelSelector("workflow", workflowId, workflowActivityId, null, null))
-            .isEmpty()) {
-      container.addVolumeMountsItem(
-          getVolumeMount(helperKubeService.getPrefixVol() + "-wf", "/workflow"));
-      V1Volume workerVolume = getVolume(helperKubeService.getPrefixVol() + "-wf");
-      V1PersistentVolumeClaimVolumeSource workerVolumePVCSource =
-          new V1PersistentVolumeClaimVolumeSource();
-      workerVolume
-          .persistentVolumeClaim(workerVolumePVCSource.claimName(getPVCName(helperKubeService
-              .getLabelSelector("workflow", workflowId, workflowActivityId, null, null))));
-      podSpec.addVolumesItem(workerVolume);
-    }
-
-    /*
-     * The following code is integrated to the helm chart and CICD properties It allows for
-     * containers that breach the standard ephemeral-storage size by off-loading to memory See:
-     * https://kubernetes.io/docs/concepts/storage/volumes/#emptydir
-     */
-    container
-        .addVolumeMountsItem(getVolumeMount(helperKubeService.getPrefixVol() + "-data", "/data"));
-    V1Volume dataVolume = getVolume(helperKubeService.getPrefixVol() + "-data");
-    V1EmptyDirVolumeSource emptyDir = new V1EmptyDirVolumeSource();
-    if (kubeWorkerStorageDataMemory
-        && Boolean.valueOf(taskProperties.get("worker.storage.data.memory"))) {
-      LOGGER.info("Setting /data to in memory storage...");
-      emptyDir.setMedium("Memory");
-    }
-    dataVolume.emptyDir(emptyDir);
-    podSpec.addVolumesItem(dataVolume);
-
-    container
-        .addVolumeMountsItem(getVolumeMount(helperKubeService.getPrefixVol() + "-props", "/props"));
-
-    // Creation of Projected Volume with multiple ConfigMaps
-    V1Volume volumeProps = getVolume(helperKubeService.getPrefixVol() + "-props");
-    V1ProjectedVolumeSource projectedVolPropsSource = new V1ProjectedVolumeSource();
-    List<V1VolumeProjection> projectPropsVolumeList = new ArrayList<>();
-
-    // Add Workflow Configmap Projected Volume
-    V1ConfigMap wfConfigMap = getConfigMap(
-        helperKubeService.getLabelSelector("workflow", workflowId, workflowActivityId, null, null));
-    if (wfConfigMap != null && !getConfigMapName(wfConfigMap).isEmpty()) {
-      projectPropsVolumeList.add(getVolumeProjection(wfConfigMap));
-    }
-
-    // Add Task Configmap Projected Volume
-    V1ConfigMap taskConfigMap = getConfigMap(helperKubeService.getLabelSelector("task", workflowId,
-        workflowActivityId, taskId, taskActivityId));
-    if (taskConfigMap != null && !getConfigMapName(taskConfigMap).isEmpty()) {
-      projectPropsVolumeList.add(getVolumeProjection(taskConfigMap));
-    }
-
-    // Add all configmap projected volume
-    projectedVolPropsSource.sources(projectPropsVolumeList);
-    volumeProps.projected(projectedVolPropsSource);
-    podSpec.addVolumesItem(volumeProps);
-
-    // V1ConfigMap taskConfigMap = getConfigMap(null, workflowActivityId, taskId);
-    // V1EnvFromSource envAsProps = new V1EnvFromSource();
-    // V1ConfigMapEnvSource envCMRef = new V1ConfigMapEnvSource();
-    // envCMRef.setName(getConfigMapName(taskConfigMap));
-    // envAsProps.setConfigMapRef(envCMRef);
-    // envAsProps.setPrefix("PARAMS_");
-    //
-    // container.addEnvFromItem(envAsProps);
-
-    /*
-     * The following code is for tasks with Lifecycle enabled.
-     */
-    if (createLifecycleWatcher) {
-      List<V1Container> initContainers = new ArrayList<>();
-      V1Container initContainer = getContainer(kubeLifecycleImage, null).name("init-cntr")
-          .addVolumeMountsItem(getVolumeMount("lifecycle", "/lifecycle")).addArgsItem("lifecycle")
-          .addArgsItem("init");
-      initContainers.add(initContainer);
-      podSpec.setInitContainers(initContainers);
-      V1Container lifecycleContainer = getContainer(kubeLifecycleImage, null).name("lifecycle-cntr")
-          .addVolumeMountsItem(getVolumeMount("lifecycle", "/lifecycle"))
-          .addVolumeMountsItem(
-              getVolumeMount(helperKubeService.getPrefixVol() + "-props", "/props"))
-          .addArgsItem("lifecycle").addArgsItem("wait");
-      lifecycleContainer.env(helperKubeService.createEnvVars(workflowId, workflowActivityId,
-          taskName, taskId, taskActivityId));
-      lifecycleContainer.addEnvItem(helperKubeService.createEnvVar("DEBUG",
-          helperKubeService.getTaskDebug(taskConfiguration)));
-      containerList.add(lifecycleContainer);
-      container.addVolumeMountsItem(getVolumeMount("lifecycle", "/lifecycle"));
-      V1Volume lifecycleVol = getVolume("lifecycle");
-      V1EmptyDirVolumeSource emptyDir2 = new V1EmptyDirVolumeSource();
-      lifecycleVol.emptyDir(emptyDir2);
-      podSpec.addVolumesItem(lifecycleVol);
-    }
-
-    if (kubeJobDedicatedNodes) {
-      helperKubeService.getTolerationAndSelector(podSpec);
-    }
-
-    helperKubeService.getPodAntiAffinity(podSpec,
-        helperKubeService.createAntiAffinityLabels("task"));
-
-    if (!kubeJobHostAliases.isEmpty()) {
-      Type listHostAliasType = new TypeToken<List<V1HostAlias>>() {}.getType();
-      List<V1HostAlias> hostAliasList = new Gson().fromJson(kubeJobHostAliases, listHostAliasType);
-      podSpec.hostAliases(hostAliasList);
-    }
-
-    if (!kubeJobServiceAccount.isEmpty()) {
-      podSpec.serviceAccountName(kubeJobServiceAccount);
-    }
-
-    containerList.add(container);
-    podSpec.containers(containerList);
-    V1LocalObjectReference imagePullSecret = new V1LocalObjectReference();
-    imagePullSecret.name(kubeImagePullSecret);
-    List<V1LocalObjectReference> imagePullSecretList = new ArrayList<>();
-    imagePullSecretList.add(imagePullSecret);
-    podSpec.imagePullSecrets(imagePullSecretList);
-    podSpec.restartPolicy(kubeJobRestartPolicy);
-    templateSpec.spec(podSpec);
-    templateSpec.metadata(helperKubeService.getMetadata("task", workflowName, workflowId,
-        workflowActivityId, taskId, taskActivityId, null, customLabels));
-
-    jobSpec.backoffLimit(kubeJobBackOffLimit);
-    jobSpec.template(templateSpec);
-    Integer ttl = ONE_DAY_IN_SECONDS * kubeJobTTLDays;
-    LOGGER.info("Setting Job TTL at " + ttl + " seconds");
-    jobSpec.setTtlSecondsAfterFinished(ttl);
-    body.spec(jobSpec);
-
-    return body;
+    return result;
   }
 }
