@@ -18,6 +18,7 @@ import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
 import io.fabric8.kubernetes.api.model.ConfigMapList;
 import io.fabric8.kubernetes.api.model.ConfigMapProjection;
 import io.fabric8.kubernetes.api.model.Container;
+import io.fabric8.kubernetes.api.model.DeletionPropagation;
 import io.fabric8.kubernetes.api.model.EmptyDirVolumeSource;
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.HostAlias;
@@ -43,6 +44,7 @@ import io.fabric8.kubernetes.client.Watch;
 import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.WatcherException;
 import net.boomerangplatform.model.TaskConfiguration;
+import net.boomerangplatform.model.TaskDeletionEnum;
 
 @Component
 public class NewKubeServiceImpl {
@@ -356,6 +358,10 @@ public ConfigMap createTaskConfigMap(String workflowName, String workflowId,
   public void deleteWorkflowConfigMap(String workflowId, String workflowActivityId) {
     deleteConfigMap(helperKubeService.getWorkflowLabels(workflowId, workflowActivityId, null));
   }
+
+  public void deleteTaskConfigMap(String workflowId, String workflowActivityId, String taskId, String taskActivityId, Map<String, String> customLabels) {
+    deleteConfigMap(helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskId, taskActivityId, customLabels));
+  }
   
   private void deleteConfigMap(Map<String, String> labels) {
 
@@ -664,5 +670,13 @@ public ConfigMap createTaskConfigMap(String workflowName, String workflowId,
 //    client.batch().jobs().withLabels(helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskId, taskActivityId, customLabels)).waitUntilReady(amount, timeUnit)
 
     return result;
+  }
+  
+  public void deleteJob(TaskDeletionEnum taskDeletion, String workflowId,
+      String workflowActivityId, String taskId, String taskActivityId, Map<String, String> customLabels) {
+
+    LOGGER.debug("Deleting Job...");
+    
+    client.batch().jobs().withLabels(helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskId, taskActivityId, customLabels)).withPropagationPolicy(DeletionPropagation.BACKGROUND).delete();
   }
 }

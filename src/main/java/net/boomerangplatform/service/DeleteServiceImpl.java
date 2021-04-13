@@ -1,5 +1,6 @@
 package net.boomerangplatform.service;
 
+import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,14 +25,14 @@ public class DeleteServiceImpl implements DeleteService {
 
   @Override
   @Async
-  public void deleteJob(TaskDeletionEnum taskDeletion, String workflowId, String workflowActivityId, String taskId, String taskActivityId) {
+  public void deleteJob(TaskDeletionEnum taskDeletion, String workflowId, String workflowActivityId, String taskId, String taskActivityId, Map<String, String> customLabels) {
     try {
       Thread.sleep(sleep);
     } catch (InterruptedException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();
     }
-//    kubeService.deleteJob(taskDeletion,workflowId,workflowActivityId, taskId, taskActivityId);
+    kubeService.deleteJob(taskDeletion,workflowId,workflowActivityId, taskId, taskActivityId, customLabels);
   }
   
 //  @Override

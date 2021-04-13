@@ -84,11 +84,12 @@ public class TaskServiceImpl implements TaskService {
 //                Uses the workflowActivityId as the TaskOutput is stored in the Workflow Configmap
 //                  response.setResults(kubeService.getTaskOutPutConfigMapData(task.getWorkflowId(),
 //                          task.getWorkflowActivityId(), task.getTaskId(), task.getTaskName()));
-//                  kubeService.deleteTaskConfigMap(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId(), task.getTaskActivityId());
-//                  if (isTaskDeletionNever(task.getConfiguration())) {
-//                    deleteService.deleteJob(getTaskDeletion(task.getConfiguration()), task.getWorkflowId(),
-//                              task.getWorkflowActivityId(), task.getTaskId(), task.getTaskActivityId());
-//                  }
+                  kubeService.deleteTaskConfigMap(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId(), task.getTaskActivityId(), task.getLabels());
+                  if (isTaskDeletionNever(task.getConfiguration())) {
+                    deleteService.deleteJob(getTaskDeletion(task.getConfiguration()), task.getWorkflowId(),
+                              task.getWorkflowActivityId(), task.getTaskId(), task.getTaskActivityId(), task.getLabels());
+//                    TODO: re-implement the delete onFailure option
+                  }
                   LOGGER.info("Task (" + task.getTaskId() + ") has completed with code " + response.getCode());
               }
           }
