@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -27,6 +28,8 @@ import io.fabric8.kubernetes.api.model.PersistentVolumeClaim;
 import io.fabric8.kubernetes.api.model.PersistentVolumeClaimBuilder;
 import io.fabric8.kubernetes.api.model.PersistentVolumeClaimList;
 import io.fabric8.kubernetes.api.model.PersistentVolumeClaimVolumeSource;
+import io.fabric8.kubernetes.api.model.Pod;
+import io.fabric8.kubernetes.api.model.PodCondition;
 import io.fabric8.kubernetes.api.model.ProjectedVolumeSource;
 import io.fabric8.kubernetes.api.model.Quantity;
 import io.fabric8.kubernetes.api.model.ResourceRequirements;
@@ -200,11 +203,7 @@ public class NewKubeServiceImpl {
 
     client.resource(result).waitUntilCondition(
         r -> "Bound".equals(r.getStatus().getPhase()) || "Pending".equals(r.getStatus().getPhase()),
-        30, TimeUnit.SECONDS);
-
-    // client.resource(result).waitUntilCondition(r -> "Bound".equals(r.getStatus().getPhase()),
-    // waitSeconds, TimeUnit.SECONDS);
-
+        waitSeconds, TimeUnit.SECONDS);
 
     LOGGER.info(result);
     return result;
@@ -277,32 +276,32 @@ public class NewKubeServiceImpl {
     return result;
   }
   
-  private static Watch watchWorkflowConfigMap(KubernetesClient client, Map<String, String> labels) {
-    
-    return client.configMaps().withLabels(labels).watch(new Watcher<ConfigMap>() {
-      @Override
-      public void eventReceived(Action action, ConfigMap resource) {
-        LOGGER.info("Watch event received {}: {}", action.name(), resource.getMetadata().getName());
-        switch (action.name()) {
-          case "DELETED":
-            LOGGER.info(resource.getMetadata().getName() + "got deleted");
-              break;
-        }
-      }
-
-      @Override
-      public void onClose(WatcherException e) {
-        LOGGER.error("Watch error received: {}", e.getMessage(), e);
-        //Cause the pod to restart
-        System.exit(1);
-      }
-
-      @Override
-      public void onClose() {
-        LOGGER.info("Watch gracefully closed");
-      }
-    });
-  }
+//  private static Watch watchWorkflowConfigMap(KubernetesClient client, Map<String, String> labels) {
+//    
+//    return client.configMaps().withLabels(labels).watch(new Watcher<ConfigMap>() {
+//      @Override
+//      public void eventReceived(Action action, ConfigMap resource) {
+//        LOGGER.info("Watch event received {}: {}", action.name(), resource.getMetadata().getName());
+//        switch (action.name()) {
+//          case "DELETED":
+//            LOGGER.info(resource.getMetadata().getName() + "got deleted");
+//              break;
+//        }
+//      }
+//
+//      @Override
+//      public void onClose(WatcherException e) {
+//        LOGGER.error("Watch error received: {}", e.getMessage(), e);
+//        //Cause the pod to restart
+//        System.exit(1);
+//      }
+//
+//      @Override
+//      public void onClose() {
+//        LOGGER.info("Watch gracefully closed");
+//      }
+//    });
+//  }
   
 public ConfigMap createTaskConfigMap(String workflowName, String workflowId,
     String workflowActivityId, String taskName, String taskId, String taskActivityId,
@@ -398,7 +397,7 @@ public ConfigMap createTaskConfigMap(String workflowName, String workflowId,
       String workflowId, String workflowActivityId, String taskActivityId, String taskName,
       String taskId, Map<String, String> customLabels, List<String> arguments,
       Map<String, String> taskProperties, String image, String command,
-      TaskConfiguration taskConfiguration) {
+      TaskConfiguration taskConfiguration, long waitSeconds) throws InterruptedException {
 
     LOGGER.info("Initializing Job...");
     
@@ -541,6 +540,7 @@ public ConfigMap createTaskConfigMap(String workflowName, String workflowId,
     if (command != null && !command.isEmpty()) {
       commands.add(command);
     }
+    commands.add("");
     taskContainer.setCommand(commands);
     taskContainer.setImagePullPolicy(kubeImagePullPolicy);
     taskContainer.setArgs(arguments);
@@ -667,9 +667,147 @@ public ConfigMap createTaskConfigMap(String workflowName, String workflowId,
     
     Job result = client.batch().jobs().create(job);
     
-//    client.batch().jobs().withLabels(helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskId, taskActivityId, customLabels)).waitUntilReady(amount, timeUnit)
+    client.batch().jobs().withLabels(helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskId, taskActivityId, customLabels)).waitUntilReady(waitSeconds, TimeUnit.SECONDS);
 
     return result;
+  }
+  
+  public void watchJob(String workflowId, String workflowActivityId, String taskId, String taskActivityId, Map<String, String> customLabels) throws InterruptedException {
+    final CountDownLatch latch = new CountDownLatch(1);
+    
+//    Watch jobWatcher = client.pods.withLabels(helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskId, taskActivityId, customLabels)).watch(new Watcher<Job>() {
+//      @Override
+//      public void eventReceived(Action action, Job resource) {
+//        LOGGER.info("Watch event received {}: {}", action.name(), resource.getMetadata().getName());
+//        switch (action.name()) {
+//          case "MODIFIED":
+//            LOGGER.info(resource.getStatus().toString());
+//            if (resource.getStatus().getFailed() > 0) {
+//              jobLatch.countDown();
+//              throw new BoomerangException(BoomerangError.JOB_CREATION_ERROR, resource.getStatus().getConditions().get(0).getMessage());
+//            }
+//              break;
+//        }
+//      }
+//
+//      @Override
+//      public void onClose(WatcherException e) {
+//        LOGGER.error("Watch error received: {}", e.getMessage(), e);
+//        //Cause the pod to restart
+//        System.exit(1);
+//      }
+//
+//      @Override
+//      public void onClose() {
+//        LOGGER.info("Watch gracefully closed");
+//      }
+//    });
+    
+    Watch podWatcher = client.pods().withLabels(helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskId, taskActivityId, customLabels)).watch(new Watcher<Pod>() {
+      @Override
+      public void eventReceived(Action action, Pod resource) {
+        LOGGER.info("Watch event received {}: {}", action.name(), resource.getMetadata().getName());
+        LOGGER.info("  Pod: " + resource.getMetadata().getName() + ", started: " + resource.getStatus().getStartTime());
+        LOGGER.info("  Pod Phase: " + resource.getStatus().getPhase() + "...");
+        if (resource.getStatus().getConditions() != null) {
+          for (PodCondition condition : resource.getStatus().getConditions()) {
+            LOGGER.info("  Pod Condition: " + condition.toString());
+          }
+        }
+        switch (action.name()) {
+          case "MODIFIED":
+            LOGGER.info(resource.getStatus().toString());
+//            if (resource.getStatus().getFailed() > 0) {
+//              jobLatch.countDown();
+//              throw new BoomerangException(BoomerangError.JOB_CREATION_ERROR, resource.getStatus().getConditions().get(0).getMessage());
+//            }
+              break;
+        }
+      }
+      
+//    if (item.object.getStatus().getContainerStatuses() != null) {
+//    for (V1ContainerStatus containerStatus : item.object.getStatus().getContainerStatuses()) {
+//      LOGGER.info("Container Status: " + containerStatus.toString());
+//      if ("task-cntr".equalsIgnoreCase(containerStatus.getName())
+//          && containerStatus.getState().getTerminated() != null) {
+//        LOGGER.info("-----------------------------------------------");
+//        LOGGER.info("------- Executing Lifecycle Termination -------");
+//        LOGGER.info("-----------------------------------------------");
+//        try {
+//          execJobLifecycle(name, "lifecycle-cntr");
+//        } catch (Exception e) {
+//          LOGGER.error("Lifecycle Execution Exception: ", e);
+//          throw new KubeRuntimeException("Lifecycle Execution Exception", e);
+//        }
+//        pod = item.object;
+//        break;
+//      } else if ("task-cntr".equalsIgnoreCase(containerStatus.getName())
+//          && containerStatus.getState().getWaiting() != null 
+////          && "CreateContainerError".equalsIgnoreCase(containerStatus.getState().getWaiting().getReason())) {
+//            && ArrayUtils.contains(waitingErrorReasons, containerStatus.getState().getWaiting().getReason())) {
+//        throw new KubeRuntimeException("Container Waiting Error (" + containerStatus.getState().getWaiting().getReason() + ")");
+//      }
+//    }
+//  }
+      
+//      private void execJobLifecycle(String podName, String containerName)  {
+//        Exec exec = new Exec();
+//        exec.setApiClient(Configuration.getDefaultApiClient());
+//        // boolean tty = System.console() != null;
+//        // String[] commands = new String[] {"node", "cli", "lifecycle", "terminate"};
+//        String[] commands =
+//            new String[] {"/bin/sh", "-c", "rm -f /lifecycle/lock && ls -ltr /lifecycle"};
+//        LOGGER.info("Pod: " + podName + ", Container: " + containerName + ", Commands: "
+//            + Arrays.toString(commands));
+//        final Process proc =
+//            exec.exec(kubeNamespace, podName, commands, containerName, false, false);
+//
+//        // Thread in =
+//        // new Thread(
+//        // new Runnable() {
+//        // public void run() {
+//        // try {
+//        // ByteStreams.copy(System.in, proc.getOutputStream());
+//        // } catch (IOException ex) {
+//        // ex.printStackTrace();
+//        // }
+//        // }
+//        // });
+//        // in.start();
+//
+//        Thread out = new Thread(new Runnable() {
+//          public void run() {
+//            try {
+//              ByteStreams.copy(proc.getInputStream(), System.out);
+//            } catch (IOException ex) {
+//              ex.printStackTrace();
+//            }
+//          }
+//        });
+//        out.start();
+//
+//        proc.waitFor();
+//        // wait for any last output; no need to wait for input thread
+//        out.join();
+//        proc.destroy();
+//      }
+
+      @Override
+      public void onClose(WatcherException e) {
+        LOGGER.error("Watch error received: {}", e.getMessage(), e);
+        //Cause the pod to restart
+        System.exit(1);
+      }
+
+      @Override
+      public void onClose() {
+        LOGGER.info("Watch gracefully closed");
+      }
+    });
+    
+    latch.await(3, TimeUnit.MINUTES);
+//    jobWatcher.close();
+    podWatcher.close();
   }
   
   public void deleteJob(TaskDeletionEnum taskDeletion, String workflowId,
