@@ -371,7 +371,7 @@ public ConfigMap createTaskConfigMap(String workflowName, String workflowId,
     client.configMaps().withLabels(labels).delete();
   }
   
-  private String getConfigMapName(Map<String, String> labels) {
+  protected String getConfigMapName(Map<String, String> labels) {
   try {
     ConfigMapList configMapList = client.configMaps().withLabels(labels).list();
 

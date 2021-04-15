@@ -7,7 +7,7 @@ public enum BoomerangError {
   
   /** Add reusable error list here. */
   PVC_CREATE_CONDITION_NOT_MET(100, "Unable to create PVC with a status of Bound or Pending within {0} seconds.", HttpStatus.INTERNAL_SERVER_ERROR),
-  JOB_CREATION_ERROR(100, "Unable to create job with reason: {0}.", HttpStatus.INTERNAL_SERVER_ERROR);;
+  TASK_EXECUTION_ERROR(100, "Unable to execute job with reason: {0}.", HttpStatus.INTERNAL_SERVER_ERROR);
 
   private final int code;
   private final String description;

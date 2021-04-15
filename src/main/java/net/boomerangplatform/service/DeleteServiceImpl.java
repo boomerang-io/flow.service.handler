@@ -1,12 +1,10 @@
 package net.boomerangplatform.service;
 
 import java.util.Map;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import net.boomerangplatform.kube.service.NewKubeServiceImpl;
+import net.boomerangplatform.kube.service.TektonServiceImpl;
 import net.boomerangplatform.model.TaskDeletionEnum;
 
 /*
@@ -16,12 +14,12 @@ import net.boomerangplatform.model.TaskDeletionEnum;
 @Service
 public class DeleteServiceImpl implements DeleteService {
 
-  private static final Logger LOGGER = LogManager.getLogger(DeleteServiceImpl.class);
+//  private static final Logger LOGGER = LogManager.getLogger(DeleteServiceImpl.class);
   
   private static final long sleep = 1000;
   
   @Autowired
-  private NewKubeServiceImpl kubeService;
+  private TektonServiceImpl tektonService;
 
   @Override
   @Async
@@ -29,10 +27,9 @@ public class DeleteServiceImpl implements DeleteService {
     try {
       Thread.sleep(sleep);
     } catch (InterruptedException e) {
-      // TODO Auto-generated catch block
       e.printStackTrace();
     }
-    kubeService.deleteJob(taskDeletion,workflowId,workflowActivityId, taskId, taskActivityId, customLabels);
+    tektonService.deleteTask(taskDeletion,workflowId,workflowActivityId, taskId, taskActivityId, customLabels);
   }
   
 //  @Override

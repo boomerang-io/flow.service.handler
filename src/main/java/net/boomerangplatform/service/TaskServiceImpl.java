@@ -12,6 +12,7 @@ import io.fabric8.kubernetes.client.KubernetesClientException;
 import net.boomerangplatform.error.BoomerangException;
 import net.boomerangplatform.kube.exception.KubeRuntimeException;
 import net.boomerangplatform.kube.service.NewKubeServiceImpl;
+import net.boomerangplatform.kube.service.TektonServiceImpl;
 import net.boomerangplatform.model.Response;
 import net.boomerangplatform.model.Task;
 import net.boomerangplatform.model.TaskConfiguration;
@@ -32,6 +33,9 @@ public class TaskServiceImpl implements TaskService {
 
   @Autowired
   private NewKubeServiceImpl kubeService;
+
+  @Autowired
+  private TektonServiceImpl tektonService;
 
   @Autowired
   private DeleteServiceImpl deleteService;
@@ -83,16 +87,23 @@ public class TaskServiceImpl implements TaskService {
         String workspaceId = task.getWorkspaces() != null && task.getWorkspaces().get(0) != null
             ? task.getWorkspaces().get(0).getWorkspaceId()
             : null;
-        kubeService.createJob(createLifecycleWatcher, workspaceId, task.getWorkflowName(),
-            task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskActivityId(),
-            task.getTaskName(), task.getTaskId(), task.getLabels(), task.getArguments(),
-            task.getParameters(), task.getImage(), task.getCommand(), task.getConfiguration(), waitUntilTimeout);
-        kubeService.watchJob(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId(),
-            task.getTaskActivityId(), task.getLabels());
+            tektonService.createTaskRun(createLifecycleWatcher, workspaceId, task.getWorkflowName(),
+                task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskActivityId(),
+                task.getTaskName(), task.getTaskId(), task.getLabels(), task.getArguments(),
+                task.getParameters(), task.getImage(), task.getCommand(), task.getConfiguration(), waitUntilTimeout);
+          tektonService.watchTask(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId(),
+          task.getTaskActivityId(), task.getLabels());
+//        kubeService.createJob(createLifecycleWatcher, workspaceId, task.getWorkflowName(),
+//            task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskActivityId(),
+//            task.getTaskName(), task.getTaskId(), task.getLabels(), task.getArguments(),
+//            task.getParameters(), task.getImage(), task.getCommand(), task.getConfiguration(), waitUntilTimeout);
+//        kubeService.watchJob(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId(),
+//            task.getTaskActivityId(), task.getLabels());
       } catch (KubernetesClientException e) {
         // KubernetesClientException handles the case where an internal admission
         // controller rejects the creation
         if (e.getMessage().contains("admission webhook")) {
+          LOGGER.error(e);
           throw new BoomerangException(1, "ADMISSION_WEBHOOK_DENIED", HttpStatus.BAD_REQUEST, e.getMessage());
         } else {
           throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
