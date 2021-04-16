@@ -24,6 +24,12 @@ public class TaskWatcher implements Watcher<TaskRun>{
   }
 
   @Override
+  /*
+   * Process the Watcher Events and return as a Condition result object
+   * - Processes a delete event occurred by external source such as CLI
+   * 
+   * Reference: https://tekton.dev/vault/pipelines-v0.14.3/taskruns/#monitoring-execution-status
+   */
   public void eventReceived(Action action, TaskRun resource) {
     LOGGER.info("Watch event received {}: {}", action.name(),
         resource.getMetadata().getName());
@@ -35,6 +41,17 @@ public class TaskWatcher implements Watcher<TaskRun>{
          LOGGER.info(" Task Status Condition: " + condition.toString());
        }
        LOGGER.info(resource.getStatus().getTaskResults().toString());
+       switch (action.name()) {
+         case "DELETED":
+           if ("Unknown".equals(resource.getStatus().getConditions().get(0).getStatus())) {
+             LOGGER.info(" Task Cancelled Externally. Adjusting status");
+             result = resource.getStatus().getConditions().get(0);
+             result.setStatus("False");
+             result.setReason("TaskRunCancelled");
+             result.setMessage("The TaskRun was cancelled successfully.");
+             latch.countDown();
+           }
+       }
       switch (taskStatus) {
         case "False":
           result = resource.getStatus().getConditions().get(0);
