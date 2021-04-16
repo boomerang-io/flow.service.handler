@@ -216,7 +216,7 @@ public class NewHelperKubeServiceImpl {
     labels.put("boomerang.io/product", bmrgProduct);
     labels.put("boomerang.io/tier", tier);
     Optional.ofNullable(workspaceId)
-        .ifPresent(str -> labels.put("boomerang.io/workspaceId-id", str));
+        .ifPresent(str -> labels.put("boomerang.io/workspace-id", str));
     Optional.ofNullable(workflowId).ifPresent(str -> labels.put("boomerang.io/workflow-id", str));
     Optional.ofNullable(workflowActivityId)
         .ifPresent(str -> labels.put("boomerang.io/workflow-activity-id", str));

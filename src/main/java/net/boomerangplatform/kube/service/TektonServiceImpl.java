@@ -36,8 +36,6 @@ import io.fabric8.tekton.pipeline.v1beta1.ParamSpec;
 import io.fabric8.tekton.pipeline.v1beta1.Step;
 import io.fabric8.tekton.pipeline.v1beta1.TaskRun;
 import io.fabric8.tekton.pipeline.v1beta1.TaskRunBuilder;
-import io.fabric8.tekton.pipeline.v1beta1.TaskSpec;
-import io.fabric8.tekton.triggers.v1alpha1.PodTemplate;
 import io.fabric8.tekton.v1beta1.internal.pipeline.pkg.apis.pipeline.pod.Template;
 import net.boomerangplatform.error.BoomerangError;
 import net.boomerangplatform.error.BoomerangException;
@@ -175,19 +173,19 @@ public class TektonServiceImpl {
      */
     List<VolumeMount> volumeMounts = new ArrayList<>();
     List<Volume> volumes = new ArrayList<>();
-//    if (kubeService.checkWorkspacePVCExists(workspaceId, true)) {
-//      VolumeMount wsVolumeMount = new VolumeMount();
-//      wsVolumeMount.setName(helperKubeService.getPrefixVol() + "-ws");
-//      wsVolumeMount.setMountPath("/workspace");
-//      volumeMounts.add(wsVolumeMount);
+    if (workspaceId != null && !workspaceId.isEmpty() && kubeService.checkWorkspacePVCExists(workspaceId, false)) {
+      VolumeMount wsVolumeMount = new VolumeMount();
+      wsVolumeMount.setName(helperKubeService.getPrefixVol() + "-ws");
+      wsVolumeMount.setMountPath("/workspace");
+      volumeMounts.add(wsVolumeMount);
 
-//      Volume wsVolume = new Volume();
-//      wsVolume.setName(helperKubeService.getPrefixVol() + "-ws");
-//      PersistentVolumeClaimVolumeSource wsPVCVolumeSource = new PersistentVolumeClaimVolumeSource();
-//      wsPVCVolumeSource.setClaimName(kubeService.getPVCName(helperKubeService.getWorkspaceLabels(workspaceId, customLabels)));
-//      wsVolume.setPersistentVolumeClaim(wsPVCVolumeSource);
-//      volumes.add(wsVolume);
-//    }
+      Volume wsVolume = new Volume();
+      wsVolume.setName(helperKubeService.getPrefixVol() + "-ws");
+      PersistentVolumeClaimVolumeSource wsPVCVolumeSource = new PersistentVolumeClaimVolumeSource();
+      wsPVCVolumeSource.setClaimName(kubeService.getPVCName(helperKubeService.getWorkspaceLabels(workspaceId, customLabels)));
+      wsVolume.setPersistentVolumeClaim(wsPVCVolumeSource);
+      volumes.add(wsVolume);
+    }
 
     if (!kubeService.getPVCName(helperKubeService.getWorkflowLabels(workflowId, workflowActivityId, customLabels)).isEmpty()) {
       VolumeMount wfVolumeMount = new VolumeMount();
@@ -216,11 +214,11 @@ public class TektonServiceImpl {
     Volume dataVolume = new Volume();
     dataVolume.setName(helperKubeService.getPrefixVol() + "-data");
     EmptyDirVolumeSource dataEmptyDirVolumeSource = new EmptyDirVolumeSource();
-//    if (kubeWorkerStorageDataMemory
-//        && Boolean.valueOf(taskProperties.get("worker.storage.data.memory"))) {
-//      LOGGER.info("Setting /data to in memory storage...");
-//      dataEmptyDirVolumeSource.setMedium("Memory");
-//    }
+    if (kubeWorkerStorageDataMemory
+        && Boolean.valueOf(taskParameters.get("worker.storage.data.memory"))) {
+      LOGGER.info("Setting /data to in memory storage...");
+      dataEmptyDirVolumeSource.setMedium("Memory");
+    }
     dataVolume.setEmptyDir(dataEmptyDirVolumeSource);
     volumes.add(dataVolume);
 
@@ -249,74 +247,7 @@ public class TektonServiceImpl {
     projectedVolPropsSource.setSources(projectPropsVolumeList);
     propsVolume.setProjected(projectedVolPropsSource);
     volumes.add(propsVolume);
-    
-    /*
-     * Create the main task container
-     */
-
-    List<Step> taskSteps = new ArrayList<>();
-    Step taskStep = new Step();
-    taskStep.setName("task");
-    taskStep.setImage(image);
-    List<String> commands = new ArrayList<>();
-    if (command != null && !command.isEmpty()) {
-      commands.add(command);
-    }
-    taskStep.setCommand(commands);
-    taskStep.setImagePullPolicy(kubeImagePullPolicy);
-    taskStep.setArgs(arguments);
-    taskStep.setEnv(envVars);
-    taskStep.setVolumeMounts(volumeMounts);
-//    taskStep.setSecurityContext(securityContext);
-//    taskContainer.setResources(resources);
-    taskSteps.add(taskStep);
-    
-    /*
-     * The following code is for tasks with Lifecycle Watcher enabled.
-     * - initContainer
-     * - lifecycleContainer
-     */
-//    List<Container> initContainers = new ArrayList<>();
-//    if (createLifecycleWatcher) {
-//      Container initContainer = new Container();
-//      initContainer.setName("init-cntr");
-//      initContainer.setImage(kubeLifecycleImage);
-//      initContainer.setImagePullPolicy(kubeImagePullPolicy);
-//      List<String> initArgs = new ArrayList<>();
-//      initArgs.add("lifecycle");
-//      initArgs.add("init");
-//      initContainer.setArgs(initArgs);
-//      List<VolumeMount> lifecycleVolumeMounts = new ArrayList<>();
-//      VolumeMount lifecycleVolumeMount = new VolumeMount();
-//      lifecycleVolumeMount.setName(helperKubeService.getPrefixVol() + "-lifecycle");
-//      lifecycleVolumeMount.setMountPath("/lifecycle");
-//      lifecycleVolumeMounts.add(lifecycleVolumeMount);
-//      initContainer.setVolumeMounts(lifecycleVolumeMounts);
-//      initContainers.add(initContainer);
-//      
-//      Container lifecycleContainer = new Container();
-//      lifecycleContainer.setName("lifecycle-cntr");
-//      lifecycleContainer.setImage(kubeLifecycleImage);
-//      lifecycleContainer.setImagePullPolicy(kubeImagePullPolicy);
-//      List<String> lifecycleArgs = new ArrayList<>();
-//      lifecycleArgs.add("lifecycle");
-//      lifecycleArgs.add("wait");
-//      lifecycleContainer.setArgs(lifecycleArgs);
-//      lifecycleVolumeMounts.add(propsVolumeMount);
-//      lifecycleContainer.setVolumeMounts(lifecycleVolumeMounts);
-//      List<EnvVar> lifecyleEnvVars = new ArrayList<>();
-//      lifecyleEnvVars.addAll(helperKubeService.createEnvVars(workflowId, workflowActivityId, taskName, taskId, taskActivityId));
-//      lifecyleEnvVars.add(helperKubeService.createEnvVar("DEBUG", taskEnableDebug.toString()));
-//      lifecycleContainer.setEnv(lifecyleEnvVars);
-//      containers.add(lifecycleContainer);
-//
-//      Volume lifecycleVol = new Volume();
-//      lifecycleVol.setName(helperKubeService.getPrefixVol() + "-lifecycle");
-//      EmptyDirVolumeSource lifecycleEmptyDirVolumeSource = new EmptyDirVolumeSource();
-//      lifecycleVol.setEmptyDir(lifecycleEmptyDirVolumeSource);
-//      volumes.add(lifecycleVol);
-//    }
-    
+       
     /*
      * Configure Node Selector and Tolerations if defined
      */
@@ -349,42 +280,6 @@ public class TektonServiceImpl {
     imagePullSecret.setName(kubeImagePullSecret);
     List<LocalObjectReference> imagePullSecrets = new ArrayList<>();
     imagePullSecrets.add(imagePullSecret);
-
-    /*
-     * Job Specification builder
-     */
-//    Job job = new JobBuilder()
-//        .withApiVersion("batch/v1")
-//        .withNewMetadata()
-//        .withGenerateName(helperKubeService.getPrefixTask() + "-" + taskActivityId + "-")
-//        .withLabels(helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskId, taskActivityId, customLabels))
-//        .withAnnotations(helperKubeService.getAnnotations("task", workflowName, workflowId,
-//            workflowActivityId, taskId, taskActivityId))
-//        .endMetadata()
-//        .withNewSpec()
-//        .withNewTemplate()
-//        .withNewMetadata()
-//        .withLabels(helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskId, taskActivityId, customLabels))
-//        .withAnnotations(helperKubeService.getAnnotations("task", workflowName, workflowId,
-//            workflowActivityId, taskId, taskActivityId))
-//        .endMetadata()
-//        .withNewSpec()
-//        .withInitContainers(initContainers)
-//        .withContainers(containers)
-//        .withVolumes(volumes)
-//        .withRestartPolicy(kubeJobRestartPolicy)
-//        .withTolerations(tolerations)
-//        .withNodeSelector(nodeSelectors)
-//        .withAffinity(helperKubeService.getPodAffinity(helperKubeService.createAntiAffinityLabels("task")))
-//        .withHostAliases(hostAliases)
-//        .withNewServiceAccountName(kubeJobServiceAccount)
-//        .withImagePullSecrets(imagePullSecrets)
-//        .endSpec()
-//        .endTemplate()
-//        .withBackoffLimit(kubeJobBackOffLimit)
-//        .withTtlSecondsAfterFinished(ONE_DAY_IN_SECONDS * kubeJobTTLDays)
-//        .endSpec()
-//        .build();
     
 //    TaskSpec taskSpec = new TaskSpec();
     List<ParamSpec> taskSpecParams = new ArrayList<>();
@@ -393,18 +288,55 @@ public class TektonServiceImpl {
       ParamSpec taskSpecParam = new ParamSpec();
       taskSpecParam.setName(key);
       taskSpecParam.setType("string");
+      taskSpecParams.add(taskSpecParam);
       Param taskParam = new Param();
       taskParam.setName(key);
       ArrayOrString valueString = new ArrayOrString();
       valueString.setStringVal(value);
       taskParam.setValue(valueString);
       taskParams.add(taskParam);
+      envVars.add(helperKubeService.createEnvVar(key, "true"));
     });
     
+    /*
+     * Create the main task container
+     */
+    List<Step> taskSteps = new ArrayList<>();
+    Step taskStep = new Step();
+    taskStep.setName("task");
+    taskStep.setImage(image);
+    List<String> commands = new ArrayList<>();
+    if (command != null && !command.isEmpty()) {
+      commands.add(command);
+    }
+    taskStep.setCommand(commands);
+    taskStep.setImagePullPolicy(kubeImagePullPolicy);
+    taskStep.setArgs(arguments);
+    taskStep.setEnv(envVars);
+    taskStep.setVolumeMounts(volumeMounts);
+//    taskStep.setSecurityContext(securityContext);
+//    taskContainer.setResources(resources);
+    taskSteps.add(taskStep);
+    
+    /*
+     * Create the additional PodTemplate based controlls
+     * TODO: figure out if volumes go here or on the TaskRunSpec
+     */
     Template taskPodTemplate = new Template();
     taskPodTemplate.setNodeSelector(nodeSelectors);
-    taskPodTemplate.setTolerations(tolerations);    
+    taskPodTemplate.setTolerations(tolerations);
+    taskPodTemplate.setImagePullSecrets(imagePullSecrets);
+//    taskPodTemplate.setVolumes(volumes);
     
+    /*
+     * Build out TaskRun definition.
+     * - Optionally loads Node Selector and Tolerations
+     * TODO: determine how to make Task Workspace work. Currently if using the local-path (bound to a particular node)
+     * the Task doesn't find a node to allow it to run. It cant handle the standard Pod method of determine if all its
+     * volumes can be satisfied
+     * Notes:
+     * - Parameters passed into the TaskRun MUST be parameters on the task
+     */
     TaskRun taskRun = new TaskRunBuilder()
       .withNewMetadata()
       .withGenerateName(helperKubeService.getPrefixTask() + "-" + taskActivityId + "-")
@@ -414,9 +346,13 @@ public class TektonServiceImpl {
       .endMetadata()
       .withNewSpec()
       .withPodTemplate(taskPodTemplate)
-//      .withParams(taskParams)
+      .withParams(taskParams)
       .withNewTaskSpec()
-//      .withParams(taskSpecParams)
+      .withParams(taskSpecParams)
+//      .addNewParam().withName("channel").withType("string").endParam()
+//      .addNewParam().withName("title").withType("string").endParam()
+//      .addNewParam().withName("message").withType("string").endParam()
+//      .addNewParam().withName("with-dash").withType("string").endParam()
 //      .withStepTemplate(taskContainer)
       .withVolumes(volumes)
       .withSteps(taskSteps)
@@ -430,6 +366,7 @@ public class TektonServiceImpl {
 //      .endWorkspace()
       .endSpec()
       .build();
+
     
     LOGGER.info(taskRun);
     
