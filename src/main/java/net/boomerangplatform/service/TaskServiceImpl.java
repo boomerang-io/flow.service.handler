@@ -1,6 +1,8 @@
 package net.boomerangplatform.service;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -9,6 +11,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import io.fabric8.kubernetes.client.KubernetesClientException;
+import io.fabric8.tekton.pipeline.v1beta1.TaskRunResult;
 import net.boomerangplatform.error.BoomerangException;
 import net.boomerangplatform.kube.exception.KubeRuntimeException;
 import net.boomerangplatform.kube.service.NewKubeServiceImpl;
@@ -74,6 +77,7 @@ public class TaskServiceImpl implements TaskService {
   private TaskResponse executeTaskTemplate(TaskTemplate task) {
     TaskResponse response = new TaskResponse("0",
         "Task (" + task.getTaskId() + ") has been executed successfully.", null);
+    List<TaskRunResult> results = new ArrayList<TaskRunResult>();
     if (task.getImage() == null) {
       throw new BoomerangException(1, "NO_TASK_IMAGE", HttpStatus.BAD_REQUEST,
           task.getClass().toString());
@@ -90,15 +94,9 @@ public class TaskServiceImpl implements TaskService {
             tektonService.createTaskRun(createLifecycleWatcher, workspaceId, task.getWorkflowName(),
                 task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskActivityId(),
                 task.getTaskName(), task.getTaskId(), task.getLabels(), task.getArguments(),
-                task.getParameters(), task.getImage(), task.getCommand(), task.getConfiguration(), waitUntilTimeout);
-          tektonService.watchTask(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId(),
+                task.getParameters(), task.getResults(), task.getImage(), task.getCommand(), task.getConfiguration(), waitUntilTimeout);
+            results = tektonService.watchTask(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId(),
           task.getTaskActivityId(), task.getLabels());
-//        kubeService.createJob(createLifecycleWatcher, workspaceId, task.getWorkflowName(),
-//            task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskActivityId(),
-//            task.getTaskName(), task.getTaskId(), task.getLabels(), task.getArguments(),
-//            task.getParameters(), task.getImage(), task.getCommand(), task.getConfiguration(), waitUntilTimeout);
-//        kubeService.watchJob(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId(),
-//            task.getTaskActivityId(), task.getLabels());
       } catch (KubernetesClientException e) {
         // KubernetesClientException handles the case where an internal admission
         // controller rejects the creation
@@ -114,9 +112,7 @@ public class TaskServiceImpl implements TaskService {
       } catch (InterruptedException e) {
         throw new BoomerangException(1, "JOB_CREATION_ERROR", HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
       } finally {
-        // Uses the workflowActivityId as the TaskOutput is stored in the Workflow Configmap
-        // response.setResults(kubeService.getTaskOutPutConfigMapData(task.getWorkflowId(),
-        // task.getWorkflowActivityId(), task.getTaskId(), task.getTaskName()));
+        response.setResults(results);
         kubeService.deleteTaskConfigMap(task.getWorkflowId(), task.getWorkflowActivityId(),
             task.getTaskId(), task.getTaskActivityId(), task.getLabels());
         if (isTaskDeletionNever(task.getConfiguration())) {
@@ -172,36 +168,4 @@ public class TaskServiceImpl implements TaskService {
   // }
   // return response;
   // }
-
-  @Override
-  public Response setTaskResultParameter(String workflowId, String workflowActivityId,
-      String taskId, String taskName, String key, String value) {
-    Response response = new Response("0", "Parameter has been set against workflow ("
-        + workflowActivityId + ") and task (" + taskId + ")");
-    try {
-      Map<String, String> parameters = new HashMap<>();
-      parameters.put(key, value);
-      // kubeService.patchTaskConfigMap(workflowId, workflowActivityId, taskId, taskName,
-      // parameters);
-    } catch (KubeRuntimeException e) {
-      throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-    return response;
-  }
-
-  @Override
-  public Response setTaskResultParameters(String workflowId, String workflowActivityId,
-      String taskId, String taskName, Map<String, String> parameters) {
-    Response response = new Response("0", "Parameters have been set against workflow ("
-        + workflowActivityId + ") and task (" + taskId + ")");
-
-    LOGGER.info(parameters);
-    try {
-      // kubeService.patchTaskConfigMap(workflowId, workflowActivityId, taskId, taskName,
-      // parameters);
-    } catch (KubeRuntimeException e) {
-      throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-    return response;
-  }
 }

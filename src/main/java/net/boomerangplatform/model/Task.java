@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import io.fabric8.tekton.pipeline.v1beta1.TaskResult;
 
 @JsonTypeInfo(
 		  use = JsonTypeInfo.Id.NAME, 
@@ -39,11 +40,17 @@ public abstract class Task {
   @JsonProperty("command")
   private String command;
 
+  @JsonProperty("script")
+  private String script;
+
   @JsonProperty("labels")
   private Map<String, String> labels = new HashMap<>();
 
   @JsonProperty("parameters")
   private Map<String, String> parameters = new HashMap<>();
+
+  @JsonProperty("results")
+  private List<TaskResult> results;
 
   @JsonProperty("arguments")
   private List<String> arguments;
@@ -118,6 +125,14 @@ public abstract class Task {
     this.parameters.put(name, value);
   }
 
+  public List<TaskResult> getResults() {
+    return results;
+  }
+
+  public void setResults(List<TaskResult> results) {
+    this.results = results;
+  }
+
   public List<String> getArguments() {
     return sanityNullList(arguments);
   }
@@ -152,6 +167,14 @@ public abstract class Task {
 
   public void setCommand(String command) {
     this.command = command;
+  }
+
+  public String getScript() {
+    return script;
+  }
+
+  public void setScript(String script) {
+    this.script = script;
   }
 
   public TaskConfiguration getConfiguration() {

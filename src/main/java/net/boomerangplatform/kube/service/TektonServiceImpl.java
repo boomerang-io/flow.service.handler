@@ -34,8 +34,10 @@ import io.fabric8.tekton.pipeline.v1beta1.ArrayOrString;
 import io.fabric8.tekton.pipeline.v1beta1.Param;
 import io.fabric8.tekton.pipeline.v1beta1.ParamSpec;
 import io.fabric8.tekton.pipeline.v1beta1.Step;
+import io.fabric8.tekton.pipeline.v1beta1.TaskResult;
 import io.fabric8.tekton.pipeline.v1beta1.TaskRun;
 import io.fabric8.tekton.pipeline.v1beta1.TaskRunBuilder;
+import io.fabric8.tekton.pipeline.v1beta1.TaskRunResult;
 import io.fabric8.tekton.v1beta1.internal.pipeline.pkg.apis.pipeline.pod.Template;
 import net.boomerangplatform.error.BoomerangError;
 import net.boomerangplatform.error.BoomerangException;
@@ -115,7 +117,7 @@ public class TektonServiceImpl {
   public TaskRun createTaskRun(boolean createLifecycleWatcher, String workspaceId, String workflowName,
       String workflowId, String workflowActivityId, String taskActivityId, String taskName,
       String taskId, Map<String, String> customLabels, List<String> arguments,
-      Map<String, String> taskParameters, String image, String command,
+      Map<String, String> taskParameters, List<TaskResult> taskResults, String image, String command,
       TaskConfiguration taskConfiguration, long waitSeconds) throws InterruptedException {
 
     LOGGER.info("Initializing Task...");
@@ -128,18 +130,6 @@ public class TektonServiceImpl {
      */
 //    SecurityContext securityContext = new SecurityContext();
 //    securityContext.setPrivileged(true);
-    
-    /*
-     * Define environment variables made up of
-     * - Proxy (if enabled)
-     * - Boomerang Flow env vars
-     * - Debug and CI
-     */
-    List<EnvVar> envVars = new ArrayList<>();
-    envVars.addAll(helperKubeService.createProxyEnvVars());
-    envVars.addAll(helperKubeService.createEnvVars(workflowId, workflowActivityId, taskName, taskId, taskActivityId));
-    envVars.add(helperKubeService.createEnvVar("DEBUG", taskEnableDebug.toString()));
-    envVars.add(helperKubeService.createEnvVar("CI", "true"));
     
     /*
      * Create a resource request and limit for ephemeral-storage Defaults to application.properties,
@@ -265,6 +255,7 @@ public class TektonServiceImpl {
     
     /*
      * Create Host Aliases if defined
+     * TODO: Implement as part of Tekton 0.24
      */
     List<HostAlias> hostAliases = new ArrayList<>();
     if (!kubeHostAliases.isEmpty()) {
@@ -281,7 +272,22 @@ public class TektonServiceImpl {
     List<LocalObjectReference> imagePullSecrets = new ArrayList<>();
     imagePullSecrets.add(imagePullSecret);
     
-//    TaskSpec taskSpec = new TaskSpec();
+    /*
+     * Define environment variables made up of
+     * - Proxy (if enabled)
+     * - Boomerang Flow env vars
+     * - Debug and CI
+     */
+    List<EnvVar> envVars = new ArrayList<>();
+    envVars.addAll(helperKubeService.createProxyEnvVars());
+    envVars.addAll(helperKubeService.createEnvVars(workflowId, workflowActivityId, taskName, taskId, taskActivityId));
+    envVars.add(helperKubeService.createEnvVar("DEBUG", taskEnableDebug.toString()));
+    envVars.add(helperKubeService.createEnvVar("CI", "true"));
+    
+    /*
+     * Define Task Params and Task Spec Params
+     * Additionally default an environment variable for the Task Param prefixed with PARAM_
+     */
     List<ParamSpec> taskSpecParams = new ArrayList<>();
     List<Param> taskParams = new ArrayList<>();
     taskParameters.forEach((key, value) -> {
@@ -295,7 +301,8 @@ public class TektonServiceImpl {
       valueString.setStringVal(value);
       taskParam.setValue(valueString);
       taskParams.add(taskParam);
-      envVars.add(helperKubeService.createEnvVar(key, "true"));
+//      Determine if we need this. For now we keep the configmap.
+//      envVars.add(helperKubeService.createEnvVar("PARAM_" + key.toUpperCase(), value));
     });
     
     /*
@@ -349,11 +356,8 @@ public class TektonServiceImpl {
       .withParams(taskParams)
       .withNewTaskSpec()
       .withParams(taskSpecParams)
-//      .addNewParam().withName("channel").withType("string").endParam()
-//      .addNewParam().withName("title").withType("string").endParam()
-//      .addNewParam().withName("message").withType("string").endParam()
-//      .addNewParam().withName("with-dash").withType("string").endParam()
 //      .withStepTemplate(taskContainer)
+      .withResults(taskResults)
       .withVolumes(volumes)
       .withSteps(taskSteps)
 //      .addNewWorkspace()
@@ -377,10 +381,11 @@ public class TektonServiceImpl {
     return result;
   }
   
-  public void watchTask(String workflowId, String workflowActivityId, String taskId,
+  public List<TaskRunResult> watchTask(String workflowId, String workflowActivityId, String taskId,
       String taskActivityId, Map<String, String> customLabels) throws InterruptedException {
     final CountDownLatch latch = new CountDownLatch(1);
-    Condition result = null;
+    Condition condition = null;
+    List<TaskRunResult> results = new ArrayList<TaskRunResult>();
     
     TaskWatcher taskWatcher = new TaskWatcher(latch);
 
@@ -388,24 +393,30 @@ public class TektonServiceImpl {
         .v1beta1().taskRuns().withLabels(helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskId, taskActivityId, customLabels))
         .watch(taskWatcher)) {
       
+      //TODO is there a way to wait 3 minutes and check if the task
+      //has moved from initial state. If its still in initial state then check PVC
+      //PVC might have Event / Condition "ProvisioningFailed" with a reason.
       
       boolean taskComplete = latch.await(3, TimeUnit.MINUTES);
       if (!taskComplete) {
         throw new BoomerangException(BoomerangError.TASK_EXECUTION_ERROR, "TIMED_OUT - Task timed out while waiting for completion.");
       }
       
-      result = taskWatcher.getResult();
+      condition = taskWatcher.getCondition();
+      results = taskWatcher.getResults();
       
-      if (result != null && "True".equals(result.getStatus())) {
+      if (condition != null && "True".equals(condition.getStatus())) {
         LOGGER.info("Task completed successfully");
       } else {
-        throw new BoomerangException(BoomerangError.TASK_EXECUTION_ERROR, result.getReason() + " - " + result.getMessage());
+        throw new BoomerangException(BoomerangError.TASK_EXECUTION_ERROR, condition.getReason() + " - " + condition.getMessage());
       }
       
     } catch (Exception e) {
       LOGGER.error(e.toString());
       throw e;
     }
+    
+    return results;
   }
   
   public void deleteTask(TaskDeletionEnum taskDeletion, String workflowId,
