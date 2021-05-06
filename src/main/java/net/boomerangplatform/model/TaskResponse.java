@@ -2,7 +2,6 @@ package net.boomerangplatform.model;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.fabric8.tekton.pipeline.v1beta1.TaskRunResult;
 

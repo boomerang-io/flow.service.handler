@@ -245,36 +245,36 @@ public class NewKubeServiceImpl {
     client.persistentVolumeClaims().withLabels(labels).delete();
   }
 
-  public ConfigMap createWorkflowConfigMap(String workflowName, String workflowId,
-      String workflowActivityId, Map<String, String> customLabels, Map<String, String> inputProps) {
-    
-  Map<String, String> dataMap = new HashMap<>();
-  Map<String, String> sysProps = new HashMap<>();
-  sysProps.put("controller-service-url", controllerServiceURL);
-  sysProps.put("workflow-name", workflowName);
-  sysProps.put("workflow-id", workflowId);
-  sysProps.put("workflow-activity-id", workflowActivityId);
-  dataMap.put("workflow.input.properties",
-      helperKubeService.createConfigMapProp(inputProps));
-  dataMap.put("workflow.system.properties",
-      helperKubeService.createConfigMapProp(sysProps));
-  
-//  Watch cmWatcher = watchWorkflowConfigMap(client, helperKubeService.getWorkflowLabels(workflowId, workflowActivityId, customLabels));
-    
-//  try (Watch ignored = watchWorkflowConfigMap(client,
-//      helperKubeService.getWorkflowLabels(workflowId, workflowActivityId, customLabels));) {
-    ConfigMap configMap = new ConfigMapBuilder().withNewMetadata()
-        .withGenerateName(helperKubeService.getPrefixCM() + "-")
-        .withLabels(
-            helperKubeService.getWorkflowLabels(workflowId, workflowActivityId, customLabels))
-        .withAnnotations(helperKubeService.getAnnotations("workflow", workflowName, workflowId,
-            workflowActivityId, null, null))
-        .endMetadata().addToData(dataMap).build();
-    ConfigMap result = client.configMaps().create(configMap);
+//  public ConfigMap createWorkflowConfigMap(String workflowName, String workflowId,
+//      String workflowActivityId, Map<String, String> customLabels, Map<String, String> inputProps) {
+//    
+//  Map<String, String> dataMap = new HashMap<>();
+//  Map<String, String> sysProps = new HashMap<>();
+//  sysProps.put("controller-service-url", controllerServiceURL);
+//  sysProps.put("workflow-name", workflowName);
+//  sysProps.put("workflow-id", workflowId);
+//  sysProps.put("workflow-activity-id", workflowActivityId);
+//  dataMap.put("workflow.input.properties",
+//      helperKubeService.createConfigMapProp(inputProps));
+//  dataMap.put("workflow.system.properties",
+//      helperKubeService.createConfigMapProp(sysProps));
+//  
+////  Watch cmWatcher = watchWorkflowConfigMap(client, helperKubeService.getWorkflowLabels(workflowId, workflowActivityId, customLabels));
+//    
+////  try (Watch ignored = watchWorkflowConfigMap(client,
+////      helperKubeService.getWorkflowLabels(workflowId, workflowActivityId, customLabels));) {
+//    ConfigMap configMap = new ConfigMapBuilder().withNewMetadata()
+//        .withGenerateName(helperKubeService.getPrefixCM() + "-")
+//        .withLabels(
+//            helperKubeService.getWorkflowLabels(workflowId, workflowActivityId, customLabels))
+//        .withAnnotations(helperKubeService.getAnnotations("workflow", workflowName, workflowId,
+//            workflowActivityId, null, null))
+//        .endMetadata().addToData(dataMap).build();
+//    ConfigMap result = client.configMaps().create(configMap);
+////  }
+//  
+//    return result;
 //  }
-  
-    return result;
-  }
   
 //  private static Watch watchWorkflowConfigMap(KubernetesClient client, Map<String, String> labels) {
 //    

@@ -114,7 +114,7 @@ public class TektonServiceImpl {
     this.client = new DefaultTektonClient();
   }
   
-  public TaskRun createTaskRun(boolean createLifecycleWatcher, String workspaceId, String workflowName,
+  public TaskRun createTaskRun(String workspaceId, String workflowName,
       String workflowId, String workflowActivityId, String taskActivityId, String taskName,
       String taskId, Map<String, String> customLabels, List<String> arguments,
       Map<String, String> taskParameters, List<TaskResult> taskResults, String image, String command,
@@ -425,5 +425,15 @@ public class TektonServiceImpl {
     LOGGER.debug("Deleting Job...");
     
     client.v1beta1().taskRuns().withLabels(helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskId, taskActivityId, customLabels)).withPropagationPolicy(DeletionPropagation.BACKGROUND).delete();
+  }
+  
+  public void cancelTask(TaskDeletionEnum taskDeletion, String workflowId,
+      String workflowActivityId, String taskId, String taskActivityId, Map<String, String> customLabels) {
+
+    LOGGER.debug("Cancelling Job...");
+    
+    TaskRun taskRun = client.v1beta1().taskRuns().withLabels(helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskId, taskActivityId, customLabels)).list().getItems().get(0);
+    taskRun.getSpec().setStatus("TaskRunCancelled");
+    client.v1beta1().taskRuns().withLabels(helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskId, taskActivityId, customLabels)).updateStatus(taskRun);
   }
 }

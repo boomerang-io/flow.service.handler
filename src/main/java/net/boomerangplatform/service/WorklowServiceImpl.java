@@ -51,8 +51,8 @@ public class WorklowServiceImpl implements WorkflowService {
         } else {
           response = new Response("0", "Workflow Activity (" +workflow.getWorkflowActivityId() + ") created without storage.");
         }
-        kubeService.createWorkflowConfigMap(workflow.getWorkflowName(), workflow.getWorkflowId(),
-            workflow.getWorkflowActivityId(), workflow.getLabels(), workflow.getParameters());
+//        kubeService.createWorkflowConfigMap(workflow.getWorkflowName(), workflow.getWorkflowId(),
+//            workflow.getWorkflowActivityId(), workflow.getLabels(), workflow.getParameters());
       } catch (KubeRuntimeException | KubernetesClientException | InterruptedException e) {
         LOGGER.error(e.getMessage());
         throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);

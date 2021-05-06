@@ -1,9 +1,7 @@
 package net.boomerangplatform.service;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +14,6 @@ import net.boomerangplatform.error.BoomerangException;
 import net.boomerangplatform.kube.exception.KubeRuntimeException;
 import net.boomerangplatform.kube.service.NewKubeServiceImpl;
 import net.boomerangplatform.kube.service.TektonServiceImpl;
-import net.boomerangplatform.model.Response;
 import net.boomerangplatform.model.Task;
 import net.boomerangplatform.model.TaskConfiguration;
 import net.boomerangplatform.model.TaskDeletionEnum;
@@ -58,6 +55,10 @@ public class TaskServiceImpl implements TaskService {
   public TaskResponse terminateTask(Task task) {
     TaskResponse response = new TaskResponse("0",
         "Task (" + task.getTaskId() + ") is meant to be terminated now.", null);
+    
+    tektonService.cancelTask(getTaskDeletion(task.getConfiguration()), task.getWorkflowId(),
+              task.getWorkflowActivityId(), task.getTaskId(), task.getTaskActivityId(),
+              task.getLabels());
 
     return response;
   }
@@ -86,12 +87,10 @@ public class TaskServiceImpl implements TaskService {
         kubeService.createTaskConfigMap(task.getWorkflowName(), task.getWorkflowId(),
             task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(),
             task.getTaskActivityId(), task.getLabels(), task.getParameters());
-        boolean createLifecycleWatcher =
-            task.getConfiguration().getLifecycle() ? Boolean.TRUE : Boolean.FALSE;
         String workspaceId = task.getWorkspaces() != null && task.getWorkspaces().get(0) != null
             ? task.getWorkspaces().get(0).getWorkspaceId()
             : null;
-            tektonService.createTaskRun(createLifecycleWatcher, workspaceId, task.getWorkflowName(),
+            tektonService.createTaskRun(workspaceId, task.getWorkflowName(),
                 task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskActivityId(),
                 task.getTaskName(), task.getTaskId(), task.getLabels(), task.getArguments(),
                 task.getParameters(), task.getResults(), task.getImage(), task.getCommand(), task.getConfiguration(), waitUntilTimeout);
