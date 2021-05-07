@@ -224,11 +224,11 @@ public class TektonServiceImpl {
     propsVolume.setName(helperKubeService.getPrefixVol() + "-props");
     ProjectedVolumeSource projectedVolPropsSource = new ProjectedVolumeSource();
     List<VolumeProjection> projectPropsVolumeList = new ArrayList<>();
-    VolumeProjection wfCMVolumeProjection = new VolumeProjection();
-    ConfigMapProjection projectedWFConfigMap = new ConfigMapProjection();
-    projectedWFConfigMap.setName(kubeService.getConfigMapName(helperKubeService.getWorkflowLabels(workflowId, workflowActivityId, customLabels)));
-    wfCMVolumeProjection.setConfigMap(projectedWFConfigMap);    
-    projectPropsVolumeList.add(wfCMVolumeProjection);
+//    VolumeProjection wfCMVolumeProjection = new VolumeProjection();
+//    ConfigMapProjection projectedWFConfigMap = new ConfigMapProjection();
+//    projectedWFConfigMap.setName(kubeService.getConfigMapName(helperKubeService.getWorkflowLabels(workflowId, workflowActivityId, customLabels)));
+//    wfCMVolumeProjection.setConfigMap(projectedWFConfigMap);    
+//    projectPropsVolumeList.add(wfCMVolumeProjection);
     VolumeProjection taskCMVolumeProjection = new VolumeProjection();
     ConfigMapProjection projectedTaskConfigMap = new ConfigMapProjection();
     projectedTaskConfigMap.setName(kubeService.getConfigMapName(helperKubeService.getTaskLabels( workflowId, workflowActivityId, taskId, taskActivityId, customLabels)));
@@ -433,7 +433,17 @@ public class TektonServiceImpl {
     LOGGER.debug("Cancelling Job...");
     
     TaskRun taskRun = client.v1beta1().taskRuns().withLabels(helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskId, taskActivityId, customLabels)).list().getItems().get(0);
-    taskRun.getSpec().setStatus("TaskRunCancelled");
-    client.v1beta1().taskRuns().withLabels(helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskId, taskActivityId, customLabels)).updateStatus(taskRun);
+    
+    List<Condition> taskRunConditions = new ArrayList<>();
+    Condition taskRunCancelCondition = new Condition();
+    taskRunCancelCondition.setType("Succeeded");
+    taskRunCancelCondition.setStatus("False");
+    taskRunCancelCondition.setReason("TaskRunCancelled");
+    taskRunCancelCondition.setMessage("The TaskRun was cancelled successfully.");
+    taskRunConditions.add(taskRunCancelCondition);
+    
+    taskRun.getStatus().setConditions(taskRunConditions);
+
+    client.v1beta1().taskRuns().updateStatus(taskRun);
   }
 }
