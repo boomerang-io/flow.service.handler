@@ -356,7 +356,6 @@ public class TektonServiceImpl {
       .withParams(taskParams)
       .withNewTaskSpec()
       .withParams(taskSpecParams)
-//      .withStepTemplate(taskContainer)
       .withResults(taskResults)
       .withVolumes(volumes)
       .withSteps(taskSteps)
@@ -427,6 +426,15 @@ public class TektonServiceImpl {
     client.v1beta1().taskRuns().withLabels(helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskId, taskActivityId, customLabels)).withPropagationPolicy(DeletionPropagation.BACKGROUND).delete();
   }
   
+  /*
+   * Cancel a TaskRun
+   * 
+   * The implementation needs to replace old conditions with the single status condition to be added.
+   * Without this, you will receive back a "Not all Steps in the Task have finished executing" message
+   * 
+   * Reference(s):
+   * - https://github.com/abayer/tektoncd-pipeline/blob/0.8.0-jx-support-backwards-incompats/pkg/reconciler/taskrun/cancel.go
+   */
   public void cancelTask(TaskDeletionEnum taskDeletion, String workflowId,
       String workflowActivityId, String taskId, String taskActivityId, Map<String, String> customLabels) {
 
@@ -442,6 +450,7 @@ public class TektonServiceImpl {
     taskRunCancelCondition.setMessage("The TaskRun was cancelled successfully.");
     taskRunConditions.add(taskRunCancelCondition);
     
+
     taskRun.getStatus().setConditions(taskRunConditions);
 
     client.v1beta1().taskRuns().updateStatus(taskRun);
