@@ -57,8 +57,8 @@ public class TektonServiceImpl {
     
   protected static final Integer ONE_DAY_IN_SECONDS = 86400; // 60*60*24
 
-  @Value("${kube.namespace}")
-  protected String kubeNamespace;
+//  @Value("${kube.namespace}")
+//  protected String kubeNamespace;
   
   @Value("${kube.image.pullPolicy}")
   protected String kubeImagePullPolicy;

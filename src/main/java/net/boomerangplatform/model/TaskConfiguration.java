@@ -2,11 +2,12 @@ package net.boomerangplatform.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-
 @JsonIgnoreProperties
 public class TaskConfiguration {
 
   private Boolean debug;
+
+  private int timeout;
 
   private TaskDeletionEnum deletion;
 
@@ -16,6 +17,14 @@ public class TaskConfiguration {
 
   public void setDebug(Boolean debug) {
     this.debug = debug;
+  }
+
+  public int getTimeout() {
+    return timeout;
+  }
+
+  public void setTimeout(int timeout) {
+    this.timeout = timeout;
   }
 
   public TaskDeletionEnum getDeletion() {
