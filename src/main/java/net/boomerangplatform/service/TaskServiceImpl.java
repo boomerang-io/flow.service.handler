@@ -9,15 +9,16 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import io.fabric8.kubernetes.client.KubernetesClientException;
-import io.fabric8.tekton.pipeline.v1beta1.TaskRunResult;
 import net.boomerangplatform.error.BoomerangException;
 import net.boomerangplatform.kube.exception.KubeRuntimeException;
 import net.boomerangplatform.kube.service.NewKubeServiceImpl;
 import net.boomerangplatform.kube.service.TektonServiceImpl;
 import net.boomerangplatform.model.Task;
 import net.boomerangplatform.model.TaskConfiguration;
+import net.boomerangplatform.model.TaskCustom;
 import net.boomerangplatform.model.TaskDeletionEnum;
 import net.boomerangplatform.model.TaskResponse;
+import net.boomerangplatform.model.TaskResponseResult;
 import net.boomerangplatform.model.TaskTemplate;
 
 @Service
@@ -67,8 +68,8 @@ public class TaskServiceImpl implements TaskService {
   public TaskResponse executeTask(Task task) {
     if (task instanceof TaskTemplate) {
       return executeTaskTemplate((TaskTemplate) task);
-      // } else if (task instanceof TaskCustom) {
-      // return executeTaskCustom((TaskCustom)task);
+    } else if (task instanceof TaskCustom) {
+       return executeTaskCustom((TaskCustom)task);
     } else {
       throw new BoomerangException(1, "UNKOWN_TASK_TYPE", HttpStatus.BAD_REQUEST,
           task.getClass().toString());
@@ -78,7 +79,7 @@ public class TaskServiceImpl implements TaskService {
   private TaskResponse executeTaskTemplate(TaskTemplate task) {
     TaskResponse response = new TaskResponse("0",
         "Task (" + task.getTaskId() + ") has been executed successfully.", null);
-    List<TaskRunResult> results = new ArrayList<TaskRunResult>();
+    List<TaskResponseResult> results = new ArrayList<>();
     if (task.getImage() == null) {
       throw new BoomerangException(1, "NO_TASK_IMAGE", HttpStatus.BAD_REQUEST,
           task.getClass().toString());
@@ -93,7 +94,7 @@ public class TaskServiceImpl implements TaskService {
             tektonService.createTaskRun(workspaceId, task.getWorkflowName(),
                 task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskActivityId(),
                 task.getTaskName(), task.getTaskId(), task.getLabels(), task.getArguments(),
-                task.getParameters(), task.getResults(), task.getImage(), task.getCommand(), task.getConfiguration(), waitUntilTimeout);
+                task.getParameters(), task.getEnvs(), task.getResults(), task.getImage(), task.getCommand(), task.getConfiguration(), waitUntilTimeout);
             results = tektonService.watchTask(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId(),
           task.getTaskActivityId(), task.getLabels());
       } catch (KubernetesClientException e) {
@@ -127,44 +128,8 @@ public class TaskServiceImpl implements TaskService {
     return response;
   }
 
-  // private TaskResponse executeTaskCustom(TaskCustom task) {
-  // TaskResponse response = new TaskResponse("0", "Task (" + task.getTaskId() + ") has been
-  // executed successfully.",
-  // null);
-  // if (task.getImage() == null) {
-  // throw new BoomerangException(1, "NO_TASK_IMAGE", HttpStatus.BAD_REQUEST,
-  // task.getClass().toString());
-  // } else {
-  // try {
-  // kubeService.createTaskConfigMap(task.getWorkflowName(), task.getWorkflowId(),
-  // task.getWorkflowActivityId(), task.getTaskName(),
-  // task.getTaskId(), task.getTaskActivityId(), task.getLabels(), task.getParameters());
-  // kubeService.watchTaskConfigMap(task.getWorkflowId(), task.getWorkflowActivityId(),
-  // task.getTaskId(), task.getTaskActivityId());
-  // String workspaceId = task.getWorkspaces() != null && task.getWorkspaces().get(0) != null ?
-  // task.getWorkspaces().get(0).getWorkspaceId() : null;
-  // kubeService.createJob(true, workspaceId, task.getWorkflowName(), task.getWorkflowId(),
-  // task.getWorkflowActivityId(),
-  // task.getTaskActivityId(), task.getTaskName(), task.getTaskId(), task.getLabels(),
-  // task.getArguments(),
-  // task.getParameters(), task.getImage(), task.getCommand(), task.getConfiguration());
-  // kubeService.watchJob(true, task.getWorkflowId(), task.getWorkflowActivityId(),
-  // task.getTaskId(), task.getTaskActivityId());
-  // } catch (KubeRuntimeException e) {
-  // LOGGER.info("DEBUG::Task Is Being Set as Failed");
-  // throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
-  // } finally {
-  // response.setResults(kubeService.getTaskOutPutConfigMapData(task.getWorkflowId(),
-  // task.getWorkflowActivityId(), task.getTaskId(), task.getTaskName()));
-  // kubeService.deleteTaskConfigMap(task.getWorkflowId(), task.getWorkflowActivityId(),
-  // task.getTaskId(), task.getTaskActivityId());
-  // if (isTaskDeletionNever(task.getConfiguration())) {
-  // deleteService.deleteJob(getTaskDeletion(task.getConfiguration()), task.getWorkflowId(),
-  // task.getWorkflowActivityId(), task.getTaskId(), task.getTaskActivityId());
-  // }
-  // LOGGER.info("Task (" + task.getTaskId() + ") has completed with code " + response.getCode());
-  // }
-  // }
-  // return response;
-  // }
+   private TaskResponse executeTaskCustom(TaskCustom task) {
+     TaskResponse response = new TaskResponse("100", "Tekton Custom Task has not yet been implemented. Support will come in a future release.", null);
+     return response;
+   }
 }

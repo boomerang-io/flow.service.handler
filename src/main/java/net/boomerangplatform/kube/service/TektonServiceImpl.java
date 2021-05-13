@@ -34,7 +34,6 @@ import io.fabric8.tekton.pipeline.v1beta1.ArrayOrString;
 import io.fabric8.tekton.pipeline.v1beta1.Param;
 import io.fabric8.tekton.pipeline.v1beta1.ParamSpec;
 import io.fabric8.tekton.pipeline.v1beta1.Step;
-import io.fabric8.tekton.pipeline.v1beta1.TaskResult;
 import io.fabric8.tekton.pipeline.v1beta1.TaskRun;
 import io.fabric8.tekton.pipeline.v1beta1.TaskRunBuilder;
 import io.fabric8.tekton.pipeline.v1beta1.TaskRunResult;
@@ -43,6 +42,9 @@ import net.boomerangplatform.error.BoomerangError;
 import net.boomerangplatform.error.BoomerangException;
 import net.boomerangplatform.model.TaskConfiguration;
 import net.boomerangplatform.model.TaskDeletionEnum;
+import net.boomerangplatform.model.TaskEnvVar;
+import net.boomerangplatform.model.TaskResponseResult;
+import net.boomerangplatform.model.TaskResult;
 
 @Component
 public class TektonServiceImpl {
@@ -117,8 +119,8 @@ public class TektonServiceImpl {
   public TaskRun createTaskRun(String workspaceId, String workflowName,
       String workflowId, String workflowActivityId, String taskActivityId, String taskName,
       String taskId, Map<String, String> customLabels, List<String> arguments,
-      Map<String, String> taskParameters, List<TaskResult> taskResults, String image, String command,
-      TaskConfiguration taskConfiguration, long waitSeconds) throws InterruptedException {
+      Map<String, String> parameters, List<TaskEnvVar> envVars, List<TaskResult> results, String image, String command,
+      TaskConfiguration configuration, long waitSeconds) throws InterruptedException {
 
     LOGGER.info("Initializing Task...");
     
@@ -205,7 +207,7 @@ public class TektonServiceImpl {
     dataVolume.setName(helperKubeService.getPrefixVol() + "-data");
     EmptyDirVolumeSource dataEmptyDirVolumeSource = new EmptyDirVolumeSource();
     if (kubeWorkerStorageDataMemory
-        && Boolean.valueOf(taskParameters.get("worker.storage.data.memory"))) {
+        && Boolean.valueOf(parameters.get("worker.storage.data.memory"))) {
       LOGGER.info("Setting /data to in memory storage...");
       dataEmptyDirVolumeSource.setMedium("Memory");
     }
@@ -275,14 +277,18 @@ public class TektonServiceImpl {
     /*
      * Define environment variables made up of
      * - Proxy (if enabled)
-     * - Boomerang Flow env vars
+     * - Boomerang Flow
      * - Debug and CI
+     * - Task defined
      */
-    List<EnvVar> envVars = new ArrayList<>();
-    envVars.addAll(helperKubeService.createProxyEnvVars());
-    envVars.addAll(helperKubeService.createEnvVars(workflowId, workflowActivityId, taskName, taskId, taskActivityId));
-    envVars.add(helperKubeService.createEnvVar("DEBUG", taskEnableDebug.toString()));
-    envVars.add(helperKubeService.createEnvVar("CI", "true"));
+    List<EnvVar> tknEnvVars = new ArrayList<>();
+    tknEnvVars.addAll(helperKubeService.createProxyEnvVars());
+    tknEnvVars.addAll(helperKubeService.createEnvVars(workflowId, workflowActivityId, taskName, taskId, taskActivityId));
+    tknEnvVars.add(helperKubeService.createEnvVar("DEBUG", taskEnableDebug.toString()));
+    tknEnvVars.add(helperKubeService.createEnvVar("CI", "true"));
+    envVars.forEach(var -> {
+      tknEnvVars.add(helperKubeService.createEnvVar(var.getName(), var.getValue()));
+    });
     
     /*
      * Define Task Params and Task Spec Params
@@ -290,7 +296,7 @@ public class TektonServiceImpl {
      */
     List<ParamSpec> taskSpecParams = new ArrayList<>();
     List<Param> taskParams = new ArrayList<>();
-    taskParameters.forEach((key, value) -> {
+    parameters.forEach((key, value) -> {
       ParamSpec taskSpecParam = new ParamSpec();
       taskSpecParam.setName(key);
       taskSpecParam.setType("string");
@@ -319,14 +325,14 @@ public class TektonServiceImpl {
     taskStep.setCommand(commands);
     taskStep.setImagePullPolicy(kubeImagePullPolicy);
     taskStep.setArgs(arguments);
-    taskStep.setEnv(envVars);
+    taskStep.setEnv(tknEnvVars);
     taskStep.setVolumeMounts(volumeMounts);
 //    taskStep.setSecurityContext(securityContext);
 //    taskContainer.setResources(resources);
     taskSteps.add(taskStep);
     
     /*
-     * Create the additional PodTemplate based controlls
+     * Create the additional PodTemplate based controls
      * TODO: figure out if volumes go here or on the TaskRunSpec
      */
     Template taskPodTemplate = new Template();
@@ -334,6 +340,17 @@ public class TektonServiceImpl {
     taskPodTemplate.setTolerations(tolerations);
     taskPodTemplate.setImagePullSecrets(imagePullSecrets);
 //    taskPodTemplate.setVolumes(volumes);
+    
+    /*
+     * Define TaskResults and copy from internal model
+     */
+    List<io.fabric8.tekton.pipeline.v1beta1.TaskResult> tknTaskResults = new ArrayList<>();
+    results.forEach(result -> {
+      tknTaskResults.add(new io.fabric8.tekton.pipeline.v1beta1.TaskResult(result.getDescription(), result.getName()));
+    });
+//    BeanUtils.copyProperties(taskResults, tknTaskResults);
+//    LOGGER.info("Task Results (Flow : Tekton): " + results.size() + " : " + tknTaskResults.size());
+    
     
     /*
      * Build out TaskRun definition.
@@ -356,7 +373,7 @@ public class TektonServiceImpl {
       .withParams(taskParams)
       .withNewTaskSpec()
       .withParams(taskSpecParams)
-      .withResults(taskResults)
+      .withResults(tknTaskResults)
       .withVolumes(volumes)
       .withSteps(taskSteps)
 //      .addNewWorkspace()
@@ -380,11 +397,11 @@ public class TektonServiceImpl {
     return result;
   }
   
-  public List<TaskRunResult> watchTask(String workflowId, String workflowActivityId, String taskId,
+  public List<TaskResponseResult> watchTask(String workflowId, String workflowActivityId, String taskId,
       String taskActivityId, Map<String, String> customLabels) throws InterruptedException {
     final CountDownLatch latch = new CountDownLatch(1);
     Condition condition = null;
-    List<TaskRunResult> results = new ArrayList<TaskRunResult>();
+    List<TaskRunResult> tknResults = new ArrayList<TaskRunResult>();
     
     TaskWatcher taskWatcher = new TaskWatcher(latch);
 
@@ -402,7 +419,7 @@ public class TektonServiceImpl {
       }
       
       condition = taskWatcher.getCondition();
-      results = taskWatcher.getResults();
+      tknResults = taskWatcher.getResults();
       
       if (condition != null && "True".equals(condition.getStatus())) {
         LOGGER.info("Task completed successfully");
@@ -414,6 +431,11 @@ public class TektonServiceImpl {
       LOGGER.error(e.toString());
       throw e;
     }
+    
+    List<TaskResponseResult> results = new ArrayList<>();
+    tknResults.forEach(tknResult -> {
+      results.add(new TaskResponseResult(tknResult.getName(), tknResult.getValue()));
+    });
     
     return results;
   }
