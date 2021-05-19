@@ -257,7 +257,7 @@ public class TektonServiceImpl {
     
     /*
      * Create Host Aliases if defined
-     * TODO: Implement as part of Tekton 0.24
+     * Note: Requires Tekton 0.24
      */
     List<HostAlias> hostAliases = new ArrayList<>();
     if (!kubeHostAliases.isEmpty()) {
@@ -334,6 +334,7 @@ public class TektonServiceImpl {
     /*
      * Create the additional PodTemplate based controls
      * TODO: figure out if volumes go here or on the TaskRunSpec
+     * TODO: incorporate Host Alias
      */
     Template taskPodTemplate = new Template();
     taskPodTemplate.setNodeSelector(nodeSelectors);
@@ -460,21 +461,26 @@ public class TektonServiceImpl {
   public void cancelTask(TaskDeletionEnum taskDeletion, String workflowId,
       String workflowActivityId, String taskId, String taskActivityId, Map<String, String> customLabels) {
 
-    LOGGER.debug("Cancelling Job...");
+    LOGGER.debug("Cancelling Task...");
     
-    TaskRun taskRun = client.v1beta1().taskRuns().withLabels(helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskId, taskActivityId, customLabels)).list().getItems().get(0);
+    List<TaskRun> taskRuns = client.v1beta1().taskRuns().withLabels(helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskId, taskActivityId, customLabels)).list().getItems();
     
-    List<Condition> taskRunConditions = new ArrayList<>();
-    Condition taskRunCancelCondition = new Condition();
-    taskRunCancelCondition.setType("Succeeded");
-    taskRunCancelCondition.setStatus("False");
-    taskRunCancelCondition.setReason("TaskRunCancelled");
-    taskRunCancelCondition.setMessage("The TaskRun was cancelled successfully.");
-    taskRunConditions.add(taskRunCancelCondition);
-    
-
-    taskRun.getStatus().setConditions(taskRunConditions);
-
-    client.v1beta1().taskRuns().updateStatus(taskRun);
+    if (taskRuns != null && taskRuns.isEmpty()) {
+      TaskRun taskRun = taskRuns.get(0);
+      
+      List<Condition> taskRunConditions = new ArrayList<>();
+      Condition taskRunCancelCondition = new Condition();
+      taskRunCancelCondition.setType("Succeeded");
+      taskRunCancelCondition.setStatus("False");
+      taskRunCancelCondition.setReason("TaskRunCancelled");
+      taskRunCancelCondition.setMessage("The TaskRun was cancelled successfully.");
+      taskRunConditions.add(taskRunCancelCondition);
+      
+      taskRun.getStatus().setConditions(taskRunConditions);
+  
+      client.v1beta1().taskRuns().updateStatus(taskRun);
+    } else {
+      throw new BoomerangException(BoomerangError.TASK_EXECUTION_ERROR, "CANCEL_FAILURE - Error attempting to cancel task.");
+    }
   }
 }
