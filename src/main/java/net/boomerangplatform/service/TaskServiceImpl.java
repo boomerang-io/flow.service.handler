@@ -57,8 +57,7 @@ public class TaskServiceImpl implements TaskService {
     TaskResponse response = new TaskResponse("0",
         "Task (" + task.getTaskId() + ") is meant to be terminated now.", null);
     
-    tektonService.cancelTask(getTaskDeletion(task.getConfiguration()), task.getWorkflowId(),
-              task.getWorkflowActivityId(), task.getTaskId(), task.getTaskActivityId(),
+    tektonService.cancelTask(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId(), task.getTaskActivityId(),
               task.getLabels());
 
     return response;

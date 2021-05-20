@@ -286,9 +286,11 @@ public class TektonServiceImpl {
     tknEnvVars.addAll(helperKubeService.createEnvVars(workflowId, workflowActivityId, taskName, taskId, taskActivityId));
     tknEnvVars.add(helperKubeService.createEnvVar("DEBUG", taskEnableDebug.toString()));
     tknEnvVars.add(helperKubeService.createEnvVar("CI", "true"));
-    envVars.forEach(var -> {
-      tknEnvVars.add(helperKubeService.createEnvVar(var.getName(), var.getValue()));
-    });
+    if (envVars != null) {
+      envVars.forEach(var -> {
+        tknEnvVars.add(helperKubeService.createEnvVar(var.getName(), var.getValue()));
+      });
+    }
     
     /*
      * Define Task Params and Task Spec Params
@@ -346,12 +348,11 @@ public class TektonServiceImpl {
      * Define TaskResults and copy from internal model
      */
     List<io.fabric8.tekton.pipeline.v1beta1.TaskResult> tknTaskResults = new ArrayList<>();
-    results.forEach(result -> {
-      tknTaskResults.add(new io.fabric8.tekton.pipeline.v1beta1.TaskResult(result.getDescription(), result.getName()));
-    });
-//    BeanUtils.copyProperties(taskResults, tknTaskResults);
-//    LOGGER.info("Task Results (Flow : Tekton): " + results.size() + " : " + tknTaskResults.size());
-    
+    if (results != null) {
+      results.forEach(result -> {
+        tknTaskResults.add(new io.fabric8.tekton.pipeline.v1beta1.TaskResult(result.getDescription(), result.getName()));
+      });
+    }    
     
     /*
      * Build out TaskRun definition.
@@ -458,14 +459,16 @@ public class TektonServiceImpl {
    * Reference(s):
    * - https://github.com/abayer/tektoncd-pipeline/blob/0.8.0-jx-support-backwards-incompats/pkg/reconciler/taskrun/cancel.go
    */
-  public void cancelTask(TaskDeletionEnum taskDeletion, String workflowId,
-      String workflowActivityId, String taskId, String taskActivityId, Map<String, String> customLabels) {
+  public void cancelTask(String workflowId, String workflowActivityId, String taskId, String taskActivityId, Map<String, String> customLabels) {
 
     LOGGER.debug("Cancelling Task...");
     
-    List<TaskRun> taskRuns = client.v1beta1().taskRuns().withLabels(helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskId, taskActivityId, customLabels)).list().getItems();
+    LOGGER.info("  Cancel Labels: " + helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskId, taskActivityId, customLabels).toString());
     
-    if (taskRuns != null && taskRuns.isEmpty()) {
+    List<TaskRun> taskRuns = client.v1beta1().taskRuns().withLabels(helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskId, taskActivityId, customLabels)).list().getItems();
+//    List<TaskRun> taskRuns = client.v1beta1().taskRuns().;
+    
+    if (taskRuns != null && !taskRuns.isEmpty()) {
       TaskRun taskRun = taskRuns.get(0);
       
       List<Condition> taskRunConditions = new ArrayList<>();
