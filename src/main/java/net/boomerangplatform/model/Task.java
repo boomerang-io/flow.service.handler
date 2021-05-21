@@ -39,6 +39,9 @@ public abstract class Task {
   @JsonProperty("command")
   private String command;
 
+  @JsonProperty("workingDir")
+  private String workingDir;
+
   @JsonProperty("script")
   private String script;
 
@@ -177,6 +180,14 @@ public abstract class Task {
 
   public void setCommand(String command) {
     this.command = command;
+  }
+
+  public String getWorkingDir() {
+    return workingDir;
+  }
+
+  public void setWorkingDir(String workingDir) {
+    this.workingDir = workingDir;
   }
 
   public String getScript() {

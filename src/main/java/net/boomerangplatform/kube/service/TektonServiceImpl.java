@@ -110,7 +110,7 @@ public class TektonServiceImpl {
   public TaskRun createTaskRun(String workspaceId, String workflowName,
       String workflowId, String workflowActivityId, String taskActivityId, String taskName,
       String taskId, Map<String, String> customLabels, List<String> arguments,
-      Map<String, String> parameters, List<TaskEnvVar> envVars, List<TaskResult> results, String image, String command,
+      Map<String, String> parameters, List<TaskEnvVar> envVars, List<TaskResult> results, String image, String command, String workingDir, 
       TaskConfiguration configuration, long waitSeconds) throws InterruptedException {
 
     LOGGER.info("Initializing Task...");
@@ -320,6 +320,7 @@ public class TektonServiceImpl {
     taskStep.setArgs(arguments);
     taskStep.setEnv(tknEnvVars);
     taskStep.setVolumeMounts(volumeMounts);
+    taskStep.setWorkingDir(workingDir);
 //    taskStep.setSecurityContext(securityContext);
 //    taskContainer.setResources(resources);
     taskSteps.add(taskStep);

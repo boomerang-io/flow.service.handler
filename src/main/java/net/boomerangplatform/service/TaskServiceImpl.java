@@ -93,7 +93,7 @@ public class TaskServiceImpl implements TaskService {
             tektonService.createTaskRun(workspaceId, task.getWorkflowName(),
                 task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskActivityId(),
                 task.getTaskName(), task.getTaskId(), task.getLabels(), task.getArguments(),
-                task.getParameters(), task.getEnvs(), task.getResults(), task.getImage(), task.getCommand(), task.getConfiguration(), waitUntilTimeout);
+                task.getParameters(), task.getEnvs(), task.getResults(), task.getImage(), task.getCommand(), task.getWorkingDir(), task.getConfiguration(), waitUntilTimeout);
             results = tektonService.watchTask(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId(),
           task.getTaskActivityId(), task.getLabels());
       } catch (KubernetesClientException e) {
