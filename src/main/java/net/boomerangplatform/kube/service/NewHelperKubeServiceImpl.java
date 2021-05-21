@@ -42,10 +42,12 @@ public class NewHelperKubeServiceImpl {
 
   @Value("${proxy.ignore}")
   protected String proxyIgnore;
-  //
+  
   @Value("${boomerang.product:bmrg-flow}")
   protected String bmrgProduct;
-
+  
+  @Value("${boomerang.instance:bmrg-flow}")
+  protected String bmrgInstance;
   
    @Autowired
    private ConfigurationService configurationService;
@@ -211,7 +213,7 @@ public class NewHelperKubeServiceImpl {
       Map<String, String> customLabels) {
     Map<String, String> labels = new HashMap<>();
     labels.put("app.kubernetes.io/name", bmrgProduct);
-    labels.put("app.kubernetes.io/instance", bmrgProduct + "-" + workflowId);
+    labels.put("app.kubernetes.io/instance", bmrgInstance);
     labels.put("app.kubernetes.io/managed-by", "controller");
     labels.put("boomerang.io/product", bmrgProduct);
     labels.put("boomerang.io/tier", tier);

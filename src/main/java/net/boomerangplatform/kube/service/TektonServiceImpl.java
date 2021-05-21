@@ -59,9 +59,6 @@ public class TektonServiceImpl {
     
   protected static final Integer ONE_DAY_IN_SECONDS = 86400; // 60*60*24
 
-//  @Value("${kube.namespace}")
-//  protected String kubeNamespace;
-  
   @Value("${kube.image.pullPolicy}")
   protected String kubeImagePullPolicy;
 
@@ -94,9 +91,6 @@ public class TektonServiceImpl {
 
   @Value("${kube.worker.storage.data.memory}")
   private Boolean kubeWorkerStorageDataMemory;
-  
-  @Value("${kube.lifecycle.image}")
-  private String kubeLifecycleImage;
 
   @Value("${kube.worker.node.dedicated}")
   protected Boolean kubeJobDedicatedNodes;
@@ -106,9 +100,6 @@ public class TektonServiceImpl {
 
   @Value("${kube.worker.debug}")
   private Boolean taskEnableDebug;
-
-  @Value("${controller.service.host}")
-  protected String controllerServiceURL;
 
   TektonClient client = null;
 
@@ -460,13 +451,11 @@ public class TektonServiceImpl {
    * - https://github.com/abayer/tektoncd-pipeline/blob/0.8.0-jx-support-backwards-incompats/pkg/reconciler/taskrun/cancel.go
    */
   public void cancelTask(String workflowId, String workflowActivityId, String taskId, String taskActivityId, Map<String, String> customLabels) {
-
-    LOGGER.debug("Cancelling Task...");
+    Map<String, String> labels = helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskId, taskActivityId, customLabels);
+  
+    LOGGER.info("Cancelling Task with labels: " + labels.toString());
     
-    LOGGER.info("  Cancel Labels: " + helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskId, taskActivityId, customLabels).toString());
-    
-    List<TaskRun> taskRuns = client.v1beta1().taskRuns().withLabels(helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskId, taskActivityId, customLabels)).list().getItems();
-//    List<TaskRun> taskRuns = client.v1beta1().taskRuns().;
+    List<TaskRun> taskRuns = client.v1beta1().taskRuns().withLabels(labels).list().getItems();
     
     if (taskRuns != null && !taskRuns.isEmpty()) {
       TaskRun taskRun = taskRuns.get(0);
@@ -482,8 +471,10 @@ public class TektonServiceImpl {
       taskRun.getStatus().setConditions(taskRunConditions);
   
       client.v1beta1().taskRuns().updateStatus(taskRun);
+    } else if (taskRuns != null && taskRuns.isEmpty()) {
+      throw new BoomerangException(BoomerangError.TASK_EXECUTION_ERROR, "CANCEL_FAILURE - No tasks found matching the lables: " + labels.toString());
     } else {
-      throw new BoomerangException(BoomerangError.TASK_EXECUTION_ERROR, "CANCEL_FAILURE - Error attempting to cancel task.");
+      throw new BoomerangException(BoomerangError.TASK_EXECUTION_ERROR, "CANCEL_FAILURE - Unknown error attempting to cancel task.");
     }
   }
 }

@@ -59,9 +59,6 @@ public class NewKubeServiceImpl {
     
   protected static final Integer ONE_DAY_IN_SECONDS = 86400; // 60*60*24
 
-//  @Value("${kube.namespace}")
-//  protected String kubeNamespace;
-//  
   @Value("${kube.image.pullPolicy}")
   protected String kubeImagePullPolicy;
 
@@ -94,9 +91,6 @@ public class NewKubeServiceImpl {
 
   @Value("${kube.worker.storage.data.memory}")
   private Boolean kubeWorkerStorageDataMemory;
-  
-  @Value("${kube.lifecycle.image}")
-  private String kubeLifecycleImage;
 
   @Value("${kube.worker.node.dedicated}")
   protected Boolean kubeJobDedicatedNodes;
