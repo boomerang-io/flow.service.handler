@@ -101,6 +101,9 @@ public class TektonServiceImpl {
   @Value("${kube.worker.debug}")
   private Boolean taskEnableDebug;
 
+  @Value("${kube.worker.timeout}")
+  private Integer taskTimeout;
+
   TektonClient client = null;
 
   public TektonServiceImpl() {
@@ -407,7 +410,7 @@ public class TektonServiceImpl {
       //has moved from initial state. If its still in initial state then check PVC
       //PVC might have Event / Condition "ProvisioningFailed" with a reason.
       
-      boolean taskComplete = latch.await(3, TimeUnit.MINUTES);
+      boolean taskComplete = latch.await(taskTimeout, TimeUnit.MINUTES);
       if (!taskComplete) {
         throw new BoomerangException(BoomerangError.TASK_EXECUTION_ERROR, "TIMED_OUT - Task timed out while waiting for completion.");
       }
