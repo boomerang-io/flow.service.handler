@@ -187,7 +187,7 @@ public class LogServiceImpl implements LogService {
 
   private String createLokiFilter(String workflowId, String taskId, String taskActivityId) {
     return "{bmrg_task_activity=\"" + taskActivityId + "\",bmrg_workflow=\"" + workflowId
-        + "\",bmrg_task=\"" + taskId + "\",bmrg_container=\"task-cntr\"}";
+        + "\",bmrg_task=\"" + taskId + "\",bmrg_container=\"step-task\"}";
   }
 
   private StreamingResponseBody streamLogsFromElastic(String activityId) {
