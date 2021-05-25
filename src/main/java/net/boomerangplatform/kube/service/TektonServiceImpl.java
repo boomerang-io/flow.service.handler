@@ -37,6 +37,8 @@ import io.fabric8.tekton.pipeline.v1beta1.Step;
 import io.fabric8.tekton.pipeline.v1beta1.TaskRun;
 import io.fabric8.tekton.pipeline.v1beta1.TaskRunBuilder;
 import io.fabric8.tekton.pipeline.v1beta1.TaskRunResult;
+import io.fabric8.tekton.pipeline.v1beta1.WorkspaceBinding;
+import io.fabric8.tekton.pipeline.v1beta1.WorkspaceDeclaration;
 import io.fabric8.tekton.v1beta1.internal.pipeline.pkg.apis.pipeline.pod.Template;
 import net.boomerangplatform.error.BoomerangError;
 import net.boomerangplatform.error.BoomerangException;
@@ -173,18 +175,31 @@ public class TektonServiceImpl {
       volumes.add(wsVolume);
     }
 
+    List<WorkspaceDeclaration> taskSpecWorkspaces = new ArrayList<>();
+    List<WorkspaceBinding> taskWorkspaces = new ArrayList<>();
+    //TODO: determine if optional=true works better than checking if the PVC exists
     if (!kubeService.getPVCName(helperKubeService.getWorkflowLabels(workflowId, workflowActivityId, customLabels)).isEmpty()) {
-      VolumeMount wfVolumeMount = new VolumeMount();
-      wfVolumeMount.setName(helperKubeService.getPrefixVol() + "-wf");
-      wfVolumeMount.setMountPath("/workflow");
-      volumeMounts.add(wfVolumeMount);
+//      VolumeMount wfVolumeMount = new VolumeMount();
+//      wfVolumeMount.setName(helperKubeService.getPrefixVol() + "-wf");
+//      wfVolumeMount.setMountPath("/workflow");
+//      volumeMounts.add(wfVolumeMount);
+      WorkspaceDeclaration wfWorkspaceDeclaration = new WorkspaceDeclaration();
+      wfWorkspaceDeclaration.setName(helperKubeService.getPrefixVol() + "-wf");
+      wfWorkspaceDeclaration.setMountPath("/workflow");
+      wfWorkspaceDeclaration.setDescription("Storage for the specific workflow execution");
+      taskSpecWorkspaces.add(wfWorkspaceDeclaration);
       
-      Volume wfVolume = new Volume();
-      wfVolume.setName(helperKubeService.getPrefixVol() + "-wf");
+//      Volume wfVolume = new Volume();
+//      wfVolume.setName(helperKubeService.getPrefixVol() + "-wf");
       PersistentVolumeClaimVolumeSource wfPVCVolumeSource = new PersistentVolumeClaimVolumeSource();
       wfPVCVolumeSource.setClaimName(kubeService.getPVCName(helperKubeService.getWorkflowLabels(workflowId, workflowActivityId, customLabels)));
-      wfVolume.setPersistentVolumeClaim(wfPVCVolumeSource);
-      volumes.add(wfVolume);
+//      wfVolume.setPersistentVolumeClaim(wfPVCVolumeSource);
+//      volumes.add(wfVolume);
+      
+      WorkspaceBinding wfWorkspaceBinding = new WorkspaceBinding();
+      wfWorkspaceBinding.setName(helperKubeService.getPrefixVol() + "-wf");
+      wfWorkspaceBinding.setPersistentVolumeClaim(wfPVCVolumeSource);
+      taskWorkspaces.add(wfWorkspaceBinding);
     }
     
     /*
@@ -368,14 +383,13 @@ public class TektonServiceImpl {
       .withNewSpec()
       .withPodTemplate(taskPodTemplate)
       .withParams(taskParams)
+      .withWorkspaces(taskWorkspaces)
       .withNewTaskSpec()
+      .withWorkspaces(taskSpecWorkspaces)
       .withParams(taskSpecParams)
       .withResults(tknTaskResults)
       .withVolumes(volumes)
       .withSteps(taskSteps)
-//      .addNewWorkspace()
-//      .withName("flow")
-//      .endWorkspace()
       .endTaskSpec()
 //      .addNewWorkspace()
 //      .withName("flow")
