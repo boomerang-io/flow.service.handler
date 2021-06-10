@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 @JsonIgnoreProperties
 public class TaskConfiguration {
 
-  private Boolean debug;
+  private Boolean debug = false;
 
   private int timeout;
 
@@ -34,5 +34,4 @@ public class TaskConfiguration {
   public void setDeletion(TaskDeletionEnum deletion) {
     this.deletion = deletion;
   }
-
 }

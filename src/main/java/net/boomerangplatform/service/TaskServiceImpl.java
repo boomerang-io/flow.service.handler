@@ -29,8 +29,8 @@ public class TaskServiceImpl implements TaskService {
   @Value("${kube.timeout.waitUntil}")
   protected long waitUntilTimeout;
 
-  @Autowired
-  private ConfigurationServiceImpl configurationService;
+  @Value("${kube.worker.job.deletion}")
+  private TaskDeletionEnum workerDeletion;
 
   @Autowired
   private NewKubeServiceImpl kubeService;
@@ -44,7 +44,7 @@ public class TaskServiceImpl implements TaskService {
   protected TaskDeletionEnum getTaskDeletion(TaskConfiguration taskConfiguration) {
     return taskConfiguration != null && taskConfiguration.getDeletion() != null
         ? taskConfiguration.getDeletion()
-        : configurationService.getTaskDeletion();
+        : workerDeletion;
   }
 
   protected Boolean isTaskDeletionNever(TaskConfiguration taskConfiguration) {
@@ -90,12 +90,13 @@ public class TaskServiceImpl implements TaskService {
         String workspaceId = task.getWorkspaces() != null && task.getWorkspaces().get(0) != null
             ? task.getWorkspaces().get(0).getWorkspaceId()
             : null;
-            tektonService.createTaskRun(workspaceId, task.getWorkflowName(),
-                task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskActivityId(),
-                task.getTaskName(), task.getTaskId(), task.getLabels(), task.getArguments(),
-                task.getParameters(), task.getEnvs(), task.getResults(), task.getImage(), task.getCommand(), task.getWorkingDir(), task.getConfiguration(), waitUntilTimeout);
-            results = tektonService.watchTask(task.getWorkflowId(), task.getWorkflowActivityId(), task.getTaskId(),
-          task.getTaskActivityId(), task.getLabels());
+        tektonService.createTaskRun(workspaceId, task.getWorkflowName(), task.getWorkflowId(),
+            task.getWorkflowActivityId(), task.getTaskActivityId(), task.getTaskName(),
+            task.getTaskId(), task.getLabels(), task.getArguments(), task.getParameters(),
+            task.getEnvs(), task.getResults(), task.getImage(), task.getCommand(),
+            task.getWorkingDir(), task.getConfiguration(), waitUntilTimeout);
+        results = tektonService.watchTask(task.getWorkflowId(), task.getWorkflowActivityId(),
+            task.getTaskId(), task.getTaskActivityId(), task.getLabels());
       } catch (KubernetesClientException e) {
         // KubernetesClientException handles the case where an internal admission
         // controller rejects the creation

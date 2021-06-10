@@ -10,7 +10,6 @@ import java.util.Optional;
 import java.util.Properties;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import io.fabric8.kubernetes.api.model.Affinity;
@@ -20,17 +19,12 @@ import io.fabric8.kubernetes.api.model.PodAffinityTerm;
 import io.fabric8.kubernetes.api.model.PodAntiAffinity;
 import io.fabric8.kubernetes.api.model.WeightedPodAffinityTerm;
 import net.boomerangplatform.model.TaskConfiguration;
-import net.boomerangplatform.service.ConfigurationService;
 
 @Component
 public class NewHelperKubeServiceImpl {
 
   private static final Logger LOGGER = LogManager.getLogger(NewHelperKubeServiceImpl.class);
 
-  // protected static final String TIER = "worker";
-  //
-  // private static final String EXCEPTION = "Exception: ";
-  //
   @Value("${proxy.enable}")
   protected Boolean proxyEnabled;
 
@@ -49,9 +43,6 @@ public class NewHelperKubeServiceImpl {
   @Value("${boomerang.instance:bmrg-flow}")
   protected String bmrgInstance;
   
-   @Autowired
-   private ConfigurationService configurationService;
-  //
   // Utilized by LogServiceImpl
   // @Override
   public String getPrefixTask() {
@@ -287,8 +278,8 @@ public class NewHelperKubeServiceImpl {
   }
 
   protected String getTaskDebug(TaskConfiguration taskConfiguration) {
-    return taskConfiguration != null && taskConfiguration.getDebug() != null
+    return taskConfiguration != null && taskConfiguration.getDebug() != null && (taskConfiguration.getDebug() ==  Boolean.TRUE || taskConfiguration.getDebug() ==  Boolean.FALSE)
         ? taskConfiguration.getDebug().toString()
-        : configurationService.getTaskDebug().toString();
+        : Boolean.FALSE.toString();
   }
 }

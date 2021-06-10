@@ -61,6 +61,16 @@ public class TaskWatcher implements Watcher<TaskRun>{
              condition.setMessage("The TaskRun was cancelled successfully.");
              latch.countDown();
            }
+         case "MODIFIED":
+           if (resource.getStatus().getConditions() != null && !resource.getStatus().getConditions().get(0).getMessage().isEmpty() && resource.getStatus().getConditions().get(0).getMessage().contains("rpc error")) {
+             LOGGER.info(" Task Failed due to RPC error");
+             condition = resource.getStatus().getConditions().get(0);
+             condition.setStatus("False");
+             condition.setReason("TaskRunFailed");
+             condition.setMessage(resource.getStatus().getConditions().get(0).getMessage());
+             latch.countDown();
+//             TODO need to have the task cancelled.
+           }
        }
       switch (taskStatus) {
         case "False":

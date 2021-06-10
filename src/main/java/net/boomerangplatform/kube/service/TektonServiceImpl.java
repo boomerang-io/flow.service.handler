@@ -66,6 +66,9 @@ public class TektonServiceImpl {
 
   @Value("${kube.image.pullSecret}")
   protected String kubeImagePullSecret;
+  
+  @Value("${kube.lifecycle.image}")
+  protected String kubeLifecycleImage;
 
   @Value("${kube.worker.job.backOffLimit}")
   protected Integer kubeJobBackOffLimit;
@@ -99,9 +102,6 @@ public class TektonServiceImpl {
 
   @Value("${kube.worker.hostaliases}")
   protected String kubeHostAliases;
-
-  @Value("${kube.worker.debug}")
-  private Boolean taskEnableDebug;
 
   @Value("${kube.worker.timeout}")
   private Integer taskTimeout;
@@ -158,6 +158,7 @@ public class TektonServiceImpl {
      * - /workflow for workflow based sharing between tasks (optional if mounted prior) 
      * - /props for mounting config_maps 
      * - /data for task storage (optional - needed if using in memory storage)
+     * - /lifecycle if enabled for the custom retrieval result parameters
      */
     List<VolumeMount> volumeMounts = new ArrayList<>();
     List<Volume> volumes = new ArrayList<>();
@@ -174,7 +175,7 @@ public class TektonServiceImpl {
       wsVolume.setPersistentVolumeClaim(wsPVCVolumeSource);
       volumes.add(wsVolume);
     }
-
+    
     List<WorkspaceDeclaration> taskSpecWorkspaces = new ArrayList<>();
     List<WorkspaceBinding> taskWorkspaces = new ArrayList<>();
     //TODO: determine if optional=true works better than checking if the PVC exists
@@ -268,12 +269,12 @@ public class TektonServiceImpl {
      * Create Host Aliases if defined
      * Note: Requires Tekton 0.24
      */
-    List<HostAlias> hostAliases = new ArrayList<>();
-    if (!kubeHostAliases.isEmpty()) {
-      Type listHostAliasType = new TypeToken<List<HostAlias>>() {}.getType();
-      List<HostAlias> hostAliasList = new Gson().fromJson(kubeHostAliases, listHostAliasType);
-      LOGGER.debug("Host Alias List Size: " + hostAliasList.size());
-    }
+//    List<HostAlias> hostAliases = new ArrayList<>();
+//    if (!kubeHostAliases.isEmpty()) {
+//      Type listHostAliasType = new TypeToken<List<HostAlias>>() {}.getType();
+//      List<HostAlias> hostAliasList = new Gson().fromJson(kubeHostAliases, listHostAliasType);
+//      LOGGER.debug("Host Alias List Size: " + hostAliasList.size());
+//    }
     
     /*
      * Define Image Pull Secrets
@@ -293,7 +294,7 @@ public class TektonServiceImpl {
     List<EnvVar> tknEnvVars = new ArrayList<>();
     tknEnvVars.addAll(helperKubeService.createProxyEnvVars());
     tknEnvVars.addAll(helperKubeService.createEnvVars(workflowId, workflowActivityId, taskName, taskId, taskActivityId));
-    tknEnvVars.add(helperKubeService.createEnvVar("DEBUG", taskEnableDebug.toString()));
+    tknEnvVars.add(helperKubeService.createEnvVar("DEBUG", helperKubeService.getTaskDebug(configuration)));
     tknEnvVars.add(helperKubeService.createEnvVar("CI", "true"));
     if (envVars != null) {
       envVars.forEach(var -> {

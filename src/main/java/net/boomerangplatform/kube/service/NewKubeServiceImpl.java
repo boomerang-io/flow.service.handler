@@ -1,53 +1,28 @@
 package net.boomerangplatform.kube.service;
 
-import java.lang.reflect.Type;
-import java.util.ArrayList;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
 import io.fabric8.kubernetes.api.model.ConfigMapList;
-import io.fabric8.kubernetes.api.model.ConfigMapProjection;
-import io.fabric8.kubernetes.api.model.Container;
-import io.fabric8.kubernetes.api.model.DeletionPropagation;
-import io.fabric8.kubernetes.api.model.EmptyDirVolumeSource;
-import io.fabric8.kubernetes.api.model.EnvVar;
-import io.fabric8.kubernetes.api.model.HostAlias;
-import io.fabric8.kubernetes.api.model.LocalObjectReference;
 import io.fabric8.kubernetes.api.model.PersistentVolumeClaim;
 import io.fabric8.kubernetes.api.model.PersistentVolumeClaimBuilder;
 import io.fabric8.kubernetes.api.model.PersistentVolumeClaimList;
-import io.fabric8.kubernetes.api.model.PersistentVolumeClaimVolumeSource;
-import io.fabric8.kubernetes.api.model.Pod;
-import io.fabric8.kubernetes.api.model.PodCondition;
-import io.fabric8.kubernetes.api.model.ProjectedVolumeSource;
 import io.fabric8.kubernetes.api.model.Quantity;
-import io.fabric8.kubernetes.api.model.ResourceRequirements;
-import io.fabric8.kubernetes.api.model.SecurityContext;
-import io.fabric8.kubernetes.api.model.Toleration;
-import io.fabric8.kubernetes.api.model.Volume;
-import io.fabric8.kubernetes.api.model.VolumeMount;
-import io.fabric8.kubernetes.api.model.VolumeProjection;
-import io.fabric8.kubernetes.api.model.batch.Job;
-import io.fabric8.kubernetes.api.model.batch.JobBuilder;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
-import io.fabric8.kubernetes.client.Watch;
-import io.fabric8.kubernetes.client.Watcher;
-import io.fabric8.kubernetes.client.WatcherException;
-import net.boomerangplatform.model.TaskConfiguration;
-import net.boomerangplatform.model.TaskDeletionEnum;
 
 @Component
 public class NewKubeServiceImpl {
@@ -97,9 +72,6 @@ public class NewKubeServiceImpl {
 
   @Value("${kube.worker.hostaliases}")
   protected String kubeHostAliases;
-
-  @Value("${kube.worker.debug}")
-  private Boolean taskEnableDebug;
 
   @Value("${controller.service.host}")
   protected String controllerServiceURL;
@@ -386,4 +358,25 @@ public ConfigMap createTaskConfigMap(String workflowName, String workflowId,
   }
   return "";
   }
+  
+//  public void retrieveLifecycleParameters(Map<String, String> labels) {
+//    String podName = client.pods().withLabels(labels).list().getItems().get(0).getMetadata().getName();
+//    
+//    try (InputStream is = client.pods().withName(podName).inContainer("step-lifecycle").file("/lifecycle/results").read())  {
+//      String result = new BufferedReader(new InputStreamReader(is)).lines().collect(Collectors.joining("\n"));
+//      
+//      LOGGER.info(result);
+//    } catch (IOException e) {
+//      // TODO Auto-generated catch block
+//      e.printStackTrace();
+//    } catch (KubernetesClientException e) {
+//      LOGGER.info("retrieveResultParameter() - Unable to retrieve Task Results as: " + e.getMessage());
+//    }
+//  }
+//  
+//  public void terminateLifecycle(Map<String, String> labels) {
+//    String podName = client.pods().withLabels(labels).list().getItems().get(0).getMetadata().getName();
+//    String[] command = new String[] {"/bin/sh", "-c", "rm -f /lifecycle/lock"};
+//    client.pods().withName(podName).inContainer("step-lifecycle").exec(command);
+//  }
 }
