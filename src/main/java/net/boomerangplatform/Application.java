@@ -9,7 +9,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 
 @EnableAsync
 @SpringBootApplication
-@EnableAutoConfiguration(exclude = {ElasticsearchAutoConfiguration.class, RestClientAutoConfiguration.class})
+@EnableAutoConfiguration(exclude = {RestClientAutoConfiguration.class})
 public class Application {
 
   public static void main(String[] args) {

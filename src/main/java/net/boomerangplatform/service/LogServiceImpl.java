@@ -4,32 +4,15 @@ import java.io.PrintWriter;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.http.HttpEntity;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.elasticsearch.action.search.ClearScrollRequest;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.search.SearchScrollRequest;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.common.unit.TimeValue;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.MatchPhraseQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.Scroll;
-import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
 import org.springframework.context.support.MessageSourceAccessor;
+import org.springframework.http.HttpEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import net.boomerangplatform.kube.exception.KubeRuntimeException;
@@ -46,9 +29,6 @@ public class LogServiceImpl implements LogService {
 
   @Autowired
   private MessageSource messageSource;
-
-  @Autowired(required = false)
-  private RestHighLevelClient elasticRestClient;
 
   @Autowired
   private NewHelperKubeServiceImpl helperKubeService;
@@ -67,9 +47,7 @@ public class LogServiceImpl implements LogService {
       String workflowActivityId, String taskId, String taskActivityId) {
     
     return logKubeService.getPodLog(workflowId, workflowActivityId, taskId, taskActivityId, null);
-
   }
-
 
   @Override
   public StreamingResponseBody streamLogForTask(HttpServletResponse response, String workflowId,
@@ -80,10 +58,10 @@ public class LogServiceImpl implements LogService {
 //          && "default".equals(loggingType)) {
         if ("default".equals(loggingType)) {
         return logKubeService.streamPodLog(response, workflowId, workflowActivityId, taskId, taskActivityId, null);
-      } else if ("elastic".equals(loggingType)) {
-        return streamLogsFromElastic(taskActivityId);
       } else if ("loki".equals(loggingType)) {
         return streamLogsFromLoki(workflowId, taskId, taskActivityId);
+      } else if ("elastic".equals(loggingType)) {
+        return getDefaultErrorMessage(getMessageDeprecated());
       } else {
         return getDefaultErrorMessage(getMessageUnableToAccessLogs());
       }
@@ -190,76 +168,6 @@ public class LogServiceImpl implements LogService {
         + "\",bmrg_task=\"" + taskId + "\",bmrg_container=\"step-task\"}";
   }
 
-  private StreamingResponseBody streamLogsFromElastic(String activityId) {
-    LOGGER.info(
-        "Streaming logs from elastic: " + helperKubeService.getPrefixTask() + "-" + activityId + "-*");
-
-    LOGGER.info("kubernetes.pod=", helperKubeService.getPrefixTask() + "-" + activityId + "-*");
-    return outputStream -> {
-
-
-      PrintWriter printWriter = new PrintWriter(outputStream);
-
-      final Scroll scroll = new Scroll(TimeValue.timeValueMinutes(1L));
-
-      SearchRequest searchRequest = new SearchRequest("logstash-*");
-
-      searchRequest.scroll(scroll);
-      SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-      searchSourceBuilder.from(0);
-      searchSourceBuilder.size(1000);
-      searchSourceBuilder.sort("offset");
-
-
-      MatchPhraseQueryBuilder podName = QueryBuilders.matchPhraseQuery("kubernetes.pod",
-          helperKubeService.getPrefixTask() + "-" + activityId + "-*");
-
-      MatchPhraseQueryBuilder containerName =
-          QueryBuilders.matchPhraseQuery("kubernetes.container_name", "task-cntr");
-      BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(podName).must(containerName);
-
-      searchSourceBuilder.query(queryBuilder);
-      searchRequest.source(searchSourceBuilder);
-
-      SearchResponse searchResponse = elasticRestClient.search(searchRequest);
-      SearchHit[] searchHits = searchResponse.getHits().getHits();
-      LOGGER.info("Search returned back: " + searchHits.length);
-
-      if (searchHits.length == 0) {
-        printWriter.println(getMessageUnableToAccessLogs());
-        printWriter.flush();
-        printWriter.close();
-        return;
-      }
-
-      for (SearchHit hits : searchHits) {
-        String logMessage = (String) hits.getSourceAsMap().get("log");
-        printWriter.println(logMessage);
-      }
-
-      String scrollId = searchResponse.getScrollId();
-      while (searchHits != null && searchHits.length > 0) {
-        SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
-        scrollRequest.scroll(scroll);
-        searchResponse = elasticRestClient.searchScroll(scrollRequest);
-        scrollId = searchResponse.getScrollId();
-        searchHits = searchResponse.getHits().getHits();
-        LOGGER.info("Search returned back: " + searchHits.length);
-        for (SearchHit hits : searchHits) {
-          String logMessage = (String) hits.getSourceAsMap().get("log");
-          printWriter.println(logMessage);
-        }
-      }
-
-      ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
-      clearScrollRequest.addScrollId(scrollId);
-      elasticRestClient.clearScroll(clearScrollRequest);
-
-      printWriter.flush();
-      printWriter.close();
-    };
-  }
-
   protected StreamingResponseBody getDefaultErrorMessage(String message) {
     LOGGER.info("Returning back default message.");
 
@@ -268,6 +176,11 @@ public class LogServiceImpl implements LogService {
       outputStream.flush();
       outputStream.close();
     };
+  }
+
+  private String getMessageDeprecated() {
+    MessageSourceAccessor accessor = new MessageSourceAccessor(messageSource);
+    return accessor.getMessage("DEPRECATED_LOGS_OPTION");
   }
 
   private String getMessageUnableToAccessLogs() {
