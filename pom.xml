@@ -107,23 +107,6 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
-		
-			<dependency>
-			<groupId>org.elasticsearch.client</groupId>
-			<artifactId>elasticsearch-rest-high-level-client</artifactId>
-			<version>5.6.1</version>
-		</dependency>
-
-		<dependency>
-			<groupId>org.elasticsearch</groupId>
-			<artifactId>elasticsearch</artifactId>
-			<version>5.6.1</version>
-		</dependency>
-		<dependency>
-			<groupId>org.elasticsearch.client</groupId>
-			<artifactId>elasticsearch-rest-client</artifactId>
-			<version>5.6.1</version>
-		</dependency>
 		<dependency>
 		  <groupId>io.fabric8</groupId>
 		  <artifactId>kubernetes-client</artifactId>
@@ -165,15 +148,11 @@
 			<artifactId>lib-util</artifactId>
 			<version>1.0.0</version>
 		</dependency>
-
 		<dependency>
 			<groupId>net.boomerangplatform</groupId>
 			<artifactId>lib-opentracing</artifactId>
 			<version>1.0.5</version>
 		</dependency>
-		
-
-		
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
@@ -190,6 +169,10 @@
 			<artifactId>lib-testing</artifactId>
 			<version>1.0.4</version>
 			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.httpcomponents</groupId>
+			<artifactId>httpclient</artifactId>
 		</dependency>
 	</dependencies>
 
