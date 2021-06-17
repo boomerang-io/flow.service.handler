@@ -1,6 +1,5 @@
 package net.boomerangplatform.kube.service;
 
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -12,14 +11,11 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import io.fabric8.knative.internal.pkg.apis.Condition;
 import io.fabric8.kubernetes.api.model.ConfigMapProjection;
 import io.fabric8.kubernetes.api.model.DeletionPropagation;
 import io.fabric8.kubernetes.api.model.EmptyDirVolumeSource;
 import io.fabric8.kubernetes.api.model.EnvVar;
-import io.fabric8.kubernetes.api.model.HostAlias;
 import io.fabric8.kubernetes.api.model.LocalObjectReference;
 import io.fabric8.kubernetes.api.model.PersistentVolumeClaimVolumeSource;
 import io.fabric8.kubernetes.api.model.ProjectedVolumeSource;
@@ -158,7 +154,6 @@ public class TektonServiceImpl {
      * - /workflow for workflow based sharing between tasks (optional if mounted prior) 
      * - /props for mounting config_maps 
      * - /data for task storage (optional - needed if using in memory storage)
-     * - /lifecycle if enabled for the custom retrieval result parameters
      */
     List<VolumeMount> volumeMounts = new ArrayList<>();
     List<Volume> volumes = new ArrayList<>();
@@ -267,7 +262,7 @@ public class TektonServiceImpl {
     
     /*
      * Create Host Aliases if defined
-     * Note: Requires Tekton 0.24
+     * Note: Requires Tekton 0.24.3
      */
 //    List<HostAlias> hostAliases = new ArrayList<>();
 //    if (!kubeHostAliases.isEmpty()) {
