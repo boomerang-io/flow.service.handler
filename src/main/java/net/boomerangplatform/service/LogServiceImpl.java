@@ -4,6 +4,10 @@ import java.io.PrintWriter;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONArray;
@@ -12,12 +16,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
 import org.springframework.context.support.MessageSourceAccessor;
-import org.springframework.http.HttpEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import net.boomerangplatform.kube.exception.KubeRuntimeException;
 import net.boomerangplatform.kube.service.LogKubeServiceImpl;
-import net.boomerangplatform.kube.service.NewHelperKubeServiceImpl;
 
 @Service
 public class LogServiceImpl implements LogService {
@@ -29,9 +31,6 @@ public class LogServiceImpl implements LogService {
 
   @Autowired
   private MessageSource messageSource;
-
-  @Autowired
-  private NewHelperKubeServiceImpl helperKubeService;
 
   @Autowired
   private LogKubeServiceImpl logKubeService;
@@ -106,11 +105,10 @@ public class LogServiceImpl implements LogService {
 
           CloseableHttpResponse response = httpClient.execute(request);
           try {
-            HttpEntity entity = response.getEntity();
-            if (entity != null) {
+            if (response.getEntity() != null) {
 
               // TODO check if result is in JSON format
-              currentLogBatch = new JSONObject(EntityUtils.toString(entity));
+              currentLogBatch = new JSONObject(response.getEntity().toString());
 
               JSONArray queryResults = currentLogBatch.getJSONObject("data").getJSONArray("result");
               JSONArray logArray;
