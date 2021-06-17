@@ -8,6 +8,7 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONArray;
@@ -108,7 +109,7 @@ public class LogServiceImpl implements LogService {
             if (response.getEntity() != null) {
 
               // TODO check if result is in JSON format
-              currentLogBatch = new JSONObject(response.getEntity().toString());
+              currentLogBatch = new JSONObject(EntityUtils.toString(response.getEntity()));
 
               JSONArray queryResults = currentLogBatch.getJSONObject("data").getJSONArray("result");
               JSONArray logArray;
