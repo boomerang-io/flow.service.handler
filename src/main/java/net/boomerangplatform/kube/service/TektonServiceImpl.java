@@ -230,11 +230,6 @@ public class TektonServiceImpl {
     propsVolume.setName(helperKubeService.getPrefixVol() + "-props");
     ProjectedVolumeSource projectedVolPropsSource = new ProjectedVolumeSource();
     List<VolumeProjection> projectPropsVolumeList = new ArrayList<>();
-//    VolumeProjection wfCMVolumeProjection = new VolumeProjection();
-//    ConfigMapProjection projectedWFConfigMap = new ConfigMapProjection();
-//    projectedWFConfigMap.setName(kubeService.getConfigMapName(helperKubeService.getWorkflowLabels(workflowId, workflowActivityId, customLabels)));
-//    wfCMVolumeProjection.setConfigMap(projectedWFConfigMap);    
-//    projectPropsVolumeList.add(wfCMVolumeProjection);
     VolumeProjection taskCMVolumeProjection = new VolumeProjection();
     ConfigMapProjection projectedTaskConfigMap = new ConfigMapProjection();
     projectedTaskConfigMap.setName(kubeService.getConfigMapName(helperKubeService.getTaskLabels( workflowId, workflowActivityId, taskId, taskActivityId, customLabels)));
