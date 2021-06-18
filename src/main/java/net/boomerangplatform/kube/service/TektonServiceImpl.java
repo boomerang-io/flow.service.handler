@@ -40,8 +40,8 @@ import net.boomerangplatform.error.BoomerangError;
 import net.boomerangplatform.error.BoomerangException;
 import net.boomerangplatform.model.TaskConfiguration;
 import net.boomerangplatform.model.TaskEnvVar;
-import net.boomerangplatform.model.TaskResponseResult;
-import net.boomerangplatform.model.TaskResult;
+import net.boomerangplatform.model.TaskResponseResultParameter;
+import net.boomerangplatform.model.TaskResultParameter;
 
 @Component
 public class TektonServiceImpl {
@@ -110,7 +110,7 @@ public class TektonServiceImpl {
   public TaskRun createTaskRun(String workspaceId, String workflowName,
       String workflowId, String workflowActivityId, String taskActivityId, String taskName,
       String taskId, Map<String, String> customLabels, List<String> arguments,
-      Map<String, String> parameters, List<TaskEnvVar> envVars, List<TaskResult> results, String image, String command, String workingDir, 
+      Map<String, String> parameters, List<TaskEnvVar> envVars, List<TaskResultParameter> results, String image, String command, String workingDir, 
       TaskConfiguration configuration, long waitSeconds) throws InterruptedException {
 
     LOGGER.info("Initializing Task...");
@@ -403,11 +403,11 @@ public class TektonServiceImpl {
     return result;
   }
   
-  public List<TaskResponseResult> watchTask(String workflowId, String workflowActivityId, String taskId,
+  public List<TaskResponseResultParameter> watchTask(String workflowId, String workflowActivityId, String taskId,
       String taskActivityId, Map<String, String> customLabels) throws InterruptedException {
     final CountDownLatch latch = new CountDownLatch(1);
     Condition condition = null;
-    List<TaskRunResult> tknResults = new ArrayList<TaskRunResult>();
+    List<TaskRunResult> tknResultParameters = new ArrayList<TaskRunResult>();
     
     TaskWatcher taskWatcher = new TaskWatcher(latch);
 
@@ -425,11 +425,12 @@ public class TektonServiceImpl {
       }
       
       condition = taskWatcher.getCondition();
-      tknResults = taskWatcher.getResults();
+      tknResultParameters = taskWatcher.getResults();
       
       if (condition != null && "True".equals(condition.getStatus())) {
         LOGGER.info("Task completed successfully");
       } else {
+        LOGGER.info("Task execution error. " + condition.getReason() + " - " + condition.getMessage());
         throw new BoomerangException(BoomerangError.TASK_EXECUTION_ERROR, condition.getReason() + " - " + condition.getMessage());
       }
       
@@ -438,12 +439,12 @@ public class TektonServiceImpl {
       throw e;
     }
     
-    List<TaskResponseResult> results = new ArrayList<>();
-    tknResults.forEach(tknResult -> {
-      results.add(new TaskResponseResult(tknResult.getName(), tknResult.getValue()));
+    List<TaskResponseResultParameter> resultParameters = new ArrayList<>();
+    tknResultParameters.forEach(tknResult -> {
+      resultParameters.add(new TaskResponseResultParameter(tknResult.getName(), tknResult.getValue()));
     });
     
-    return results;
+    return resultParameters;
   }
   
   public void deleteTask(String workflowId,

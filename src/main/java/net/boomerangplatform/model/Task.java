@@ -55,7 +55,7 @@ public abstract class Task {
   private List<TaskEnvVar> envs;
 
   @JsonProperty("results")
-  private List<TaskResult> results;
+  private List<TaskResultParameter> results;
 
   @JsonProperty("arguments")
   private List<String> arguments;
@@ -138,11 +138,11 @@ public abstract class Task {
     this.envs = envs;
   }
 
-  public List<TaskResult> getResults() {
+  public List<TaskResultParameter> getResults() {
     return results;
   }
 
-  public void setResults(List<TaskResult> results) {
+  public void setResults(List<TaskResultParameter> results) {
     this.results = results;
   }
 

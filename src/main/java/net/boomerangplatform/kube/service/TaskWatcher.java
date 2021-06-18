@@ -9,6 +9,7 @@ import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.WatcherException;
 import io.fabric8.tekton.pipeline.v1beta1.TaskRun;
 import io.fabric8.tekton.pipeline.v1beta1.TaskRunResult;
+import io.fabric8.tekton.pipeline.v1beta1.TaskRunStatus;
 
 public class TaskWatcher implements Watcher<TaskRun>{
 
@@ -36,8 +37,7 @@ public class TaskWatcher implements Watcher<TaskRun>{
    * - Processes a delete event occurred by external source such as CLI
    * 
    * Reference(s):
-   * - https://tekton.dev/vault/pipelines-v0.14.3/taskruns/#monitoring-execution-status
-   * - 
+   * - https://tekton.dev/docs/pipelines/pipelineruns/#monitoring-execution-status
    */
   public void eventReceived(Action action, TaskRun resource) {
     LOGGER.info("Watch event received {}: {}", action.name(),
@@ -47,10 +47,10 @@ public class TaskWatcher implements Watcher<TaskRun>{
       LOGGER.info("TaskRun Name: " + resource.getMetadata().getName() + ",\n  Start Time: " + resource.getStatus().getStartTime() + ",\n  Status: "
           + taskStatus);
        for (Condition condition : resource.getStatus().getConditions()) {
-         LOGGER.info(" Task Status Condition: " + condition.toString());
+         LOGGER.info(" TaskRun Condition: " + condition.toString());
        }
        results = resource.getStatus().getTaskResults();
-       LOGGER.info(results.toString());
+       LOGGER.info(" TaskRun Results: " + results.toString());
        switch (action.name()) {
          case "DELETED":
            if ("Unknown".equals(resource.getStatus().getConditions().get(0).getStatus())) {

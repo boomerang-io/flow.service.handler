@@ -7,22 +7,22 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class TaskResponse extends Response {
 
-  private List<TaskResponseResult> results = new ArrayList<>();
+  private List<TaskResponseResultParameter> results = new ArrayList<>();
 
   public TaskResponse() {
     // Do nothing
   }
 
-  public TaskResponse(String code, String desc, List<TaskResponseResult> results) {
+  public TaskResponse(String code, String desc, List<TaskResponseResultParameter> results) {
     super(code, desc);
     this.results = results;
   }
 
-  public List<TaskResponseResult> getResults() {
+  public List<TaskResponseResultParameter> getResults() {
     return results;
   }
 
-  public void setResults(List<TaskResponseResult> results) {
+  public void setResults(List<TaskResponseResultParameter> results) {
     this.results = results;
   }
 }

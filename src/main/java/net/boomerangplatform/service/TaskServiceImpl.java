@@ -18,7 +18,7 @@ import net.boomerangplatform.model.TaskConfiguration;
 import net.boomerangplatform.model.TaskCustom;
 import net.boomerangplatform.model.TaskDeletionEnum;
 import net.boomerangplatform.model.TaskResponse;
-import net.boomerangplatform.model.TaskResponseResult;
+import net.boomerangplatform.model.TaskResponseResultParameter;
 import net.boomerangplatform.model.TaskTemplate;
 
 @Service
@@ -41,21 +41,10 @@ public class TaskServiceImpl implements TaskService {
   @Autowired
   private DeleteServiceImpl deleteService;
 
-  protected Boolean doTaskDeletion(TaskConfiguration taskConfiguration, String statusCode ) {
-    TaskDeletionEnum taskDeletion = taskConfiguration != null && taskConfiguration.getDeletion() != null
+  protected TaskDeletionEnum getTaskDeletionConfig(TaskConfiguration taskConfiguration) {
+    return taskConfiguration != null && taskConfiguration.getDeletion() != null
         ? taskConfiguration.getDeletion()
         : workerDeletion;
-    
-        switch (taskDeletion) {
-          case Always:
-            return Boolean.TRUE;
-          case Never:
-            return Boolean.FALSE;
-          case OnSuccess:
-            return statusCode.equals("0") ? Boolean.TRUE : Boolean.FALSE;
-          default:
-            return Boolean.FALSE;
-        }
   }
 
   @Override
@@ -84,7 +73,7 @@ public class TaskServiceImpl implements TaskService {
   private TaskResponse executeTaskTemplate(TaskTemplate task) {
     TaskResponse response = new TaskResponse("0",
         "Task (" + task.getTaskId() + ") has been executed successfully.", null);
-    List<TaskResponseResult> results = new ArrayList<>();
+    List<TaskResponseResultParameter> results = new ArrayList<>();
     if (task.getImage() == null) {
       throw new BoomerangException(1, "NO_TASK_IMAGE", HttpStatus.BAD_REQUEST,
           task.getClass().toString());
@@ -103,11 +92,16 @@ public class TaskServiceImpl implements TaskService {
             task.getWorkingDir(), task.getConfiguration(), waitUntilTimeout);
         results = tektonService.watchTask(task.getWorkflowId(), task.getWorkflowActivityId(),
             task.getTaskId(), task.getTaskActivityId(), task.getLabels());
+        if (getTaskDeletionConfig(task.getConfiguration()).equals(TaskDeletionEnum.OnSuccess)) {
+          // This will only delete on success as failure throws an Exception.
+          deleteService.deleteJob(task.getWorkflowId(),
+              task.getWorkflowActivityId(), task.getTaskId(), task.getTaskActivityId(),
+              task.getLabels());
+        }
       } catch (KubernetesClientException e) {
         // KubernetesClientException handles the case where an internal admission
         // controller rejects the creation
         if (e.getMessage().contains("admission webhook")) {
-          LOGGER.error(e);
           throw new BoomerangException(1, "ADMISSION_WEBHOOK_DENIED", HttpStatus.BAD_REQUEST, e.getMessage());
         } else {
           throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -121,7 +115,7 @@ public class TaskServiceImpl implements TaskService {
         response.setResults(results);
         kubeService.deleteTaskConfigMap(task.getWorkflowId(), task.getWorkflowActivityId(),
             task.getTaskId(), task.getTaskActivityId(), task.getLabels());
-        if (doTaskDeletion(task.getConfiguration(),response.getCode())) {
+        if (getTaskDeletionConfig(task.getConfiguration()).equals(TaskDeletionEnum.Always)) {
           deleteService.deleteJob(task.getWorkflowId(),
               task.getWorkflowActivityId(), task.getTaskId(), task.getTaskActivityId(),
               task.getLabels());

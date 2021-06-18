@@ -11,7 +11,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * - io.fabric8.tekton.pipeline.v1beta1.TaskRunResult;
  */
 @JsonIgnoreProperties
-public class TaskResponseResult {
+public class TaskResponseResultParameter {
   
   @JsonProperty("name")
   private String name;
@@ -23,7 +23,7 @@ public class TaskResponseResult {
    * No args constructor for use in serialization
    * 
    */
-  public TaskResponseResult() {
+  public TaskResponseResultParameter() {
   }
 
   /**
@@ -31,7 +31,7 @@ public class TaskResponseResult {
    * @param name
    * @param description
    */
-  public TaskResponseResult(String name, String value) {
+  public TaskResponseResultParameter(String name, String value) {
       super();
       this.name = name;
       this.value = value;
