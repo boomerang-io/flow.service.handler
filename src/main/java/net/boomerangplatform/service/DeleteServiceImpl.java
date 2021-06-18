@@ -5,7 +5,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import net.boomerangplatform.kube.service.TektonServiceImpl;
-import net.boomerangplatform.model.TaskDeletionEnum;
 
 /*
  * Implement asynchronous delete after a period of time to ensure
@@ -23,13 +22,13 @@ public class DeleteServiceImpl implements DeleteService {
 
   @Override
   @Async
-  public void deleteJob(TaskDeletionEnum taskDeletion, String workflowId, String workflowActivityId, String taskId, String taskActivityId, Map<String, String> customLabels) {
+  public void deleteJob(String workflowId, String workflowActivityId, String taskId, String taskActivityId, Map<String, String> customLabels) {
     try {
       Thread.sleep(sleep);
     } catch (InterruptedException e) {
       e.printStackTrace();
     }
-    tektonService.deleteTask(taskDeletion,workflowId,workflowActivityId, taskId, taskActivityId, customLabels);
+    tektonService.deleteTask(workflowId,workflowActivityId, taskId, taskActivityId, customLabels);
   }
   
 //  @Override

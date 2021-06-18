@@ -39,7 +39,6 @@ import io.fabric8.tekton.v1beta1.internal.pipeline.pkg.apis.pipeline.pod.Templat
 import net.boomerangplatform.error.BoomerangError;
 import net.boomerangplatform.error.BoomerangException;
 import net.boomerangplatform.model.TaskConfiguration;
-import net.boomerangplatform.model.TaskDeletionEnum;
 import net.boomerangplatform.model.TaskEnvVar;
 import net.boomerangplatform.model.TaskResponseResult;
 import net.boomerangplatform.model.TaskResult;
@@ -447,10 +446,10 @@ public class TektonServiceImpl {
     return results;
   }
   
-  public void deleteTask(TaskDeletionEnum taskDeletion, String workflowId,
+  public void deleteTask(String workflowId,
       String workflowActivityId, String taskId, String taskActivityId, Map<String, String> customLabels) {
 
-    LOGGER.debug("Deleting Job...");
+    LOGGER.debug("Deleting Task...");
     
     client.v1beta1().taskRuns().withLabels(helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskId, taskActivityId, customLabels)).withPropagationPolicy(DeletionPropagation.BACKGROUND).delete();
   }

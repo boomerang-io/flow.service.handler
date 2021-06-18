@@ -41,15 +41,21 @@ public class TaskServiceImpl implements TaskService {
   @Autowired
   private DeleteServiceImpl deleteService;
 
-  protected TaskDeletionEnum getTaskDeletion(TaskConfiguration taskConfiguration) {
-    return taskConfiguration != null && taskConfiguration.getDeletion() != null
+  protected Boolean doTaskDeletion(TaskConfiguration taskConfiguration, String statusCode ) {
+    TaskDeletionEnum taskDeletion = taskConfiguration != null && taskConfiguration.getDeletion() != null
         ? taskConfiguration.getDeletion()
         : workerDeletion;
-  }
-
-  protected Boolean isTaskDeletionNever(TaskConfiguration taskConfiguration) {
-    return !TaskDeletionEnum.Never.equals(getTaskDeletion(taskConfiguration)) ? Boolean.TRUE
-        : Boolean.FALSE;
+    
+        switch (taskDeletion) {
+          case Always:
+            return Boolean.TRUE;
+          case Never:
+            return Boolean.FALSE;
+          case OnSuccess:
+            return statusCode.equals("0") ? Boolean.TRUE : Boolean.FALSE;
+          default:
+            return Boolean.FALSE;
+        }
   }
 
   @Override
@@ -115,11 +121,10 @@ public class TaskServiceImpl implements TaskService {
         response.setResults(results);
         kubeService.deleteTaskConfigMap(task.getWorkflowId(), task.getWorkflowActivityId(),
             task.getTaskId(), task.getTaskActivityId(), task.getLabels());
-        if (isTaskDeletionNever(task.getConfiguration())) {
-          deleteService.deleteJob(getTaskDeletion(task.getConfiguration()), task.getWorkflowId(),
+        if (doTaskDeletion(task.getConfiguration(),response.getCode())) {
+          deleteService.deleteJob(task.getWorkflowId(),
               task.getWorkflowActivityId(), task.getTaskId(), task.getTaskActivityId(),
               task.getLabels());
-          // TODO: re-implement the delete onFailure option
         }
         LOGGER
             .info("Task (" + task.getTaskId() + ") has completed with code " + response.getCode());
