@@ -98,9 +98,6 @@ public class TektonServiceImpl {
   @Value("${kube.worker.hostaliases}")
   protected String kubeHostAliases;
 
-  @Value("${kube.worker.timeout}")
-  private Integer taskTimeout;
-
   TektonClient client = null;
 
   public TektonServiceImpl() {
@@ -118,7 +115,7 @@ public class TektonServiceImpl {
     /*
      * Define environment variables made up of
      * TODO: securityContext.setProcMount("Unmasked");
-     *  - Only works with Kube 1.12. ICP 3.1.1 is Kube 1.11.5
+     *  - Only works with Kube 1.12 and above
      * TODO: determine if we need to do no network as an option
      */
 //    SecurityContext securityContext = new SecurityContext();
@@ -399,7 +396,7 @@ public class TektonServiceImpl {
   }
   
   public List<TaskResponseResultParameter> watchTask(String workflowId, String workflowActivityId, String taskId,
-      String taskActivityId, Map<String, String> customLabels) throws InterruptedException {
+      String taskActivityId, Map<String, String> customLabels, Integer timeout) throws InterruptedException {
     final CountDownLatch latch = new CountDownLatch(1);
     Condition condition = null;
     List<TaskRunResult> tknResultParameters = new ArrayList<TaskRunResult>();
@@ -414,8 +411,9 @@ public class TektonServiceImpl {
       //has moved from initial state. If its still in initial state then check PVC
       //PVC might have Event / Condition "ProvisioningFailed" with a reason.
       
-      boolean taskComplete = latch.await(taskTimeout, TimeUnit.MINUTES);
+      boolean taskComplete = latch.await(timeout, TimeUnit.MINUTES);
       if (!taskComplete) {
+        // TODO: implement the TaskRuns timeout and leave this here as a final catch.
         throw new BoomerangException(BoomerangError.TASK_EXECUTION_ERROR, "TIMED_OUT - Task timed out while waiting for completion.");
       }
       

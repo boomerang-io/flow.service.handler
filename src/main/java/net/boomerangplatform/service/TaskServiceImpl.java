@@ -30,7 +30,10 @@ public class TaskServiceImpl implements TaskService {
   protected long waitUntilTimeout;
 
   @Value("${kube.worker.job.deletion}")
-  private TaskDeletionEnum workerDeletion;
+  private TaskDeletionEnum taskDeletion;
+
+  @Value("${kube.worker.timeout}")
+  private Integer taskTimeout;
 
   @Autowired
   private NewKubeServiceImpl kubeService;
@@ -44,7 +47,13 @@ public class TaskServiceImpl implements TaskService {
   protected TaskDeletionEnum getTaskDeletionConfig(TaskConfiguration taskConfiguration) {
     return taskConfiguration != null && taskConfiguration.getDeletion() != null
         ? taskConfiguration.getDeletion()
-        : workerDeletion;
+        : taskDeletion;
+  }
+
+  protected Integer getTaskTimeout(TaskConfiguration taskConfiguration) {
+    return taskConfiguration != null && taskConfiguration.getTimeout() != 0
+        ? taskConfiguration.getTimeout()
+        : taskTimeout;
   }
 
   @Override
@@ -91,7 +100,7 @@ public class TaskServiceImpl implements TaskService {
             task.getEnvs(), task.getResults(), task.getImage(), task.getCommand(),
             task.getWorkingDir(), task.getConfiguration(), waitUntilTimeout);
         results = tektonService.watchTask(task.getWorkflowId(), task.getWorkflowActivityId(),
-            task.getTaskId(), task.getTaskActivityId(), task.getLabels());
+            task.getTaskId(), task.getTaskActivityId(), task.getLabels(), getTaskTimeout(task.getConfiguration()));
         if (getTaskDeletionConfig(task.getConfiguration()).equals(TaskDeletionEnum.OnSuccess)) {
           // This will only delete on success as failure throws an Exception.
           deleteService.deleteJob(task.getWorkflowId(),
