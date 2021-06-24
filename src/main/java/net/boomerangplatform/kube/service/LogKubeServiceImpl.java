@@ -23,9 +23,6 @@ public class LogKubeServiceImpl implements LogKubeService {
 
   @Autowired
   private NewHelperKubeServiceImpl helperKubeService;
-
-  @Autowired
-  private NewKubeServiceImpl kubeService;
   
   KubernetesClient client = null;
 
@@ -53,26 +50,6 @@ public class LogKubeServiceImpl implements LogKubeService {
     } 
   }
 
-//  @Override
-//  public boolean isKubePodAvailable(String workflowId, String workflowActivityId, String taskId, String taskActivityId, Map<String, String> customLabels) {
-//    Map<String, String> labelSelector = helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskId, taskActivityId, customLabels);
-//
-//    try {
-//      List<V1Pod> allPods = kubeService.getPods(labelSelector);
-//
-//      if (allPods == null || allPods.isEmpty() || "succeeded".equalsIgnoreCase(allPods.get(0).getStatus().getPhase())
-//          || "failed".equalsIgnoreCase(allPods.get(0).getStatus().getPhase())) {
-//        LOGGER.info("isKubePodAvailable() - Not available");
-//        return false;
-//      }
-//      LOGGER.info("isKubePodAvailable() - Available");
-//    } catch (ApiException e) {
-//      LOGGER.error("streamPodLog Exception: ", e);
-//      throw new KubeRuntimeException("Error streamPodLog", e);
-//    }
-//    return true;
-//  }
-//
 @Override
 public StreamingResponseBody streamPodLog(HttpServletResponse response, String workflowId,
     String workflowActivityId, String taskId, String taskActivityId,

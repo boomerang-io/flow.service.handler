@@ -1,13 +1,9 @@
 package net.boomerangplatform.kube.service;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +15,7 @@ import io.fabric8.kubernetes.api.model.ConfigMapList;
 import io.fabric8.kubernetes.api.model.PersistentVolumeClaim;
 import io.fabric8.kubernetes.api.model.PersistentVolumeClaimBuilder;
 import io.fabric8.kubernetes.api.model.PersistentVolumeClaimList;
+import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.Quantity;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -359,24 +356,21 @@ public ConfigMap createTaskConfigMap(String workflowName, String workflowId,
   return "";
   }
   
-//  public void retrieveLifecycleParameters(Map<String, String> labels) {
-//    String podName = client.pods().withLabels(labels).list().getItems().get(0).getMetadata().getName();
-//    
-//    try (InputStream is = client.pods().withName(podName).inContainer("step-lifecycle").file("/lifecycle/results").read())  {
-//      String result = new BufferedReader(new InputStreamReader(is)).lines().collect(Collectors.joining("\n"));
-//      
-//      LOGGER.info(result);
-//    } catch (IOException e) {
-//      // TODO Auto-generated catch block
-//      e.printStackTrace();
-//    } catch (KubernetesClientException e) {
-//      LOGGER.info("retrieveResultParameter() - Unable to retrieve Task Results as: " + e.getMessage());
-//    }
-//  }
-//  
-//  public void terminateLifecycle(Map<String, String> labels) {
-//    String podName = client.pods().withLabels(labels).list().getItems().get(0).getMetadata().getName();
-//    String[] command = new String[] {"/bin/sh", "-c", "rm -f /lifecycle/lock"};
-//    client.pods().withName(podName).inContainer("step-lifecycle").exec(command);
-//  }
+  protected Boolean isTaskRunResultTooLarge(Map<String, String> labels) {
+    try {
+      List<Pod> pods = client.pods().withLabels(labels).list().getItems();
+    
+      if (pods != null && !pods.isEmpty()) {
+        Pod pod = pods.get(0);
+//        LogWatch watch = client.pods().inNamespace(pod.getMetadata().getNamespace()).withName(pod.getMetadata().getName()).tailingLines(10).watchLog(out);
+        String lastLine =  client.pods().inNamespace(pod.getMetadata().getNamespace()).withName(pod.getMetadata().getName()).tailingLines(1).getLog();;
+        if (lastLine.contains("Termination message is above max allowed size 4096")) {
+          return Boolean.TRUE;
+        }
+      }
+    } catch (Exception e) {
+      return Boolean.FALSE;
+    }
+    return Boolean.FALSE;
+  }
 }

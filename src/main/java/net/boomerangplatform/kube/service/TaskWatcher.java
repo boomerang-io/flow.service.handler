@@ -9,7 +9,6 @@ import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.WatcherException;
 import io.fabric8.tekton.pipeline.v1beta1.TaskRun;
 import io.fabric8.tekton.pipeline.v1beta1.TaskRunResult;
-import io.fabric8.tekton.pipeline.v1beta1.TaskRunStatus;
 
 public class TaskWatcher implements Watcher<TaskRun>{
 
