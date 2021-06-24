@@ -425,9 +425,9 @@ public class TektonServiceImpl {
       } else {
         LOGGER.info("Task execution error. " + condition.getReason() + " - " + condition.getMessage());
         if (kubeService.isTaskRunResultTooLarge(helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskId, taskActivityId, customLabels))) {
-          throw new BoomerangException(BoomerangError.TASK_EXECUTION_ERROR, condition.getReason() + " - " + condition.getMessage());
-        } else {
           throw new BoomerangException(BoomerangError.TASK_EXECUTION_ERROR, "TaskRunResultTooLarge - Task has exceeded the maximum allowed 4096 byte size for Result Parameters.");
+        } else {
+          throw new BoomerangException(BoomerangError.TASK_EXECUTION_ERROR, condition.getReason() + " - " + condition.getMessage());
         }
       }
       
