@@ -75,6 +75,10 @@ public class TaskWatcher implements Watcher<TaskRun>{
       switch (taskStatus) {
         case "False":
           condition = resource.getStatus().getConditions().get(0);
+          if (!resource.getStatus().getConditions().get(0).getMessage().isEmpty() && resource.getStatus().getConditions().get(0).getMessage().contains("exited with code 1")) {
+            LOGGER.info(" Task Failed. " + resource.getStatus().getConditions().get(0).getMessage());
+            condition.setMessage("Task exited with error. View logs to learn more.");
+          }
           latch.countDown();
         case "True":
           condition = resource.getStatus().getConditions().get(0);
