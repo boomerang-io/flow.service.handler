@@ -39,7 +39,6 @@ import io.fabric8.tekton.pipeline.v1beta1.TaskRunBuilder;
 import io.fabric8.tekton.pipeline.v1beta1.TaskRunResult;
 import io.fabric8.tekton.pipeline.v1beta1.WorkspaceBinding;
 import io.fabric8.tekton.pipeline.v1beta1.WorkspaceDeclaration;
-import io.fabric8.tekton.v1beta1.internal.pipeline.pkg.apis.pipeline.pod.Template;
 import net.boomerangplatform.error.BoomerangError;
 import net.boomerangplatform.error.BoomerangException;
 import net.boomerangplatform.model.TaskConfiguration;
@@ -258,11 +257,13 @@ public class TektonServiceImpl {
     /*
      * Create Host Aliases if defined
      */
+    LOGGER.info("Host Aliases: " + kubeHostAliases);
     List<HostAlias> hostAliases = new ArrayList<>();
     if (!kubeHostAliases.isEmpty()) {
       Type listHostAliasType = new TypeToken<List<HostAlias>>() {}.getType();
-      List<HostAlias> hostAliasList = new Gson().fromJson(kubeHostAliases, listHostAliasType);
-      LOGGER.debug("Host Alias List Size: " + hostAliasList.size());
+      hostAliases = new Gson().fromJson(kubeHostAliases, listHostAliasType);
+      LOGGER.info("Host Alias List Size: " + hostAliases.size());
+      LOGGER.info("Host Aliases: " + hostAliases.toString());
     }
     
     /*
@@ -336,14 +337,15 @@ public class TektonServiceImpl {
     /*
      * Create the additional PodTemplate based controls
      * TODO: figure out if volumes go here or on the TaskRunSpec
-     * TODO: incorporate Host Alias
      */
-    Template taskPodTemplate = new Template();
-    taskPodTemplate.setNodeSelector(nodeSelectors);
-    taskPodTemplate.setTolerations(tolerations);
-    taskPodTemplate.setImagePullSecrets(imagePullSecrets);
-    taskPodTemplate.setHostAliases(hostAliases);
-//    taskPodTemplate.setVolumes(volumes);
+//    Template taskPodTemplate = new Template();
+//    taskPodTemplate.setNodeSelector(nodeSelectors);
+//    taskPodTemplate.setTolerations(tolerations);
+//    taskPodTemplate.setImagePullSecrets(imagePullSecrets);
+//    taskPodTemplate.setHostAliases(hostAliases);
+////    taskPodTemplate.setVolumes(volumes);
+//    
+//    LOGGER.info(taskPodTemplate);
     
     /*
      * Define TaskResults and copy from internal model
@@ -372,7 +374,13 @@ public class TektonServiceImpl {
           workflowActivityId, taskId, taskActivityId))
       .endMetadata()
       .withNewSpec()
-      .withPodTemplate(taskPodTemplate)
+//      .withPodTemplate(taskPodTemplate) 
+      .withNewPodTemplate()
+      .addToNodeSelector(nodeSelectors)
+      .addAllToTolerations(tolerations)
+      .addAllToImagePullSecrets(imagePullSecrets)
+      .addAllToHostAliases(hostAliases)
+      .endPodTemplate()
       .withParams(taskParams)
       .withWorkspaces(taskWorkspaces)
       .withNewTaskSpec()
@@ -388,7 +396,6 @@ public class TektonServiceImpl {
 //      .endWorkspace()
       .endSpec()
       .build();
-
     
     LOGGER.info(taskRun);
     
