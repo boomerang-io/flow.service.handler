@@ -1,5 +1,6 @@
 package net.boomerangplatform.kube.service;
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -11,11 +12,14 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import io.fabric8.knative.internal.pkg.apis.Condition;
 import io.fabric8.kubernetes.api.model.ConfigMapProjection;
 import io.fabric8.kubernetes.api.model.DeletionPropagation;
 import io.fabric8.kubernetes.api.model.EmptyDirVolumeSource;
 import io.fabric8.kubernetes.api.model.EnvVar;
+import io.fabric8.kubernetes.api.model.HostAlias;
 import io.fabric8.kubernetes.api.model.LocalObjectReference;
 import io.fabric8.kubernetes.api.model.PersistentVolumeClaimVolumeSource;
 import io.fabric8.kubernetes.api.model.ProjectedVolumeSource;
@@ -253,14 +257,13 @@ public class TektonServiceImpl {
     
     /*
      * Create Host Aliases if defined
-     * Note: Requires Tekton 0.24.3
      */
-//    List<HostAlias> hostAliases = new ArrayList<>();
-//    if (!kubeHostAliases.isEmpty()) {
-//      Type listHostAliasType = new TypeToken<List<HostAlias>>() {}.getType();
-//      List<HostAlias> hostAliasList = new Gson().fromJson(kubeHostAliases, listHostAliasType);
-//      LOGGER.debug("Host Alias List Size: " + hostAliasList.size());
-//    }
+    List<HostAlias> hostAliases = new ArrayList<>();
+    if (!kubeHostAliases.isEmpty()) {
+      Type listHostAliasType = new TypeToken<List<HostAlias>>() {}.getType();
+      List<HostAlias> hostAliasList = new Gson().fromJson(kubeHostAliases, listHostAliasType);
+      LOGGER.debug("Host Alias List Size: " + hostAliasList.size());
+    }
     
     /*
      * Define Image Pull Secrets
@@ -339,6 +342,7 @@ public class TektonServiceImpl {
     taskPodTemplate.setNodeSelector(nodeSelectors);
     taskPodTemplate.setTolerations(tolerations);
     taskPodTemplate.setImagePullSecrets(imagePullSecrets);
+    taskPodTemplate.setHostAliases(hostAliases);
 //    taskPodTemplate.setVolumes(volumes);
     
     /*
