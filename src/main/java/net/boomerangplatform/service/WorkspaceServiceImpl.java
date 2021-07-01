@@ -6,10 +6,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import io.kubernetes.client.ApiException;
+import io.fabric8.kubernetes.client.KubernetesClientException;
+import net.boomerangplatform.error.BoomerangError;
 import net.boomerangplatform.error.BoomerangException;
 import net.boomerangplatform.kube.exception.KubeRuntimeException;
-import net.boomerangplatform.kube.service.KubeServiceImpl;
+import net.boomerangplatform.kube.service.NewKubeServiceImpl;
 import net.boomerangplatform.model.Response;
 import net.boomerangplatform.model.Workspace;
 
@@ -26,9 +27,15 @@ public class WorkspaceServiceImpl implements WorkspaceService {
   
   @Value("${kube.workspace.storage.accessMode}")
   protected String storageAccessMode;
+  
+  @Value("${kube.timeout.waitUntil}")
+  protected long waitUntilTimeout;
 
+//    @Autowired
+//    private KubeServiceImpl kubeService;
+    
     @Autowired
-    private KubeServiceImpl kubeService;
+    private NewKubeServiceImpl kubeService;
 	
     @Override
     public Response createWorkspace(Workspace workspace) {
@@ -36,19 +43,28 @@ public class WorkspaceServiceImpl implements WorkspaceService {
           new Response("0", "Workspace (" + workspace.getId() + ") PVC has been created successfully.");
       try {
         LOGGER.info("Workspace: " + workspace.toString());
-        boolean pvcExists = kubeService.checkWorkspacePVCExists(workspace.getId(), false);
-        if (workspace.getStorage().getEnable() && !pvcExists) {
-          String size = workspace.getStorage().getSize() == null || workspace.getStorage().getSize().isEmpty() ? storageSize : workspace.getStorage().getSize();
-          String className = workspace.getStorage().getClassName();
-          String accessMode = workspace.getStorage().getAccessMode() == null || workspace.getStorage().getAccessMode().isEmpty() ? storageAccessMode : workspace.getStorage().getAccessMode();
-          kubeService.createWorkspacePVC(workspace.getName(), workspace.getId(), workspace.getLabels(), size, className, accessMode);
-          kubeService.watchWorkspacePVC(workspace.getId());
-        } else if (pvcExists) {
-          response = new Response("0", "Workspace (" + workspace.getId() + ") PVC already existed.");
+        if (workspace.getStorage().getEnable()) {
+          boolean pvcExists = kubeService.checkWorkspacePVCExists(workspace.getId(), false);
+          if (!pvcExists) {
+            String size = workspace.getStorage().getSize() == null || workspace.getStorage().getSize().isEmpty() ? storageSize : workspace.getStorage().getSize();
+            String className = workspace.getStorage().getClassName();
+            String accessMode = workspace.getStorage().getAccessMode() == null || workspace.getStorage().getAccessMode().isEmpty() ? storageAccessMode : workspace.getStorage().getAccessMode();
+            kubeService.createWorkspacePVC(workspace.getName(), workspace.getId(), workspace.getLabels(), size, className, accessMode, waitUntilTimeout);
+          } else if (pvcExists) {
+            response = new Response("0", "Workspace (" + workspace.getId() + ") PVC already existed.");
+          }
+        } else {
+          response = new Response("0", "Workspace (" + workspace.getId() + ") storage disabled. Nothing to create.");
         }
-      } catch (ApiException | KubeRuntimeException e) {
+      } catch (KubeRuntimeException | KubernetesClientException | InterruptedException e) {
         LOGGER.error(e.getMessage());
         throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
+      } catch (IllegalArgumentException e) {
+        if (e.getMessage().contains("condition not found")) {
+          throw new BoomerangException(e, BoomerangError.PVC_CREATE_CONDITION_NOT_MET, "" + waitUntilTimeout);
+        } else {
+          throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
       }
       LOGGER.info("createWorkspace() - " + response.getMessage());
       return response;
@@ -57,14 +73,14 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     @Override
     public Response deleteWorkspace(Workspace workspace) {
       Response response =
-          new Response("0", "Workspace (" + workspace.getId() + ") has been deleted successfully.");
+          new Response("0", "Workspace (" + workspace.getId() + ") has been successfully deleted.");
       try {
         LOGGER.info(workspace.toString());
         kubeService.deleteWorkspacePVC(workspace.getId());
       } catch (KubeRuntimeException e) {
         throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
       }
-      LOGGER.info("createWorkspace() - " + response.getMessage());
+      LOGGER.info("deleteWorkspace() - " + response.getMessage());
       return response;
     }
 }

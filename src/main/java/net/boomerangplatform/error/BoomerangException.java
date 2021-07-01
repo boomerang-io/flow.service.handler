@@ -9,9 +9,9 @@ public class BoomerangException extends RuntimeException {
 	private final int code;
 	private final String description;
 	private final HttpStatus httpStatus;
-	private final String[] args;
+	private final Object[] args;
 
-	public BoomerangException(int code, String description, HttpStatus httpStatus, String... args) {
+	public BoomerangException(int code, String description, HttpStatus httpStatus, Object... args) {
 		super();
 		this.code = code;
 		this.description = description;
@@ -19,7 +19,7 @@ public class BoomerangException extends RuntimeException {
 		this.args = args;
 	}
 	
-	public BoomerangException(Throwable ex, int code, String description, HttpStatus httpStatus, String... args) {
+	public BoomerangException(Throwable ex, int code, String description, HttpStatus httpStatus, Object... args) {
 		super(ex);
 		this.code = code;
 		this.description = description;
@@ -27,18 +27,18 @@ public class BoomerangException extends RuntimeException {
 		this.args = args;
 	}
 
-	public BoomerangException(BoomerangError error, String... args) {
+	public BoomerangException(BoomerangError error, Object... args) {
 		super();
 		this.code = error.getCode();
-		this.description = error.getDescription();
+		this.description = error.getDescription(args);
 		this.httpStatus = error.getHttpStatus();
 		this.args = args;
 	}
 
-	public BoomerangException(Throwable ex, BoomerangError error, String... args) {
+	public BoomerangException(Throwable ex, BoomerangError error, Object... args) {
 		super(ex);
 		this.code = error.getCode();
-		this.description = error.getDescription();
+		this.description = error.getDescription(args);
 		this.httpStatus = error.getHttpStatus();
 		this.args = args;
 	}
@@ -55,7 +55,7 @@ public class BoomerangException extends RuntimeException {
 		return httpStatus;
 	}
 
-	public String[] getArgs() {
+	public Object[] getArgs() {
 		return args;
 	}
 

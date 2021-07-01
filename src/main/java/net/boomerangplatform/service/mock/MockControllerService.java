@@ -1,9 +1,7 @@
 package net.boomerangplatform.service.mock;
 
-import java.util.Map;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
-import net.boomerangplatform.model.Response;
 import net.boomerangplatform.model.Task;
 import net.boomerangplatform.model.TaskResponse;
 import net.boomerangplatform.service.TaskService;
@@ -26,18 +24,6 @@ public class MockControllerService implements TaskService {
 //	public Response terminateWorkflow(Workflow workflow) {
 //		return null;
 //	}
-
-	@Override
-	public Response setTaskResultParameter(String workflowId, String workflowActivityId, String taskId, String taskName,
-			String key, String value) {
-		return null;
-	}
-
-	@Override
-	public Response setTaskResultParameters(String workflowId, String workflowActivityId, String taskId, String taskName,
-			Map<String, String> properties) {
-		return null;
-	}
 
 //  @Override
 //  public Response createWorkspace(Workspace workspace) {

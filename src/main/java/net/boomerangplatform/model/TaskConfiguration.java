@@ -2,13 +2,12 @@ package net.boomerangplatform.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-
 @JsonIgnoreProperties
 public class TaskConfiguration {
 
-  private Boolean debug;
+  private Boolean debug = false;
 
-  private Boolean lifecycle;
+  private int timeout;
 
   private TaskDeletionEnum deletion;
 
@@ -20,12 +19,12 @@ public class TaskConfiguration {
     this.debug = debug;
   }
 
-  public Boolean getLifecycle() {
-    return lifecycle;
+  public int getTimeout() {
+    return timeout;
   }
 
-  public void setLifecycle(Boolean lifecycle) {
-    this.lifecycle = lifecycle;
+  public void setTimeout(int timeout) {
+    this.timeout = timeout;
   }
 
   public TaskDeletionEnum getDeletion() {
@@ -35,5 +34,4 @@ public class TaskConfiguration {
   public void setDeletion(TaskDeletionEnum deletion) {
     this.deletion = deletion;
   }
-
 }

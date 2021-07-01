@@ -1,116 +1,79 @@
 package net.boomerangplatform.kube.service;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
-import com.google.common.io.ByteStreams;
-import io.kubernetes.client.ApiException;
-import io.kubernetes.client.PodLogs;
-import io.kubernetes.client.models.V1Pod;
-import io.kubernetes.client.util.Watch;
+import io.fabric8.kubernetes.api.model.Pod;
+import io.fabric8.kubernetes.client.DefaultKubernetesClient;
+import io.fabric8.kubernetes.client.KubernetesClient;
 import net.boomerangplatform.kube.exception.KubeRuntimeException;
 
 @Component
 public class LogKubeServiceImpl implements LogKubeService {
 
-  private static final Logger LOGGER = LogManager.getLogger(KubeService.class);
+  private static final Logger LOGGER = LogManager.getLogger(LogKubeServiceImpl.class);
 
   private static final int BYTE_SIZE = 1024;
 
   @Autowired
-  private HelperKubeServiceImpl helperKubeService;
+  private NewHelperKubeServiceImpl helperKubeService;
+  
+  KubernetesClient client = null;
 
-  @Autowired
-  private KubeServiceImpl kubeService;
+  public LogKubeServiceImpl() {
+    this.client = new DefaultKubernetesClient();
+  }
 
   @Override
-  public String getPodLog(String workflowId, String workflowActivityId, String taskId, String taskActivityId) {
-    String labelSelector = helperKubeService.getLabelSelector("task", workflowId, workflowActivityId, taskId, taskActivityId);
+  public String getPodLog(String workflowId, String workflowActivityId, String taskId, String taskActivityId, Map<String, String> customLabels) {
+    Map<String, String> labelSelector = helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskId, taskActivityId, customLabels);
 
-    PodLogs logs = new PodLogs();
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
     try {
-      List<V1Pod> allPods = kubeService.getPods(labelSelector);
-
-      V1Pod pod;
-
-      if (allPods != null && !allPods.isEmpty()) {
-        pod = allPods.get(0);
-        InputStream is = logs.streamNamespacedPodLog(pod.getMetadata().getNamespace(),
-            pod.getMetadata().getName(), "task-cntr");
-
-        ByteStreams.copy(is, baos);
+      List<Pod> pods = client.pods().withLabels(labelSelector).list().getItems();
+    
+      if (pods != null && !pods.isEmpty()) {
+        Pod pod = pods.get(0);
+        return client.pods().inNamespace(pod.getMetadata().getNamespace()).withName(pod.getMetadata().getName()).withPrettyOutput().getLog();
+      } else {
+        throw new KubeRuntimeException("No logs found for Task");
       }
-    } catch (ApiException | IOException e) {
+    
+    } catch (Exception e) {
       LOGGER.error("getPodLog Exception: ", e);
       throw new KubeRuntimeException("Error getPodLog", e);
-    }
-
-    return baos.toString(StandardCharsets.UTF_8);
+    } 
   }
 
-  @Override
-  public boolean isKubePodAvailable(String workflowId, String workflowActivityId, String taskId, String taskActivityId) {
-    String labelSelector = helperKubeService.getLabelSelector("task", workflowId, workflowActivityId, taskId, taskActivityId);
+@Override
+public StreamingResponseBody streamPodLog(HttpServletResponse response, String workflowId,
+    String workflowActivityId, String taskId, String taskActivityId,
+    Map<String, String> customLabels) {
 
-    try {
-      List<V1Pod> allPods = kubeService.getPods(labelSelector);
+  LOGGER.info("Stream logs from Kubernetes");
 
-      if (allPods == null || allPods.isEmpty() || "succeeded".equalsIgnoreCase(allPods.get(0).getStatus().getPhase())
-          || "failed".equalsIgnoreCase(allPods.get(0).getStatus().getPhase())) {
-        LOGGER.info("isKubePodAvailable() - Not available");
-        return false;
+  Map<String, String> labelSelector = helperKubeService.getTaskLabels(workflowId,
+      workflowActivityId, taskId, taskActivityId, customLabels);
+  StreamingResponseBody responseBody = null;
+  Pod pod = client.pods().withLabels(labelSelector).list().getItems().get(0);
+
+      try {
+        InputStream inputStream = client.pods().inNamespace(pod.getMetadata().getNamespace())
+            .withName(pod.getMetadata().getName()).watchLog().getOutput();
+        responseBody = getPodLog(inputStream, pod.getMetadata().getName());
+      } catch (Exception e) {
+
+        LOGGER.error("streamPodLog Exception: ", e);
+        throw new KubeRuntimeException("Error streamPodLog", e);
+
       }
-      LOGGER.info("isKubePodAvailable() - Available");
-    } catch (ApiException e) {
-      LOGGER.error("streamPodLog Exception: ", e);
-      throw new KubeRuntimeException("Error streamPodLog", e);
-    }
-    return true;
-  }
-
-  @Override
-  public StreamingResponseBody streamPodLog(HttpServletResponse response, String workflowId,
-      String workflowActivityId, String taskId, String taskActivityId) {
-
-    LOGGER.info("Stream logs from Kubernetes");
-
-    String labelSelector = helperKubeService.getLabelSelector("task", workflowId, workflowActivityId, taskId, taskActivityId);
-    StreamingResponseBody responseBody = null;
-    try {
-      Watch<V1Pod> watch = kubeService.createPodWatch(labelSelector, kubeService.getCoreApi());
-      V1Pod pod = kubeService.getPod(watch);
-
-      if (pod == null) {
-        LOGGER.error("V1Pod is empty...");
-      } else {
-        if (pod.getStatus() == null) {
-          LOGGER.error("Pod Status is empty");
-        } else {
-          LOGGER.info("Phase: " + pod.getStatus().getPhase());
-        }
-      }
-
-      PodLogs logs = new PodLogs();
-      InputStream inputStream = logs.streamNamespacedPodLog(pod);
-
-      responseBody = getPodLog(inputStream, pod.getMetadata().getName());
-    } catch (ApiException | IOException e) {
-      // TODO: handle better throwing so that it can be caught in LogService and the default stream
-      // returned rather than failure.
-      LOGGER.error("streamPodLog Exception: ", e);
-      throw new KubeRuntimeException("Error streamPodLog", e);
-    }
-
-    return responseBody;
+      
+      return responseBody;
   }
 
   protected StreamingResponseBody getPodLog(InputStream inputStream, String podName) {

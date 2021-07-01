@@ -1,10 +1,9 @@
 package net.boomerangplatform.service;
 
-import net.boomerangplatform.model.TaskDeletionEnum;
+import java.util.Map;
 
 public interface DeleteService {
-  
-  void deleteJob(TaskDeletionEnum taskDeletion, String workflowId, String workflowActivityId,
-      String taskId, String taskActivityId);
 
+  void deleteJob(String workflowId, String workflowActivityId, String taskId, String taskActivityId,
+      Map<String, String> customLabels);
 }
