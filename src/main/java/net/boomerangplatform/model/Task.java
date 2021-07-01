@@ -39,11 +39,23 @@ public abstract class Task {
   @JsonProperty("command")
   private String command;
 
+  @JsonProperty("workingDir")
+  private String workingDir;
+
+  @JsonProperty("script")
+  private String script;
+
   @JsonProperty("labels")
   private Map<String, String> labels = new HashMap<>();
 
   @JsonProperty("parameters")
   private Map<String, String> parameters = new HashMap<>();
+
+  @JsonProperty("envs")
+  private List<TaskEnvVar> envs;
+
+  @JsonProperty("results")
+  private List<TaskResultParameter> results;
 
   @JsonProperty("arguments")
   private List<String> arguments;
@@ -117,6 +129,22 @@ public abstract class Task {
   public void setParameter(String name, String value) {
     this.parameters.put(name, value);
   }
+  
+  public List<TaskEnvVar> getEnvs() {
+    return envs;
+  }
+
+  public void setEnvs(List<TaskEnvVar> envs) {
+    this.envs = envs;
+  }
+
+  public List<TaskResultParameter> getResults() {
+    return results;
+  }
+
+  public void setResults(List<TaskResultParameter> results) {
+    this.results = results;
+  }
 
   public List<String> getArguments() {
     return sanityNullList(arguments);
@@ -152,6 +180,22 @@ public abstract class Task {
 
   public void setCommand(String command) {
     this.command = command;
+  }
+
+  public String getWorkingDir() {
+    return workingDir;
+  }
+
+  public void setWorkingDir(String workingDir) {
+    this.workingDir = workingDir;
+  }
+
+  public String getScript() {
+    return script;
+  }
+
+  public void setScript(String script) {
+    this.script = script;
   }
 
   public TaskConfiguration getConfiguration() {

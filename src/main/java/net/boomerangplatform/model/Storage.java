@@ -10,8 +10,17 @@ public class Storage {
 
   private String size;
   
+  /*
+   * Leave blank for clusters default to be used
+   */
   private String className;
   
+  /*
+   * Supported values: 
+   * - ReadOnlyMany
+   * - ReadWriteMany
+   * - ReadWriteOnce
+   */
   private String accessMode;
 
   public Boolean getEnable() {
