@@ -2,28 +2,30 @@
 
 This service handles and translates the requests that go to Kubernetes. This is used by Boomerang CICD and Boomerang Flow.
 
-It uses the Kubernetes Java Client to interact with Kubernetes. When writing new controller integrations, it is recommended to look through the Kubernetes Client Docs to find the exact Client method to use and then look at the API code to see how it works for advance configurations such as the Watcher API.
+It uses the [Fabric8 Kubernetes Java Client](https://github.com/fabric8io/kubernetes-client) to interact with Kubernetes along with the Tekton extension to interact with the Tekton TaskRuns. When writing new controller integrations, it is recommended to look through the Kubernetes Client Docs to find the exact Client method to use and then look at the API code to see how it works for advance configurations such as the Watcher API.
 
 ## Development
 
-When running the service locally you need access to a kubernetes API endpoint
+When running the service locally you need access to a kubernetes API endpoint. This service is set up to use whatever the kubeconfig is pointing to.
 
 ## RBAC
 
-The controller and the workers need to run with special RBAC for their specific actions.
+The controller needs to run with special Kubernetes RBAC. Please see the helm charts [rbac-role-controller.yaml](https://github.com/boomerang-io/charts/blob/main/bmrg-flow/templates/rbac-role-controller.yaml) to see more about whats needed.
 
 ### Verification
 
-`kubectl auth can-i create pods/exec --as=system:serviceaccount:bmrg-dev:bmrg-flow-controller`
+`kubectl auth can-i create taskruns --as=system:serviceaccount:bmrg-dev:bmrg-flow-controller`
 
 ## References
 
-### Kubernetes Java Client
+### Fabric8 Kubernetes Java Client
+- [Client](https://github.com/fabric8io/kubernetes-client)
+- [Tekton extension](https://github.com/fabric8io/kubernetes-client/tree/master/extensions/tekton)
+- [Cheatsheet](https://github.com/fabric8io/kubernetes-client/blob/master/doc/CHEATSHEET.md)
+- [Che example code](https://www.programcreek.com/java-api-examples/?code=eclipse%2Fche%2Fche-master%2Finfrastructures%2Fkubernetes%2Fsrc%2Fmain%2Fjava%2Forg%2Feclipse%2Fche%2Fworkspace%2Finfrastructure%2Fkubernetes%2Fnamespace%2FKubernetesPersistentVolumeClaims.java#)
+- [Access Tekton Pipelines in Java using Fabric8 Tekton Client](https://itnext.io/access-tekton-pipelines-in-java-using-fabric8-tekton-client-bd727bd5806a)
+- [Difference between Fabric8 and Official Kubernetes Java Client](https://itnext.io/difference-between-fabric8-and-official-kubernetes-java-client-3e0a994fd4af)
 
-- Client: https://github.com/kubernetes-client/java
-- Examples: https://github.com/kubernetes-client/java/blob/master/examples/src/main/java/io/kubernetes/client/examples
-- API: https://github.com/kubernetes-client/java/tree/master/kubernetes/src/main/java/io/kubernetes/client/apis
-- API Object Docs: https://github.com/kubernetes-client/java/tree/master/kubernetes/docs
 
 ### Kubernetes ConfigMap
 
@@ -33,6 +35,13 @@ We currently use projected volumes however subpath was considered.
 - Projected Volumes: https://docs.okd.io/latest/dev_guide/projected_volumes.html
 - Projected Volumes: https://stackoverflow.com/questions/49287078/how-to-merge-two-configmaps-using-volume-mount-in-kubernetes
 - SubPath: https://blog.sebastian-daschner.com/entries/multiple-kubernetes-volumes-directory
+
+### [Deprecated] Kubernetes Java Client
+
+- Client: https://github.com/kubernetes-client/java
+- Examples: https://github.com/kubernetes-client/java/blob/master/examples/src/main/java/io/kubernetes/client/examples
+- API: https://github.com/kubernetes-client/java/tree/master/kubernetes/src/main/java/io/kubernetes/client/apis
+- API Object Docs: https://github.com/kubernetes-client/java/tree/master/kubernetes/docs
 
 ## Stash
 
