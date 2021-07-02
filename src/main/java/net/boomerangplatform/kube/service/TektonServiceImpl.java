@@ -111,7 +111,7 @@ public class TektonServiceImpl {
       String workflowId, String workflowActivityId, String taskActivityId, String taskName,
       String taskId, Map<String, String> customLabels, List<String> arguments,
       Map<String, String> parameters, List<TaskEnvVar> envVars, List<TaskResultParameter> results, String image, String command, String workingDir, 
-      TaskConfiguration configuration, long waitSeconds) throws InterruptedException {
+      TaskConfiguration configuration, String script, long waitSeconds) throws InterruptedException {
 
     LOGGER.info("Initializing Task...");
     
@@ -320,6 +320,7 @@ public class TektonServiceImpl {
     Step taskStep = new Step();
     taskStep.setName("task");
     taskStep.setImage(image);
+    taskStep.setScript(script);
     List<String> commands = new ArrayList<>();
     if (command != null && !command.isEmpty()) {
       commands.add(command);
