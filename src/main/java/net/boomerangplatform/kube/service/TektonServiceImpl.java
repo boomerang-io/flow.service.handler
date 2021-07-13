@@ -312,23 +312,22 @@ public class TektonServiceImpl {
     
     /*
      * Create the main task container
+     * Notes:
+     *  - If script != null or empty then don't add command (Ref: https://github.com/tektoncd/pipeline/blob/main/docs/tasks.md#running-scripts-within-steps)
      */
     List<Step> taskSteps = new ArrayList<>();
     Step taskStep = new Step();
     taskStep.setName("task");
     taskStep.setImage(image);
-    taskStep.setScript(script);
-    List<String> commands = new ArrayList<>();
-    if (command != null) {
-      if ("---".equals(command)) {
-//      TODO: remove this
-        LOGGER.info("Applying entrypoint override until fix is provided.");
-        commands.add(""); 
-      } else {
-        commands.add(command);        
+    if (script != null && !script.isEmpty()) {
+      taskStep.setScript(script);
+    } else {
+      List<String> commands = new ArrayList<>();
+      if (command != null) {
+          commands.add(command);
       }
+      taskStep.setCommand(commands);
     }
-    taskStep.setCommand(commands);
     taskStep.setImagePullPolicy(kubeImagePullPolicy);
     taskStep.setArgs(arguments);
     taskStep.setEnv(tknEnvVars);
