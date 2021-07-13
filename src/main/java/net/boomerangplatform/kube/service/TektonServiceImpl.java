@@ -322,8 +322,14 @@ public class TektonServiceImpl {
     taskStep.setImage(image);
     taskStep.setScript(script);
     List<String> commands = new ArrayList<>();
-    if (command != null && !command.isEmpty()) {
-      commands.add(command);
+    if (command != null) {
+      if ("---".equals(command)) {
+//      TODO: remove this
+        LOGGER.info("Applying entrypoint override until fix is provided.");
+        commands.add(""); 
+      } else {
+        commands.add(command);        
+      }
     }
     taskStep.setCommand(commands);
     taskStep.setImagePullPolicy(kubeImagePullPolicy);
