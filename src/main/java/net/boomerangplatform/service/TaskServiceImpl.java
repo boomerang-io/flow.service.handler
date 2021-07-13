@@ -111,6 +111,7 @@ public class TaskServiceImpl implements TaskService {
         // KubernetesClientException handles the case where an internal admission
         // controller rejects the creation
         if (e.getMessage().contains("admission webhook")) {
+          LOGGER.info(e.toString());
           throw new BoomerangException(1, "ADMISSION_WEBHOOK_DENIED", HttpStatus.BAD_REQUEST, e.getMessage());
         } else {
           throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);

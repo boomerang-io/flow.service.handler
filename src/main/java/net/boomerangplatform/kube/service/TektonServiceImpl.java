@@ -257,13 +257,10 @@ public class TektonServiceImpl {
     /*
      * Create Host Aliases if defined
      */
-    LOGGER.info("Host Aliases: " + kubeHostAliases);
     List<HostAlias> hostAliases = new ArrayList<>();
     if (!kubeHostAliases.isEmpty()) {
       Type listHostAliasType = new TypeToken<List<HostAlias>>() {}.getType();
       hostAliases = new Gson().fromJson(kubeHostAliases, listHostAliasType);
-      LOGGER.info("Host Alias List Size: " + hostAliases.size());
-      LOGGER.info("Host Aliases: " + hostAliases.toString());
     }
     
     /*
