@@ -321,8 +321,9 @@ public class TektonServiceImpl {
     taskStep.setImage(image);
     if (script != null && !script.isEmpty()) {
       taskStep.setScript(script);
+    } else if (command != null && !command.isEmpty())  {
+      taskStep.setCommand(command);
     }
-    taskStep.setCommand(command);
     taskStep.setImagePullPolicy(kubeImagePullPolicy);
     taskStep.setArgs(arguments);
     taskStep.setEnv(tknEnvVars);
