@@ -1,5 +1,6 @@
 package net.boomerangplatform.service;
 
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
@@ -97,7 +98,8 @@ public class TaskServiceImpl implements TaskService {
         tektonService.createTaskRun(workspaceId, task.getWorkflowName(), task.getWorkflowId(),
             task.getWorkflowActivityId(), task.getTaskActivityId(), task.getTaskName(),
             task.getTaskId(), task.getLabels(), task.getImage(), task.getCommand(), task.getArguments(), task.getParameters(),
-            task.getEnvs(), task.getResults(), task.getWorkingDir(), task.getConfiguration(), task.getScript(), waitUntilTimeout);
+            task.getEnvs(), task.getResults(), task.getWorkingDir(), task.getConfiguration(), task.getScript(),
+            waitUntilTimeout, getTaskTimeout(task.getConfiguration()));
         results = tektonService.watchTask(task.getWorkflowId(), task.getWorkflowActivityId(),
             task.getTaskId(), task.getTaskActivityId(), task.getLabels(), getTaskTimeout(task.getConfiguration()));
         if (getTaskDeletionConfig(task.getConfiguration()).equals(TaskDeletionEnum.OnSuccess)) {
@@ -119,7 +121,9 @@ public class TaskServiceImpl implements TaskService {
         LOGGER.info("DEBUG::Task Is Being Set as Failed");
         throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
       } catch (InterruptedException e) {
-        throw new BoomerangException(1, "JOB_CREATION_ERROR", HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+        throw new BoomerangException(1, "TASK_CREATION_ERROR", HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+      } catch (ParseException e) {
+        throw new BoomerangException(1, "TASK_CREATION_TIMEOUT_ERROR", HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
       } finally {
         response.setResults(results);
         kubeService.deleteTaskConfigMap(task.getWorkflowId(), task.getWorkflowActivityId(),

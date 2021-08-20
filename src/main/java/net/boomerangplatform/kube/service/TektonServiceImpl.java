@@ -1,6 +1,7 @@
 package net.boomerangplatform.kube.service;
 
 import java.lang.reflect.Type;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -17,6 +18,7 @@ import com.google.gson.reflect.TypeToken;
 import io.fabric8.knative.internal.pkg.apis.Condition;
 import io.fabric8.kubernetes.api.model.ConfigMapProjection;
 import io.fabric8.kubernetes.api.model.DeletionPropagation;
+import io.fabric8.kubernetes.api.model.Duration;
 import io.fabric8.kubernetes.api.model.EmptyDirVolumeSource;
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.HostAlias;
@@ -111,7 +113,7 @@ public class TektonServiceImpl {
       String workflowId, String workflowActivityId, String taskActivityId, String taskName,
       String taskId, Map<String, String> customLabels, String image, List<String> command, List<String> arguments,
       Map<String, String> parameters, List<TaskEnvVar> envVars, List<TaskResultParameter> results, String workingDir, 
-      TaskConfiguration configuration, String script, long waitSeconds) throws InterruptedException {
+      TaskConfiguration configuration, String script, long waitSeconds, Integer timeout) throws InterruptedException, ParseException {
 
     LOGGER.info("Initializing Task...");
     
@@ -354,7 +356,9 @@ public class TektonServiceImpl {
       results.forEach(result -> {
         tknTaskResults.add(new io.fabric8.tekton.pipeline.v1beta1.TaskResult(result.getDescription(), result.getName()));
       });
-    }    
+    }
+    
+    Duration taskTimeout = Duration.parse(timeout + "mins");
     
     /*
      * Build out TaskRun definition.
@@ -382,6 +386,7 @@ public class TektonServiceImpl {
       .endPodTemplate()
       .withParams(taskParams)
       .withWorkspaces(taskWorkspaces)
+      .withTimeout(taskTimeout)
       .withNewTaskSpec()
       .withWorkspaces(taskSpecWorkspaces)
       .withParams(taskSpecParams)
@@ -400,7 +405,7 @@ public class TektonServiceImpl {
     
     TaskRun result = client.v1beta1().taskRuns().create(taskRun);
     
-//    client.batch().jobs().withLabels(helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskId, taskActivityId, customLabels)).waitUntilReady(waitSeconds, TimeUnit.SECONDS);
+//    client.v1beta1().taskRuns().withLabels(helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskId, taskActivityId, customLabels)).waitUntilReady(waitSeconds, TimeUnit.SECONDS);
 
     return result;
   }
