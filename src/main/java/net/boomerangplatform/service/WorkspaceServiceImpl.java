@@ -10,7 +10,7 @@ import io.fabric8.kubernetes.client.KubernetesClientException;
 import net.boomerangplatform.error.BoomerangError;
 import net.boomerangplatform.error.BoomerangException;
 import net.boomerangplatform.kube.exception.KubeRuntimeException;
-import net.boomerangplatform.kube.service.NewKubeServiceImpl;
+import net.boomerangplatform.kube.service.KubeServiceImpl;
 import net.boomerangplatform.model.Response;
 import net.boomerangplatform.model.Workspace;
 
@@ -35,7 +35,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
 //    private KubeServiceImpl kubeService;
     
     @Autowired
-    private NewKubeServiceImpl kubeService;
+    private KubeServiceImpl kubeService;
 	
     @Override
     public Response createWorkspace(Workspace workspace) {

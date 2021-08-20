@@ -14,9 +14,6 @@ public interface LogKubeService {
       String taskId,
       String taskActivityId, Map<String, String> customLabels) throws IOException;
 
-//  boolean isKubePodAvailable(String workflowId, String workflowActivityId, String taskId,
-//      String taskActivityId, Map<String, String> customLabels);
-
   String getPodLog(String workflowId, String workflowActivityId, String taskId,
       String taskActivityId, Map<String, String> customLabels);
 

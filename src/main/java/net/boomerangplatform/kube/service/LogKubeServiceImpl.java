@@ -22,7 +22,7 @@ public class LogKubeServiceImpl implements LogKubeService {
   private static final int BYTE_SIZE = 1024;
 
   @Autowired
-  private NewHelperKubeServiceImpl helperKubeService;
+  private KubeHelperServiceImpl helperKubeService;
   
   KubernetesClient client = null;
 
