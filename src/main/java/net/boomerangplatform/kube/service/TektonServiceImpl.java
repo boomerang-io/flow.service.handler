@@ -426,9 +426,11 @@ public class TektonServiceImpl {
       //has moved from initial state. If its still in initial state then check PVC
       //PVC might have Event / Condition "ProvisioningFailed" with a reason.
       
-      boolean taskComplete = latch.await(timeout, TimeUnit.MINUTES);
+      //Timeout is 10 minutes more than the TaskRun to account for delays in provisioning etc.
+      //Note:
+      // - The TaskRun Timeout will trigger an interrupt which enters this block as well
+      boolean taskComplete = latch.await(timeout + 10, TimeUnit.MINUTES);
       if (!taskComplete) {
-        // TODO: implement the TaskRuns timeout and leave this here as a final catch.
         throw new BoomerangException(BoomerangError.TASK_EXECUTION_ERROR, "TaskRunTimeout - Task timed out while waiting for completion.");
       }
       
