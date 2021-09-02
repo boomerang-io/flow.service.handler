@@ -1,8 +1,7 @@
 FROM adoptopenjdk/openjdk11-openj9:jdk-11.0.5_10_openj9-0.17.0-alpine-slim
-ARG BMRG_TAG
 ENV JAVA_OPTS=""
 ENV BMRG_HOME=/opt/boomerang
-ENV BMRG_SVC=service-controller-$BMRG_TAG
+ENV BMRG_SVC=service-controller
 
 WORKDIR $BMRG_HOME
 ADD target/$BMRG_SVC.jar service.jar

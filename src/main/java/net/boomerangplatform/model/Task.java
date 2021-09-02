@@ -1,6 +1,5 @@
 package net.boomerangplatform.model;
 
-import static net.boomerangplatform.util.ListUtil.sanityNullList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -147,11 +146,11 @@ public abstract class Task {
   }
 
   public List<String> getArguments() {
-    return sanityNullList(arguments);
+    return arguments;
   }
 
   public void setArguments(List<String> arguments) {
-    this.arguments = sanityNullList(arguments);
+    this.arguments = arguments;
   }
 
   public void setArgument(String argument) {
