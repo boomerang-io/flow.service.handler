@@ -13,7 +13,6 @@
 	
 	<groupId>net.boomerangplatform</groupId>
 	<artifactId>service-controller</artifactId>
-	<version>${version.name}</version>
 	<packaging>jar</packaging>
 
 	<name>service-controller</name>
@@ -115,23 +114,23 @@
 		<dependency>
 		    <groupId>io.fabric8</groupId>
 		    <artifactId>tekton-client</artifactId>
-		    <version>5.5-SNAPSHOT</version>
+		    <version>5.5.0</version>
 		</dependency>
-	    <dependency>
-	      <groupId>io.fabric8</groupId>
-	      <artifactId>tekton-model-v1beta1</artifactId>
-		    <version>5.5-SNAPSHOT</version>	      
-	    </dependency>
-	    <dependency>
-	      <groupId>io.fabric8</groupId>
-	      <artifactId>tekton-model-triggers</artifactId>
-		    <version>5.5-SNAPSHOT</version>
-	    </dependency>
-	    <dependency>
-	      <groupId>io.fabric8</groupId>
-	      <artifactId>knative-model</artifactId>
-		    <version>5.5-SNAPSHOT</version>
-	    </dependency>
+		<dependency>
+		    <groupId>io.fabric8</groupId>
+		    <artifactId>tekton-model-v1beta1</artifactId>
+		    <version>5.5.0</version>	      
+		</dependency>
+		<dependency>
+		    <groupId>io.fabric8</groupId>
+		    <artifactId>tekton-model-triggers</artifactId>
+		    <version>5.5.0</version>
+		</dependency>
+		<dependency>
+		    <groupId>io.fabric8</groupId>
+		    <artifactId>knative-model</artifactId>
+		    <version>5.5.0</version>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-devtools</artifactId>
