@@ -49,15 +49,15 @@ import net.boomerangplatform.model.TaskResponseResultParameter;
 import net.boomerangplatform.model.TaskResultParameter;
 
 @Component
-public class TektonServiceImpl {
+public class TektonServiceImpl implements TektonService {
 
   private static final Logger LOGGER = LogManager.getLogger(TektonServiceImpl.class);
 
   @Autowired
-  protected NewHelperKubeServiceImpl helperKubeService;
+  protected KubeHelperServiceImpl helperKubeService;
   
   @Autowired
-  protected NewKubeServiceImpl kubeService;
+  protected KubeServiceImpl kubeService;
     
   protected static final Integer ONE_DAY_IN_SECONDS = 86400; // 60*60*24
 
@@ -109,6 +109,7 @@ public class TektonServiceImpl {
     this.client = new DefaultTektonClient();
   }
   
+  @Override
   public TaskRun createTaskRun(String workspaceId, String workflowName,
       String workflowId, String workflowActivityId, String taskActivityId, String taskName,
       String taskId, Map<String, String> customLabels, String image, List<String> command, List<String> arguments,
@@ -409,7 +410,8 @@ public class TektonServiceImpl {
 
     return result;
   }
-  
+
+  @Override
   public List<TaskResponseResultParameter> watchTask(String workflowId, String workflowActivityId, String taskId,
       String taskActivityId, Map<String, String> customLabels, Integer timeout) throws InterruptedException {
     final CountDownLatch latch = new CountDownLatch(1);
@@ -460,7 +462,8 @@ public class TektonServiceImpl {
     
     return resultParameters;
   }
-  
+
+  @Override
   public void deleteTask(String workflowId,
       String workflowActivityId, String taskId, String taskActivityId, Map<String, String> customLabels) {
 
@@ -478,6 +481,7 @@ public class TektonServiceImpl {
    * Reference(s):
    * - https://github.com/abayer/tektoncd-pipeline/blob/0.8.0-jx-support-backwards-incompats/pkg/reconciler/taskrun/cancel.go
    */
+  @Override
   public void cancelTask(String workflowId, String workflowActivityId, String taskId, String taskActivityId, Map<String, String> customLabels) {
     Map<String, String> labels = helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskId, taskActivityId, customLabels);
   

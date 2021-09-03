@@ -21,9 +21,9 @@ import io.fabric8.kubernetes.api.model.WeightedPodAffinityTerm;
 import net.boomerangplatform.model.TaskConfiguration;
 
 @Component
-public class NewHelperKubeServiceImpl {
+public class KubeHelperServiceImpl implements KubeHelperService {
 
-  private static final Logger LOGGER = LogManager.getLogger(NewHelperKubeServiceImpl.class);
+  private static final Logger LOGGER = LogManager.getLogger(KubeHelperServiceImpl.class);
 
   @Value("${proxy.enable}")
   protected Boolean proxyEnabled;

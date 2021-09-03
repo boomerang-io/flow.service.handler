@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import net.boomerangplatform.error.BoomerangException;
 import net.boomerangplatform.kube.exception.KubeRuntimeException;
-import net.boomerangplatform.kube.service.NewKubeServiceImpl;
+import net.boomerangplatform.kube.service.KubeServiceImpl;
 import net.boomerangplatform.kube.service.TektonServiceImpl;
 import net.boomerangplatform.model.Task;
 import net.boomerangplatform.model.TaskConfiguration;
@@ -37,7 +37,7 @@ public class TaskServiceImpl implements TaskService {
   private Integer taskTimeout;
 
   @Autowired
-  private NewKubeServiceImpl kubeService;
+  private KubeServiceImpl kubeService;
 
   @Autowired
   private TektonServiceImpl tektonService;
