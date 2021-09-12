@@ -14,6 +14,8 @@ public class TaskWorkspace {
   private Boolean readOnly;
   
   private Boolean optional;
+  
+  private String mountPath;
 
   public String getWorkspaceName() {
     return workspaceName;
@@ -45,5 +47,13 @@ public class TaskWorkspace {
 
   public void setOptional(Boolean optional) {
     this.optional = optional;
+  }
+
+  public String getMountPath() {
+    return mountPath;
+  }
+
+  public void setMountPath(String mountPath) {
+    this.mountPath = mountPath;
   }
 }
