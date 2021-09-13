@@ -92,13 +92,10 @@ public class TaskServiceImpl implements TaskService {
         kubeService.createTaskConfigMap(task.getWorkflowName(), task.getWorkflowId(),
             task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(),
             task.getTaskActivityId(), task.getLabels(), task.getParameters());
-        String workspaceId = task.getWorkspaces() != null && task.getWorkspaces().get(0) != null
-            ? task.getWorkspaces().get(0).getWorkspaceId()
-            : null;
-        tektonService.createTaskRun(workspaceId, task.getWorkflowName(), task.getWorkflowId(),
+        tektonService.createTaskRun(task.getWorkflowName(), task.getWorkflowId(),
             task.getWorkflowActivityId(), task.getTaskActivityId(), task.getTaskName(),
-            task.getTaskId(), task.getLabels(), task.getImage(), task.getCommand(), task.getArguments(), task.getParameters(),
-            task.getEnvs(), task.getResults(), task.getWorkingDir(), task.getConfiguration(), task.getScript(),
+            task.getTaskId(), task.getLabels(), task.getImage(), task.getCommand(), task.getScript(), task.getArguments(), task.getParameters(),
+            task.getEnvs(), task.getResults(), task.getWorkingDir(), task.getConfiguration(), task.getWorkspaces(),
             waitUntilTimeout, getTaskTimeout(task.getConfiguration()));
         results = tektonService.watchTask(task.getWorkflowId(), task.getWorkflowActivityId(),
             task.getTaskId(), task.getTaskActivityId(), task.getLabels(), getTaskTimeout(task.getConfiguration()));

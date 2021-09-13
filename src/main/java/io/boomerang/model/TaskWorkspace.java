@@ -6,10 +6,10 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 public class TaskWorkspace {
 
 //  Optional
-  private String workspaceName;
+  private String name;
 
 //  Required
-  private String workspaceId;
+  private String id;
 
   private Boolean readOnly;
   
@@ -17,20 +17,20 @@ public class TaskWorkspace {
   
   private String mountPath;
 
-  public String getWorkspaceName() {
-    return workspaceName;
+  public String getName() {
+    return name;
   }
 
-  public void setWorkspaceName(String workspaceName) {
-    this.workspaceName = workspaceName;
+  public void setName(String name) {
+    this.name = name;
   }
 
-  public String getWorkspaceId() {
-    return workspaceId;
+  public String getId() {
+    return id;
   }
 
-  public void setWorkspaceId(String workspaceId) {
-    this.workspaceId = workspaceId;
+  public void setId(String id) {
+    this.id = id;
   }
 
   public Boolean getReadOnly() {
