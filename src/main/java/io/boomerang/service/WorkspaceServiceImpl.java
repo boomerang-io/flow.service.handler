@@ -43,18 +43,14 @@ public class WorkspaceServiceImpl implements WorkspaceService {
           new Response("0", "Workspace (" + workspace.getId() + ") PVC has been created successfully.");
       try {
         LOGGER.info("Workspace: " + workspace.toString());
-        if (workspace.getStorage().getEnable()) {
-          boolean pvcExists = kubeService.checkWorkspacePVCExists(workspace.getId(), false);
-          if (!pvcExists) {
-            String size = workspace.getStorage().getSize() == null || workspace.getStorage().getSize().isEmpty() ? storageSize : workspace.getStorage().getSize();
-            String className = workspace.getStorage().getClassName();
-            String accessMode = workspace.getStorage().getAccessMode() == null || workspace.getStorage().getAccessMode().isEmpty() ? storageAccessMode : workspace.getStorage().getAccessMode();
-            kubeService.createWorkspacePVC(workspace.getName(), workspace.getId(), workspace.getLabels(), size, className, accessMode, waitUntilTimeout);
-          } else if (pvcExists) {
-            response = new Response("0", "Workspace (" + workspace.getId() + ") PVC already existed.");
-          }
-        } else {
-          response = new Response("0", "Workspace (" + workspace.getId() + ") storage disabled. Nothing to create.");
+        boolean pvcExists = kubeService.checkWorkspacePVCExists(workspace.getId(), false);
+        if (!pvcExists) {
+          String size = workspace.getSize() == null || workspace.getSize().isEmpty() ? storageSize : workspace.getSize();
+          String className = workspace.getClassName();
+          String accessMode = workspace.getAccessMode() == null || workspace.getAccessMode().isEmpty() ? storageAccessMode : workspace.getAccessMode();
+          kubeService.createWorkspacePVC(workspace.getName(), workspace.getId(), workspace.getLabels(), size, className, accessMode, waitUntilTimeout);
+        } else if (pvcExists) {
+          response = new Response("0", "Workspace (" + workspace.getId() + ") PVC already existed.");
         }
       } catch (KubeRuntimeException | KubernetesClientException | InterruptedException e) {
         LOGGER.error(e.getMessage());

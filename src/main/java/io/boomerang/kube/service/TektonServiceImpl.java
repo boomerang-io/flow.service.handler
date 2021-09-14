@@ -162,25 +162,25 @@ public class TektonServiceImpl implements TektonService {
     List<WorkspaceBinding> taskWorkspaces = new ArrayList<>();
     if (workspaces != null) {
       workspaces.forEach(ws -> {
-        if ("workspace".equals(ws.getName()) && kubeService.checkWorkspacePVCExists(ws.getId(), false)) {
+        if ("workflow".equals(ws.getName()) && kubeService.checkWorkspacePVCExists(ws.getId(), false)) {
           WorkspaceDeclaration wsWorkspaceDeclaration = new WorkspaceDeclaration();
           wsWorkspaceDeclaration.setName(helperKubeService.getPrefixVol() + "-ws");
-          String mountPath = ws.getMountPath() != null && !ws.getMountPath().isEmpty() ? ws.getMountPath() : "/workspace";
+          String mountPath = ws.getMountPath() != null && !ws.getMountPath().isEmpty() ? ws.getMountPath() : "/workspace/workflow";
           wsWorkspaceDeclaration.setMountPath(mountPath);
-          wsWorkspaceDeclaration.setDescription("Storage for workflow cross execution");
+          wsWorkspaceDeclaration.setDescription("Storage for a workflow across execution");
           taskSpecWorkspaces.add(wsWorkspaceDeclaration);
           
           PersistentVolumeClaimVolumeSource wsPVCVolumeSource = new PersistentVolumeClaimVolumeSource();
-          wsPVCVolumeSource.setClaimName(kubeService.getPVCName(helperKubeService.getWorkflowLabels(workflowId, workflowActivityId, customLabels)));
+          wsPVCVolumeSource.setClaimName(kubeService.getPVCName(helperKubeService.getWorkspaceLabels(ws.getId(), null)));
           
           WorkspaceBinding wsWorkspaceBinding = new WorkspaceBinding();
           wsWorkspaceBinding.setName(helperKubeService.getPrefixVol() + "-ws");
           wsWorkspaceBinding.setPersistentVolumeClaim(wsPVCVolumeSource);
           taskWorkspaces.add(wsWorkspaceBinding);
-        } else if ("workflow".equals(ws.getName()) && !kubeService.getPVCName(helperKubeService.getWorkflowLabels(workflowId, workflowActivityId, customLabels)).isEmpty()) {
+        } else if ("activity".equals(ws.getName()) && !kubeService.getPVCName(helperKubeService.getWorkflowLabels(workflowId, workflowActivityId, customLabels)).isEmpty()) {
           WorkspaceDeclaration wfWorkspaceDeclaration = new WorkspaceDeclaration();
           wfWorkspaceDeclaration.setName(helperKubeService.getPrefixVol() + "-wf");
-          String mountPath = ws.getMountPath() != null && !ws.getMountPath().isEmpty() ? ws.getMountPath() : "/workflow";
+          String mountPath = ws.getMountPath() != null && !ws.getMountPath().isEmpty() ? ws.getMountPath() : "/workspace/activity";
           wfWorkspaceDeclaration.setMountPath(mountPath);
           wfWorkspaceDeclaration.setDescription("Storage for the specific workflow execution");
           taskSpecWorkspaces.add(wfWorkspaceDeclaration);

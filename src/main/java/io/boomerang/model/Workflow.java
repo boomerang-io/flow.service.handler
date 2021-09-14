@@ -1,8 +1,8 @@
 package io.boomerang.model;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -15,11 +15,11 @@ public class Workflow {
 
   private String workflowActivityId;
 
-  @JsonProperty("storage")
-  private Storage storage;
-
   @JsonProperty("labels")
   private Map<String, String> labels = new HashMap<>();
+
+  @JsonProperty("workspaces")
+  private List<Workspace> workspaces;
 
   private Map<String, String> parameters;
 
@@ -47,14 +47,6 @@ public class Workflow {
     this.workflowActivityId = workflowActivityId;
   }
 
-  public Storage getWorkflowStorage() {
-    return storage;
-  }
-
-  public void setWorkflowStorage(Storage storage) {
-    this.storage = storage;
-  }
-
   public Map<String, String> getLabels() {
     return labels;
   }
@@ -65,6 +57,14 @@ public class Workflow {
 
   public void setLabel(String name, String value) {
     this.labels.put(name, value);
+  }
+
+  public List<Workspace> getWorkspaces() {
+    return workspaces;
+  }
+
+  public void setWorkspaces(List<Workspace> workspaces) {
+    this.workspaces = workspaces;
   }
 
   public Map<String, String> getParameters() {
