@@ -16,7 +16,7 @@ public class WorkflowController {
   @Autowired
   private WorkflowService workflowService;
 
-  @PostMapping(value = "/create")
+  @PostMapping(value = "/execute")
   public Response createWorkflow(@RequestBody Workflow workflow) {
     return workflowService.createWorkflow(workflow);
   }

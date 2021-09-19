@@ -87,8 +87,7 @@ public class KubeServiceImpl implements KubeService {
   }
 
   @Override
-  public boolean checkWorkflowPVCExists(String workflowId, String workflowActivityId, String taskId,
-      String taskActivityId, boolean failIfNotBound) {
+  public boolean checkWorkflowPVCExists(String workflowId, String workflowActivityId, boolean failIfNotBound) {
     return checkPVCExists(helperKubeService.getWorkflowLabels(workflowId, workflowActivityId, null),
         failIfNotBound);
   }

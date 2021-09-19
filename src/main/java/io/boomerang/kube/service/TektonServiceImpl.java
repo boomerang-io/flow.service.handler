@@ -21,6 +21,7 @@ import io.boomerang.model.TaskConfiguration;
 import io.boomerang.model.TaskEnvVar;
 import io.boomerang.model.TaskResponseResultParameter;
 import io.boomerang.model.TaskResultParameter;
+import io.boomerang.model.TaskWorkspace;
 import io.fabric8.knative.internal.pkg.apis.Condition;
 import io.fabric8.kubernetes.api.model.ConfigMapProjection;
 import io.fabric8.kubernetes.api.model.DeletionPropagation;
@@ -110,11 +111,11 @@ public class TektonServiceImpl implements TektonService {
   }
   
   @Override
-  public TaskRun createTaskRun(String workspaceId, String workflowName,
+  public TaskRun createTaskRun(String workflowName,
       String workflowId, String workflowActivityId, String taskActivityId, String taskName,
-      String taskId, Map<String, String> customLabels, String image, List<String> command, List<String> arguments,
+      String taskId, Map<String, String> customLabels, String image, List<String> command, String script, List<String> arguments,
       Map<String, String> parameters, List<TaskEnvVar> envVars, List<TaskResultParameter> results, String workingDir, 
-      TaskConfiguration configuration, String script, long waitSeconds, Integer timeout) throws InterruptedException, ParseException {
+      TaskConfiguration configuration, List<TaskWorkspace> workspaces, long waitSeconds, Integer timeout) throws InterruptedException, ParseException {
 
     LOGGER.info("Initializing Task...");
     
@@ -151,54 +152,87 @@ public class TektonServiceImpl implements TektonService {
 //    resources.setLimits(resourceLimits);
     
     /*
-     * Create volumes and Volume Mounts
+     * Create Workspaces and PVCs
      * - /workspace for cross workflow persistence such as caches (optional if mounted prior) 
-     * - /workflow for workflow based sharing between tasks (optional if mounted prior) 
+     * - /workflow for workflow based sharing between tasks (optional if mounted prior)
+     * - TODO: determine if optional=true works better than checking if the PVC exists
+     * - TODO: migrate /data to workspaces
+     */
+    List<WorkspaceDeclaration> taskSpecWorkspaces = new ArrayList<>();
+    List<WorkspaceBinding> taskWorkspaces = new ArrayList<>();
+    if (workspaces != null) {
+      workspaces.forEach(ws -> {
+        if ("workflow".equals(ws.getName()) && kubeService.checkWorkspacePVCExists(ws.getId(), false)) {
+          WorkspaceDeclaration wsWorkspaceDeclaration = new WorkspaceDeclaration();
+          wsWorkspaceDeclaration.setName(helperKubeService.getPrefixVol() + "-ws");
+          String mountPath = ws.getMountPath() != null && !ws.getMountPath().isEmpty() ? ws.getMountPath() : "/workspace/workflow";
+          wsWorkspaceDeclaration.setMountPath(mountPath);
+          wsWorkspaceDeclaration.setDescription("Storage for a workflow across execution");
+          taskSpecWorkspaces.add(wsWorkspaceDeclaration);
+          
+          PersistentVolumeClaimVolumeSource wsPVCVolumeSource = new PersistentVolumeClaimVolumeSource();
+          wsPVCVolumeSource.setClaimName(kubeService.getPVCName(helperKubeService.getWorkspaceLabels(ws.getId(), null)));
+          
+          WorkspaceBinding wsWorkspaceBinding = new WorkspaceBinding();
+          wsWorkspaceBinding.setName(helperKubeService.getPrefixVol() + "-ws");
+          wsWorkspaceBinding.setPersistentVolumeClaim(wsPVCVolumeSource);
+          taskWorkspaces.add(wsWorkspaceBinding);
+        } else if ("activity".equals(ws.getName()) && !kubeService.getPVCName(helperKubeService.getWorkflowLabels(workflowId, workflowActivityId, customLabels)).isEmpty()) {
+          WorkspaceDeclaration wfWorkspaceDeclaration = new WorkspaceDeclaration();
+          wfWorkspaceDeclaration.setName(helperKubeService.getPrefixVol() + "-wf");
+          String mountPath = ws.getMountPath() != null && !ws.getMountPath().isEmpty() ? ws.getMountPath() : "/workspace/activity";
+          wfWorkspaceDeclaration.setMountPath(mountPath);
+          wfWorkspaceDeclaration.setDescription("Storage for the specific workflow execution");
+          taskSpecWorkspaces.add(wfWorkspaceDeclaration);
+          
+          PersistentVolumeClaimVolumeSource wfPVCVolumeSource = new PersistentVolumeClaimVolumeSource();
+          wfPVCVolumeSource.setClaimName(kubeService.getPVCName(helperKubeService.getWorkflowLabels(workflowId, workflowActivityId, customLabels)));
+          
+          WorkspaceBinding wfWorkspaceBinding = new WorkspaceBinding();
+          wfWorkspaceBinding.setName(helperKubeService.getPrefixVol() + "-wf");
+          wfWorkspaceBinding.setPersistentVolumeClaim(wfPVCVolumeSource);
+          taskWorkspaces.add(wfWorkspaceBinding);
+        } else {
+          LOGGER.warn("Skipping Workspace (" + ws.getName() + ") as we don't support custom workspaces yet.");
+        }
+      });
+    }
+    
+    /*
+     * Create volumes and Volume Mounts
+     * - [Deprecated] /workspace for cross workflow persistence such as caches (optional if mounted prior) 
+     * - [Deprecated] /workflow for workflow based sharing between tasks (optional if mounted prior) 
      * - /props for mounting config_maps 
      * - /data for task storage (optional - needed if using in memory storage)
      */
     List<VolumeMount> volumeMounts = new ArrayList<>();
     List<Volume> volumes = new ArrayList<>();
-    if (workspaceId != null && !workspaceId.isEmpty() && kubeService.checkWorkspacePVCExists(workspaceId, false)) {
-      VolumeMount wsVolumeMount = new VolumeMount();
-      wsVolumeMount.setName(helperKubeService.getPrefixVol() + "-ws");
-      wsVolumeMount.setMountPath("/workspace");
-      volumeMounts.add(wsVolumeMount);
-
-      Volume wsVolume = new Volume();
-      wsVolume.setName(helperKubeService.getPrefixVol() + "-ws");
-      PersistentVolumeClaimVolumeSource wsPVCVolumeSource = new PersistentVolumeClaimVolumeSource();
-      wsPVCVolumeSource.setClaimName(kubeService.getPVCName(helperKubeService.getWorkspaceLabels(workspaceId, customLabels)));
-      wsVolume.setPersistentVolumeClaim(wsPVCVolumeSource);
-      volumes.add(wsVolume);
-    }
+//    if (workspaceId != null && !workspaceId.isEmpty() && kubeService.checkWorkspacePVCExists(workspaceId, false)) {
+//      VolumeMount wsVolumeMount = new VolumeMount();
+//      wsVolumeMount.setName(helperKubeService.getPrefixVol() + "-ws");
+//      wsVolumeMount.setMountPath("/workspace");
+//      volumeMounts.add(wsVolumeMount);
+//
+//      Volume wsVolume = new Volume();
+//      wsVolume.setName(helperKubeService.getPrefixVol() + "-ws");
+//      PersistentVolumeClaimVolumeSource wsPVCVolumeSource = new PersistentVolumeClaimVolumeSource();
+//      wsPVCVolumeSource.setClaimName(kubeService.getPVCName(helperKubeService.getWorkspaceLabels(workspaceId, customLabels)));
+//      wsVolume.setPersistentVolumeClaim(wsPVCVolumeSource);
+//      volumes.add(wsVolume);
+//    }
     
-    List<WorkspaceDeclaration> taskSpecWorkspaces = new ArrayList<>();
-    List<WorkspaceBinding> taskWorkspaces = new ArrayList<>();
-    //TODO: determine if optional=true works better than checking if the PVC exists
-    if (!kubeService.getPVCName(helperKubeService.getWorkflowLabels(workflowId, workflowActivityId, customLabels)).isEmpty()) {
-//      VolumeMount wfVolumeMount = new VolumeMount();
-//      wfVolumeMount.setName(helperKubeService.getPrefixVol() + "-wf");
-//      wfVolumeMount.setMountPath("/workflow");
-//      volumeMounts.add(wfVolumeMount);
-      WorkspaceDeclaration wfWorkspaceDeclaration = new WorkspaceDeclaration();
-      wfWorkspaceDeclaration.setName(helperKubeService.getPrefixVol() + "-wf");
-      wfWorkspaceDeclaration.setMountPath("/workflow");
-      wfWorkspaceDeclaration.setDescription("Storage for the specific workflow execution");
-      taskSpecWorkspaces.add(wfWorkspaceDeclaration);
-      
-//      Volume wfVolume = new Volume();
-//      wfVolume.setName(helperKubeService.getPrefixVol() + "-wf");
-      PersistentVolumeClaimVolumeSource wfPVCVolumeSource = new PersistentVolumeClaimVolumeSource();
-      wfPVCVolumeSource.setClaimName(kubeService.getPVCName(helperKubeService.getWorkflowLabels(workflowId, workflowActivityId, customLabels)));
-//      wfVolume.setPersistentVolumeClaim(wfPVCVolumeSource);
-//      volumes.add(wfVolume);
-      
-      WorkspaceBinding wfWorkspaceBinding = new WorkspaceBinding();
-      wfWorkspaceBinding.setName(helperKubeService.getPrefixVol() + "-wf");
-      wfWorkspaceBinding.setPersistentVolumeClaim(wfPVCVolumeSource);
-      taskWorkspaces.add(wfWorkspaceBinding);
-    }
+//  if (!kubeService.getPVCName(helperKubeService.getWorkflowLabels(workflowId, workflowActivityId, customLabels)).isEmpty()) {
+//  VolumeMount wfVolumeMount = new VolumeMount();
+//  wfVolumeMount.setName(helperKubeService.getPrefixVol() + "-wf");
+//  wfVolumeMount.setMountPath("/workflow");
+//  volumeMounts.add(wfVolumeMount);
+    
+//  Volume wfVolume = new Volume();
+//  wfVolume.setName(helperKubeService.getPrefixVol() + "-wf");
+//  wfVolume.setPersistentVolumeClaim(wfPVCVolumeSource);
+//  volumes.add(wfVolume);   
+//  }
+
     
     /*
      * The following code is integrated to the helm chart and CICD properties It allows for
@@ -395,10 +429,6 @@ public class TektonServiceImpl implements TektonService {
       .withVolumes(volumes)
       .withSteps(taskSteps)
       .endTaskSpec()
-//      .addNewWorkspace()
-//      .withName("flow")
-//      .withNewPersistentVolumeClaim(kubeService.getPVCName(helperKubeService.getWorkspaceLabels(workspaceId, customLabels)), false)
-//      .endWorkspace()
       .endSpec()
       .build();
     

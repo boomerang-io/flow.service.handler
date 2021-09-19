@@ -9,8 +9,8 @@ public interface KubeService {
 
   boolean checkWorkspacePVCExists(String workspaceId, boolean failIfNotBound);
 
-  boolean checkWorkflowPVCExists(String workflowId, String workflowActivityId, String taskId,
-      String taskActivityId, boolean failIfNotBound);
+  boolean checkWorkflowPVCExists(String workflowId, String workflowActivityId,
+      boolean failIfNotBound);
 
   PersistentVolumeClaim createWorkspacePVC(String workspaceName, String workspaceId,
       Map<String, String> customLabels, String size, String className, String accessMode,

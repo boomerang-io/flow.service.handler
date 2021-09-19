@@ -12,11 +12,23 @@ public class Workspace {
 
   private String id;
 
-  @JsonProperty("storage")
-  private Storage storage;
-
   @JsonProperty("labels")
   private Map<String, String> labels = new HashMap<>();
+  
+  private String size;
+  
+  /*
+   * Leave blank for clusters default to be used
+   */
+  private String className;
+  
+  /*
+   * Supported values: 
+   * - ReadOnlyMany
+   * - ReadWriteMany
+   * - ReadWriteOnce
+   */
+  private String accessMode;
 
   public String getName() {
     return name;
@@ -34,14 +46,6 @@ public class Workspace {
     this.id = id;
   }
 
-  public Storage getStorage() {
-    return storage;
-  }
-
-  public void setStorage(Storage storage) {
-    this.storage = storage;
-  }
-
   public Map<String, String> getLabels() {
     return labels;
   }
@@ -52,5 +56,29 @@ public class Workspace {
 
   public void setLabel(String name, String value) {
     this.labels.put(name, value);
+  }
+
+  public String getSize() {
+    return size;
+  }
+
+  public void setSize(String size) {
+    this.size = size;
+  }
+
+  public String getClassName() {
+    return className;
+  }
+
+  public void setClassName(String className) {
+    this.className = className;
+  }
+
+  public String getAccessMode() {
+    return accessMode;
+  }
+
+  public void setAccessMode(String accessMode) {
+    this.accessMode = accessMode;
   }
 }
