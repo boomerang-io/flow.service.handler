@@ -30,10 +30,10 @@ public class TaskServiceImpl implements TaskService {
   @Value("${kube.timeout.waitUntil}")
   protected long waitUntilTimeout;
 
-  @Value("${kube.worker.job.deletion}")
+  @Value("${kube.task.deletion}")
   private TaskDeletionEnum taskDeletion;
 
-  @Value("${kube.worker.timeout}")
+  @Value("${kube.task.timeout}")
   private Integer taskTimeout;
 
   @Autowired
@@ -89,9 +89,9 @@ public class TaskServiceImpl implements TaskService {
           task.getClass().toString());
     } else {
       try {
-        kubeService.createTaskConfigMap(task.getWorkflowName(), task.getWorkflowId(),
-            task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(),
-            task.getTaskActivityId(), task.getLabels(), task.getParameters());
+//        kubeService.createTaskConfigMap(task.getWorkflowName(), task.getWorkflowId(),
+//            task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(),
+//            task.getTaskActivityId(), task.getLabels(), task.getParameters());
         tektonService.createTaskRun(task.getWorkflowName(), task.getWorkflowId(),
             task.getWorkflowActivityId(), task.getTaskActivityId(), task.getTaskName(),
             task.getTaskId(), task.getLabels(), task.getImage(), task.getCommand(), task.getScript(), task.getArguments(), task.getParameters(),

@@ -71,17 +71,14 @@ public class TektonServiceImpl implements TektonService {
   @Value("${kube.lifecycle.image}")
   protected String kubeLifecycleImage;
 
-  @Value("${kube.worker.job.backOffLimit}")
+  @Value("${kube.task.backOffLimit}")
   protected Integer kubeJobBackOffLimit;
 
-  @Value("${kube.worker.job.restartPolicy}")
+  @Value("${kube.task.restartPolicy}")
   protected String kubeJobRestartPolicy;
     
-  @Value("${kube.worker.job.ttlDays}")
+  @Value("${kube.task.ttlDays}")
   protected Integer kubeJobTTLDays;
-
-  @Value("${kube.worker.serviceaccount}")
-  protected String kubeJobServiceAccount;
 
   @Value("${kube.resource.limit.ephemeral-storage}")
   private String kubeResourceLimitEphemeralStorage;
@@ -95,14 +92,20 @@ public class TektonServiceImpl implements TektonService {
   @Value("${kube.resource.request.memory}")
   private String kubeResourceRequestMemory;
 
-  @Value("${kube.worker.storage.data.memory}")
-  private Boolean kubeWorkerStorageDataMemory;
-
-  @Value("${kube.worker.node.dedicated}")
-  protected Boolean kubeJobDedicatedNodes;
-
+  @Value("${kube.task.storage.data.memory}")
+  private Boolean kubeTaskStorageDataMemory;
+  
+  @Value("${kube.worker.serviceaccount}")
+  private String kubeWorkerServiceAccount;
+  
   @Value("${kube.worker.hostaliases}")
-  protected String kubeHostAliases;
+  private String kubeWorkerHostAliases;
+  
+  @Value("#{${kube.worker.nodeselector}}")
+  private Map<String, String> kubeWorkerNodeSelector;
+  
+  @Value("${kube.worker.tolerations}")
+  private String kubeWorkerTolerations;
 
   TektonClient client = null;
 
@@ -160,7 +163,7 @@ public class TektonServiceImpl implements TektonService {
      */
     List<WorkspaceDeclaration> taskSpecWorkspaces = new ArrayList<>();
     List<WorkspaceBinding> taskWorkspaces = new ArrayList<>();
-    if (workspaces != null) {
+    if (workspaces != null && !workspaces.isEmpty()) {
       workspaces.forEach(ws -> {
         if ("workflow".equals(ws.getName()) && kubeService.checkWorkspacePVCExists(ws.getId(), false)) {
           WorkspaceDeclaration wsWorkspaceDeclaration = new WorkspaceDeclaration();
@@ -247,7 +250,7 @@ public class TektonServiceImpl implements TektonService {
     Volume dataVolume = new Volume();
     dataVolume.setName(helperKubeService.getPrefixVol() + "-data");
     EmptyDirVolumeSource dataEmptyDirVolumeSource = new EmptyDirVolumeSource();
-    if (kubeWorkerStorageDataMemory
+    if (kubeTaskStorageDataMemory
         && Boolean.valueOf(parameters.get("worker.storage.data.memory"))) {
       LOGGER.info("Setting /data to in memory storage...");
       dataEmptyDirVolumeSource.setMedium("Memory");
@@ -281,23 +284,28 @@ public class TektonServiceImpl implements TektonService {
      */
     List<Toleration> tolerations = new ArrayList<>();
     Map<String, String> nodeSelectors = new HashMap<>();
-    if (kubeJobDedicatedNodes) {
-      Toleration toleration = new Toleration();
-      toleration.setKey("dedicated");
-      toleration.setValue("bmrg-worker");
-      toleration.setEffect("NoSchedule");
-      toleration.setOperator("Equal");
-      tolerations.add(toleration);
-      nodeSelectors.put("node-role.kubernetes.io/bmrg-worker", "true");
+    if (kubeWorkerNodeSelector != null && !kubeWorkerNodeSelector.isEmpty()) {
+      LOGGER.info(kubeWorkerNodeSelector.toString());
+      kubeWorkerNodeSelector.forEach((k, v) -> {
+        LOGGER.info("Adding node selector: " + k + "=" + v);
+        nodeSelectors.put(k, v);
+      });
     }
+    LOGGER.info("Finalized Node Selectors: " + nodeSelectors.toString());
+    if (kubeWorkerTolerations != null && !kubeWorkerTolerations.isEmpty()) {
+      LOGGER.info(kubeWorkerTolerations.toString());
+      Type listTolerationsType = new TypeToken<List<Toleration>>() {}.getType();
+      tolerations = new Gson().fromJson(kubeWorkerTolerations, listTolerationsType);
+    }
+    LOGGER.info("Finalized Tolerations: " + tolerations.toString());
     
     /*
      * Create Host Aliases if defined
      */
     List<HostAlias> hostAliases = new ArrayList<>();
-    if (!kubeHostAliases.isEmpty()) {
+    if (!kubeWorkerHostAliases.isEmpty()) {
       Type listHostAliasType = new TypeToken<List<HostAlias>>() {}.getType();
-      hostAliases = new Gson().fromJson(kubeHostAliases, listHostAliasType);
+      hostAliases = new Gson().fromJson(kubeWorkerHostAliases, listHostAliasType);
     }
     
     /*
@@ -422,6 +430,7 @@ public class TektonServiceImpl implements TektonService {
       .withParams(taskParams)
       .withWorkspaces(taskWorkspaces)
       .withTimeout(taskTimeout)
+//      .withServiceAccountName(workerProperties.getServiceaccount())
       .withNewTaskSpec()
       .withWorkspaces(taskSpecWorkspaces)
       .withParams(taskSpecParams)
