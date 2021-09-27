@@ -8,7 +8,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
@@ -23,7 +22,6 @@ import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 
 @Component
-@Primary
 public class KubeServiceImpl implements KubeService {
 
   private static final Logger LOGGER = LogManager.getLogger(KubeServiceImpl.class);
@@ -77,10 +75,15 @@ public class KubeServiceImpl implements KubeService {
 
   protected KubernetesClient client = null;
 
-  protected KubeServiceImpl() {
+  public KubeServiceImpl() {
     this.client = new DefaultKubernetesClient();
   }
-
+  
+  public KubeServiceImpl(KubernetesClient client) {
+    LOGGER.info("Creating Client");
+    this.client = client;
+  }
+  
   @Override
   public boolean checkWorkspacePVCExists(String workspaceId, boolean failIfNotBound) {
     return workspaceId != null

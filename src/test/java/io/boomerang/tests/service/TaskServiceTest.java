@@ -7,6 +7,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import io.boomerang.kube.service.KubeServiceImpl;
 import io.fabric8.kubernetes.api.model.ConfigMapList;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.server.mock.EnableKubernetesMockClient;
@@ -18,7 +19,7 @@ public class TaskServiceTest {
   KubernetesClient client;
 
   @Autowired
-  private MockKubeServiceImpl mockKubeService;
+  private KubeServiceImpl kubeService = new KubeServiceImpl(client);
 
   @Test
   public void testCreateTaskConfigMapWithEmptyParams() {
@@ -26,7 +27,7 @@ public class TaskServiceTest {
     System.out.println("testCreateTaskConfigMapWithEmptyParams() - namespace: " + client.getConfiguration().getNamespace());
 
     Map<String, String> params = new HashMap<>(); 
-    mockKubeService.createTaskConfigMap("test-cm-workflow", "20210926", "202109260627", "Test Task", "1234", "2021092606271234", null, params);
+    kubeService.createTaskConfigMap("test-cm-workflow", "20210926", "202109260627", "Test Task", "1234", "2021092606271234", null, params);
     
     ConfigMapList configMapList = client.configMaps().inAnyNamespace().list();
     System.out.println("testCreateTaskConfigMapWithEmptyParams() - " + configMapList.toString());
