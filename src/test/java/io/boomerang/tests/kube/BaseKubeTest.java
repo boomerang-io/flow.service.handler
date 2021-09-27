@@ -1,4 +1,4 @@
-package io.boomerang.kube.service;
+package io.boomerang.tests.kube;
 
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;

@@ -1,4 +1,4 @@
-package io.boomerang.kube.service;
+package io.boomerang.tests.kube;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
