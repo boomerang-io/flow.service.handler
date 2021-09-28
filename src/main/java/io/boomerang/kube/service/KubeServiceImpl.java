@@ -22,6 +22,7 @@ import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 
 @Component
+//@Configurable
 public class KubeServiceImpl implements KubeService {
 
   private static final Logger LOGGER = LogManager.getLogger(KubeServiceImpl.class);
@@ -79,8 +80,9 @@ public class KubeServiceImpl implements KubeService {
     this.client = new DefaultKubernetesClient();
   }
   
-  public KubeServiceImpl(KubernetesClient client) {
-    LOGGER.info("Creating Client");
+//  Using setter instead of Constructor due to autowiring issues
+  public void setClient(KubernetesClient client) {
+    LOGGER.info("Creating Client with default namespace: " + client.getNamespace());
     this.client = client;
   }
   
@@ -299,7 +301,10 @@ public ConfigMap createTaskConfigMap(String workflowName, String workflowId,
       .withAnnotations(helperKubeService.getAnnotations("task", workflowName, workflowId,
           workflowActivityId, taskId, taskActivityId))
       .endMetadata().addToData(dataMap).build();
+  
   ConfigMap result = client.configMaps().create(configMap);
+  
+  LOGGER.info(result.toString());
 
   return result;
 }
