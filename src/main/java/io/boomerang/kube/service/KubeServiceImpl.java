@@ -37,13 +37,13 @@ public class KubeServiceImpl implements KubeService {
   @Value("${kube.image.pullSecret}")
   protected String kubeImagePullSecret;
 
-  @Value("${kube.worker.job.backOffLimit}")
+  @Value("${kube.task.backOffLimit}")
   protected Integer kubeJobBackOffLimit;
 
-  @Value("${kube.worker.job.restartPolicy}")
+  @Value("${kube.task.restartPolicy}")
   protected String kubeJobRestartPolicy;
     
-  @Value("${kube.worker.job.ttlDays}")
+  @Value("${kube.task.ttlDays}")
   protected Integer kubeJobTTLDays;
 
   @Value("${kube.worker.serviceaccount}")
@@ -61,11 +61,8 @@ public class KubeServiceImpl implements KubeService {
   @Value("${kube.resource.request.memory}")
   private String kubeResourceRequestMemory;
 
-  @Value("${kube.worker.storage.data.memory}")
+  @Value("${kube.task.storage.data.memory}")
   private Boolean kubeWorkerStorageDataMemory;
-
-  @Value("${kube.worker.node.dedicated}")
-  protected Boolean kubeJobDedicatedNodes;
 
   @Value("${kube.worker.hostaliases}")
   protected String kubeHostAliases;
