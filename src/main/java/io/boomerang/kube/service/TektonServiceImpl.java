@@ -290,14 +290,14 @@ public class TektonServiceImpl implements TektonService {
         LOGGER.info("Adding node selector: " + k + "=" + v);
         nodeSelectors.put(k, v);
       });
+      LOGGER.info("Finalized Node Selectors: " + nodeSelectors.toString());
     }
-    LOGGER.info("Finalized Node Selectors: " + nodeSelectors.toString());
     if (kubeWorkerTolerations != null && !kubeWorkerTolerations.isEmpty()) {
       LOGGER.info(kubeWorkerTolerations.toString());
       Type listTolerationsType = new TypeToken<List<Toleration>>() {}.getType();
       tolerations = new Gson().fromJson(kubeWorkerTolerations, listTolerationsType);
+      LOGGER.info("Finalized Tolerations: " + tolerations.toString());
     }
-    LOGGER.info("Finalized Tolerations: " + tolerations.toString());
     
     /*
      * Create Host Aliases if defined
