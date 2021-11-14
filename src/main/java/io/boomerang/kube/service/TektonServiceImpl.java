@@ -104,8 +104,8 @@ public class TektonServiceImpl implements TektonService {
   @Value("#{${kube.worker.nodeselector}}")
   private Map<String, String> kubeWorkerNodeSelector;
   
-  @Value("#{'${kube.worker.tolerations}'.split(',')}")
-  private List<Toleration> kubeWorkerTolerations;
+  @Value("${kube.worker.tolerations}")
+  private String kubeWorkerTolerations;
 
   TektonClient client = null;
 
@@ -292,15 +292,15 @@ public class TektonServiceImpl implements TektonService {
       });
     }
     LOGGER.info("Finalized Node Selectors: " + nodeSelectors.toString());
-    if (kubeWorkerTolerations != null && !kubeWorkerTolerations.isEmpty()) {
+    if (kubeWorkerTolerations != null && !kubeWorkerTolerations.isEmpty() && !"null".equals(kubeWorkerTolerations)) {
       LOGGER.info(kubeWorkerTolerations.toString());
-//      Type listTolerationsType = new TypeToken<List<Toleration>>() {}.getType();
-//      tolerations = new Gson().fromJson(kubeWorkerTolerations, listTolerationsType);
+      Type listTolerationsType = new TypeToken<List<Toleration>>() {}.getType();
+      tolerations = new Gson().fromJson(kubeWorkerTolerations, listTolerationsType);
 
-      kubeWorkerTolerations.forEach(t -> {
-        LOGGER.info("Adding toleration: " + t);
-        tolerations.add(t);
-      });
+//      kubeWorkerTolerations.forEach(t -> {
+//        LOGGER.info("Adding toleration: " + t);
+//        tolerations.add(t);
+//      });
     }
     LOGGER.info("Finalized Tolerations: " + tolerations.toString());
     
