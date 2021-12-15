@@ -29,6 +29,7 @@
 		<jacoco.out.paths>${project.build.directory}</jacoco.out.paths>
 		<sonar.jacoco.reportPath>${jacoco.out.path}/jacoco.exec</sonar.jacoco.reportPath>
 		<jacoco.version>0.8.2</jacoco.version>
+		<log4j2.version>2.15.0</log4j2.version>
 	</properties>
 	
 	<dependencies>
