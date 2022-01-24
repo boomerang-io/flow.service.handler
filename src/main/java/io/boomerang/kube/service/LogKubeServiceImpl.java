@@ -50,17 +50,19 @@ public class LogKubeServiceImpl implements LogKubeService {
     } 
   }
 
-@Override
-public StreamingResponseBody streamPodLog(HttpServletResponse response, String workflowId,
-    String workflowActivityId, String taskId, String taskActivityId,
-    Map<String, String> customLabels) {
+  @Override
+  public StreamingResponseBody streamPodLog(HttpServletResponse response, String workflowId,
+      String workflowActivityId, String taskId, String taskActivityId,
+      Map<String, String> customLabels) {
 
-  LOGGER.info("Stream logs from Kubernetes");
+    LOGGER.info("Stream logs from Kubernetes");
 
-  Map<String, String> labelSelector = helperKubeService.getTaskLabels(workflowId,
-      workflowActivityId, taskId, taskActivityId, customLabels);
-  StreamingResponseBody responseBody = null;
-  Pod pod = client.pods().withLabels(labelSelector).list().getItems().get(0);
+    Map<String, String> labelSelector = helperKubeService.getTaskLabels(workflowId,
+        workflowActivityId, taskId, taskActivityId, customLabels);
+    StreamingResponseBody responseBody = null;
+    List<Pod> pods = client.pods().withLabels(labelSelector).list().getItems();
+    if (!pods.isEmpty()) {
+      Pod pod = client.pods().withLabels(labelSelector).list().getItems().get(0);
 
       try {
         InputStream inputStream = client.pods().inNamespace(pod.getMetadata().getNamespace())
@@ -72,8 +74,8 @@ public StreamingResponseBody streamPodLog(HttpServletResponse response, String w
         throw new KubeRuntimeException("Error streamPodLog", e);
 
       }
-      
-      return responseBody;
+    }
+    return responseBody;
   }
 
   protected StreamingResponseBody getPodLog(InputStream inputStream, String podName) {
