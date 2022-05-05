@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
 	<parent>
@@ -10,7 +8,7 @@
 		<version>2.6.6</version>
 		<relativePath /> <!-- lookup parent from repository -->
 	</parent>
-	
+
 	<groupId>net.boomerangplatform</groupId>
 	<artifactId>service-controller</artifactId>
 	<packaging>jar</packaging>
@@ -23,13 +21,13 @@
 		<java.version>11</java.version>
 		<maven.compiler.source>${java.version}</maven.compiler.source>
 		<maven.compiler.target>${java.version}</maven.compiler.target>
-		<http.proxyHost></http.proxyHost><!-- set from env: proxy.boomerangplatform.net -->
-		<http.proxyPort></http.proxyPort><!-- set from env: 1080 -->
+		<http.proxyHost></http.proxyHost> <!-- set from env: proxy.boomerangplatform.net -->
+		<http.proxyPort></http.proxyPort> <!-- set from env: 1080 -->
 		<jacoco.out.paths>${project.build.directory}</jacoco.out.paths>
 		<sonar.jacoco.reportPath>${jacoco.out.path}/jacoco.exec</sonar.jacoco.reportPath>
 		<jacoco.version>0.8.2</jacoco.version>
 	</properties>
-	
+
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -49,7 +47,7 @@
 				</exclusion>
 			</exclusions>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>com.fasterxml.jackson.datatype</groupId>
 			<artifactId>jackson-datatype-json-org</artifactId>
@@ -107,29 +105,29 @@
 			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
 		<dependency>
-		  <groupId>io.fabric8</groupId>
-		  <artifactId>kubernetes-client</artifactId>
-		  <version>5.3.1</version>
+			<groupId>io.fabric8</groupId>
+			<artifactId>kubernetes-client</artifactId>
+			<version>5.3.2</version>
 		</dependency>
 		<dependency>
-		    <groupId>io.fabric8</groupId>
-		    <artifactId>tekton-client</artifactId>
-		    <version>5.5.0</version>
+			<groupId>io.fabric8</groupId>
+			<artifactId>tekton-client</artifactId>
+			<version>5.5.0</version>
 		</dependency>
 		<dependency>
-		    <groupId>io.fabric8</groupId>
-		    <artifactId>tekton-model-v1beta1</artifactId>
-		    <version>5.5.0</version>	      
+			<groupId>io.fabric8</groupId>
+			<artifactId>tekton-model-v1beta1</artifactId>
+			<version>5.5.0</version>
 		</dependency>
 		<dependency>
-		    <groupId>io.fabric8</groupId>
-		    <artifactId>tekton-model-triggers</artifactId>
-		    <version>5.5.0</version>
+			<groupId>io.fabric8</groupId>
+			<artifactId>tekton-model-triggers</artifactId>
+			<version>5.5.0</version>
 		</dependency>
 		<dependency>
-		    <groupId>io.fabric8</groupId>
-		    <artifactId>knative-model</artifactId>
-		    <version>5.5.0</version>
+			<groupId>io.fabric8</groupId>
+			<artifactId>knative-model</artifactId>
+			<version>5.5.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -145,17 +143,17 @@
 					<groupId>com.google.guava</groupId>
 					<artifactId>guava</artifactId>
 				</exclusion>
-			</exclusions>	
+			</exclusions>
 		</dependency>
 		<dependency>
-		    <groupId>com.google.guava</groupId>
-		    <artifactId>guava</artifactId>
-		    <version>28.0-jre</version>
+			<groupId>com.google.guava</groupId>
+			<artifactId>guava</artifactId>
+			<version>28.0-jre</version>
 		</dependency>
 		<dependency>
-		    <groupId>com.github.fge</groupId>
-		    <artifactId>json-patch</artifactId>
-		    <version>1.9</version>
+			<groupId>com.github.fge</groupId>
+			<artifactId>json-patch</artifactId>
+			<version>1.9</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -163,22 +161,30 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
-            <groupId>com.github.tomakehurst</groupId>
-            <artifactId>wiremock</artifactId>
-            <version>2.19.0</version>
-            <scope>test</scope>
-        </dependency>
-
+			<groupId>com.github.tomakehurst</groupId>
+			<artifactId>wiremock-jre8</artifactId>
+			<version>2.32.0</version>
+			<scope>test</scope>
+		</dependency>
 		<dependency>
 			<groupId>org.apache.httpcomponents</groupId>
 			<artifactId>httpclient</artifactId>
 		</dependency>
-
-        <dependency>
-           <groupId>com.google.code.gson</groupId>
-           <artifactId>gson</artifactId>
-           <version>2.8.8</version>
-        </dependency>
+		<dependency>
+			<groupId>com.google.code.gson</groupId>
+			<artifactId>gson</artifactId>
+			<version>2.8.9</version>
+		</dependency>
+		<dependency>
+			<groupId>org.webjars</groupId>
+			<artifactId>swagger-ui</artifactId>
+			<version>4.5.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-ui</artifactId>
+			<version>1.6.8</version>
+		</dependency>
 	</dependencies>
 	<build>
 		<plugins>
@@ -195,11 +201,11 @@
 				<artifactId>maven-surefire-plugin</artifactId>
 				<configuration>
 					<systemPropertyVariables>
-				   		<http.proxyHost>${http.proxyHost}</http.proxyHost>
-				   		<http.proxyPort>${http.proxyPort}</http.proxyPort>
+						<http.proxyHost>${http.proxyHost}</http.proxyHost>
+						<http.proxyPort>${http.proxyPort}</http.proxyPort>
 					</systemPropertyVariables>
 					<argLine>${surefireArgLine}</argLine>
-      			</configuration>
+				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
@@ -211,14 +217,14 @@
 				<version>${jacoco.version}</version>
 				<executions>
 					<execution>
-						 <id>pre-unit-test</id>
+						<id>pre-unit-test</id>
 						<goals>
 							<goal>prepare-agent</goal>
 						</goals>
 						<configuration>
-						    <destFile>${sonar.jacoco.reportPaths}</destFile>
-			                <propertyName>surefireArgLine</propertyName>
-			              </configuration>
+							<destFile>${sonar.jacoco.reportPaths}</destFile>
+							<propertyName>surefireArgLine</propertyName>
+						</configuration>
 					</execution>
 					<execution>
 						<id>jacoco-report</id>
@@ -236,7 +242,7 @@
 				<filtering>true</filtering>
 			</resource>
 		</resources>
-	    <finalName>${project.name}</finalName>
+		<finalName>${project.name}</finalName>
 	</build>
 
 </project>
