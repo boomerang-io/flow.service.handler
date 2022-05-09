@@ -21,8 +21,8 @@
 		<java.version>11</java.version>
 		<maven.compiler.source>${java.version}</maven.compiler.source>
 		<maven.compiler.target>${java.version}</maven.compiler.target>
-		<http.proxyHost></http.proxyHost> <!-- set from env: proxy.boomerangplatform.net -->
-		<http.proxyPort></http.proxyPort> <!-- set from env: 1080 -->
+		<http.proxyHost /> 
+		<http.proxyPort />
 		<jacoco.out.paths>${project.build.directory}</jacoco.out.paths>
 		<sonar.jacoco.reportPath>${jacoco.out.path}/jacoco.exec</sonar.jacoco.reportPath>
 		<jacoco.version>0.8.2</jacoco.version>
