@@ -30,10 +30,10 @@ public class TaskServiceImpl implements TaskService {
   @Value("${kube.timeout.waitUntil}")
   protected long waitUntilTimeout;
 
-  @Value("${kube.worker.job.deletion}")
+  @Value("${kube.task.deletion}")
   private TaskDeletionEnum taskDeletion;
 
-  @Value("${kube.worker.timeout}")
+  @Value("${kube.task.timeout}")
   private Integer taskTimeout;
 
   @Autowired
