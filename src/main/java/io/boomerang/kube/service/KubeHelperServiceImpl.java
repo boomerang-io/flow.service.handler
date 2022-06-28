@@ -57,7 +57,7 @@ public class KubeHelperServiceImpl implements KubeHelperService {
     return bmrgProduct + "-pv";
   }
 
-  protected String getPrefixCM() {
+  public String getPrefixCM() {
     return bmrgProduct + "-cfg";
   }
 
