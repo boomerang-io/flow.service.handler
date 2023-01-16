@@ -10,8 +10,8 @@ import io.boomerang.model.Workspace;
 import io.boomerang.service.WorkspaceService;
 
 @RestController
-@RequestMapping("/controller/workspace")
-public class WorkspaceController {
+@RequestMapping("/controller/api/v1/workspace")
+public class WorkspaceV1Controller {
 
   @Autowired
   private WorkspaceService workspaceService;

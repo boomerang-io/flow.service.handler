@@ -10,8 +10,8 @@ import io.boomerang.model.Workflow;
 import io.boomerang.service.WorkflowService;
 
 @RestController
-@RequestMapping("/controller/workflow")
-public class WorkflowController {
+@RequestMapping("/controller/api/v1/workflowrun")
+public class WorkflowRunV1Controller {
 
   @Autowired
   private WorkflowService workflowService;

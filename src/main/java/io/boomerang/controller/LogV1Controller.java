@@ -12,8 +12,8 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 import io.boomerang.service.LogServiceImpl;
 
 @RestController
-@RequestMapping("/controller/log")
-public class LogController {
+@RequestMapping("/controller/api/v1/logs")
+public class LogV1Controller {
 
   @Autowired
   private LogServiceImpl logService;
