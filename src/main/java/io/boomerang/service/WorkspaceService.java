@@ -1,11 +1,13 @@
 package io.boomerang.service;
 
+import io.boomerang.model.WorkspaceRequest;
 import io.boomerang.model.Response;
-import io.boomerang.model.Workspace;
 
 public abstract interface WorkspaceService {
 
-    Response createWorkspace(Workspace workspace);
+    Response create(WorkspaceRequest workspace);
 
-    Response deleteWorkspace(Workspace workspace);
+    Response delete(WorkspaceRequest workspace);
+
+    String getWorkspaceRef(String workspaceType, String workflowRef, String workflowRunRef);
 }

@@ -43,23 +43,22 @@ public class LogServiceImpl implements LogService {
   protected String lokiPort;
   
   @Override
-  public String getLogForTask(String workflowId,
-      String workflowActivityId, String taskId, String taskActivityId) {
-    
-    return logKubeService.getPodLog(workflowId, workflowActivityId, taskId, taskActivityId, null);
+  public String getLogForTask(String workflowRef,
+      String workflowRunRef, String taskRunRef) {
+    return logKubeService.getPodLog(workflowRef, workflowRunRef, taskRunRef, null);
   }
 
   @Override
-  public StreamingResponseBody streamLogForTask(HttpServletResponse response, String workflowId,
-      String workflowActivityId, String taskId, String taskActivityId) {
+  public StreamingResponseBody streamLogForTask(HttpServletResponse response, String workflowRef,
+      String workflowRunRef, String taskRunRef) {
 //    StreamingResponseBody srb = null;
     try {
 //      if (logKubeService.isKubePodAvailable(workflowId, workflowActivityId, taskId, taskActivityId)
 //          && "default".equals(loggingType)) {
         if ("default".equals(loggingType)) {
-        return logKubeService.streamPodLog(response, workflowId, workflowActivityId, taskId, taskActivityId, null);
+        return logKubeService.streamPodLog(response, workflowRef, workflowRunRef, taskRunRef, null);
       } else if ("loki".equals(loggingType)) {
-        return streamLogsFromLoki(workflowId, taskId, taskActivityId);
+        return streamLogsFromLoki(workflowRef, taskRunRef);
       } else if ("elastic".equals(loggingType)) {
         return getDefaultErrorMessage(getMessageDeprecated());
       } else {
@@ -71,18 +70,14 @@ public class LogServiceImpl implements LogService {
   }
 
   // TODO: reduce complexity, refactor method
-  private StreamingResponseBody streamLogsFromLoki(String workflowId,
-      String taskId, String taskActivityId) {
+  private StreamingResponseBody streamLogsFromLoki(String workflowRef, String taskRunRef) {
 
-    LOGGER.info("Streaming logs from loki for task ("+ taskId + ") and activity (" + taskActivityId + ")");
-
-
+    LOGGER.info("Streaming logs from loki for TaskRun ("+ taskRunRef + ")");
     return outputStream -> {
-
       PrintWriter printWriter = new PrintWriter(outputStream);
 
       final String filter =
-          createLokiFilter(workflowId, taskId, taskActivityId);
+          createLokiFilter(workflowRef, taskRunRef);
       LOGGER.info("Loki filter: " + filter);
 
       final String encodedQuery = URLEncoder.encode(filter, StandardCharsets.UTF_8);
@@ -162,9 +157,8 @@ public class LogServiceImpl implements LogService {
     };
   }
 
-  private String createLokiFilter(String workflowId, String taskId, String taskActivityId) {
-    return "{bmrg_task_activity=\"" + taskActivityId + "\",bmrg_workflow=\"" + workflowId
-        + "\",bmrg_task=\"" + taskId + "\",bmrg_container=\"step-task\"}";
+  private String createLokiFilter(String workflowRef, String taskRunRef) {
+    return "{bmrg_task_activity=\"" + taskRunRef + "\",bmrg_workflow=\"" + workflowRef + "\",bmrg_container=\"step-task\"}";
   }
 
   protected StreamingResponseBody getDefaultErrorMessage(String message) {

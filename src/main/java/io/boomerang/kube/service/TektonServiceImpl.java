@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
@@ -17,11 +18,11 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import io.boomerang.error.BoomerangError;
 import io.boomerang.error.BoomerangException;
-import io.boomerang.model.TaskConfiguration;
-import io.boomerang.model.TaskEnvVar;
 import io.boomerang.model.TaskResponseResultParameter;
-import io.boomerang.model.TaskResultParameter;
-import io.boomerang.model.TaskWorkspace;
+import io.boomerang.model.ref.RunParam;
+import io.boomerang.model.ref.TaskEnvVar;
+import io.boomerang.model.ref.TaskWorkspace;
+import io.boomerang.service.WorkspaceService;
 import io.fabric8.knative.internal.pkg.apis.Condition;
 import io.fabric8.kubernetes.api.model.ConfigMapProjection;
 import io.fabric8.kubernetes.api.model.DeletionPropagation;
@@ -59,6 +60,9 @@ public class TektonServiceImpl implements TektonService {
   
   @Autowired
   protected KubeServiceImpl kubeService;
+
+  @Autowired
+  private WorkspaceService workspaceService;
     
   protected static final Integer ONE_DAY_IN_SECONDS = 86400; // 60*60*24
 
@@ -114,11 +118,11 @@ public class TektonServiceImpl implements TektonService {
   }
   
   @Override
-  public TaskRun createTaskRun(String workflowName,
+  public TaskRun createTaskRun(
       String workflowId, String workflowActivityId, String taskActivityId, String taskName,
-      String taskId, Map<String, String> customLabels, String image, List<String> command, String script, List<String> arguments,
-      Map<String, String> parameters, List<TaskEnvVar> envVars, List<TaskResultParameter> results, String workingDir, 
-      TaskConfiguration configuration, List<TaskWorkspace> workspaces, long waitSeconds, Integer timeout) throws InterruptedException, ParseException {
+      Map<String, String> customLabels, String image, List<String> command, String script, List<String> arguments,
+      List<RunParam> params, List<TaskEnvVar> envVars, List<io.boomerang.model.ref.RunResult> results, String workingDir, 
+      List<TaskWorkspace> workspaces, long waitSeconds, Integer timeout, Boolean debug) throws InterruptedException, ParseException {
 
     LOGGER.info("Initializing Task...");
     
@@ -165,36 +169,29 @@ public class TektonServiceImpl implements TektonService {
     List<WorkspaceBinding> taskWorkspaces = new ArrayList<>();
     if (workspaces != null && !workspaces.isEmpty()) {
       workspaces.forEach(ws -> {
-        if ("workflow".equals(ws.getName()) && kubeService.checkWorkspacePVCExists(ws.getId(), false)) {
+        // Based on the Workspace Type we set the workspaceRef to be the WorkflowRef or the
+        // WorkflowRunRef
+        String workspaceRef = workspaceService.getWorkspaceRef(ws.getType(), workflowId, workflowActivityId);
+//        boolean pvcExists =
+//            kubeService.checkWorkspacePVCExists(workspaceRef, ws.getType(), false);
+//        if (pvcExists) {
+        if ("workflow".equals(ws.getType()) || "workflowRun".equals(ws.getType())) {
           WorkspaceDeclaration wsWorkspaceDeclaration = new WorkspaceDeclaration();
-          wsWorkspaceDeclaration.setName(helperKubeService.getPrefixVol() + "-ws");
-          String mountPath = ws.getMountPath() != null && !ws.getMountPath().isEmpty() ? ws.getMountPath() : "/workspace/workflow";
+          wsWorkspaceDeclaration.setName(helperKubeService.getPrefixVol() + "-ws-" + ws.getType());
+          String mountPath = ws.getMountPath() != null && !ws.getMountPath().isEmpty() ? ws.getMountPath() : "/workspace/" + ws.getType();
           wsWorkspaceDeclaration.setMountPath(mountPath);
-          wsWorkspaceDeclaration.setDescription("Storage for a workflow across execution");
+          String description = "workflow".equals(ws.getType()) ? "Storage for a workflow across execution" : "Storage for the specific workflow execution";
+          wsWorkspaceDeclaration.setDescription(description);
+          wsWorkspaceDeclaration.setOptional(ws.isOptional());
           taskSpecWorkspaces.add(wsWorkspaceDeclaration);
           
           PersistentVolumeClaimVolumeSource wsPVCVolumeSource = new PersistentVolumeClaimVolumeSource();
-          wsPVCVolumeSource.setClaimName(kubeService.getPVCName(helperKubeService.getWorkspaceLabels(ws.getId(), null)));
+          wsPVCVolumeSource.setClaimName(kubeService.getPVCName(helperKubeService.getWorkspaceLabels(workflowId, workspaceRef, ws.getType(), null)));
           
           WorkspaceBinding wsWorkspaceBinding = new WorkspaceBinding();
-          wsWorkspaceBinding.setName(helperKubeService.getPrefixVol() + "-ws");
+          wsWorkspaceBinding.setName(helperKubeService.getPrefixVol() + "-ws-" + ws.getType());
           wsWorkspaceBinding.setPersistentVolumeClaim(wsPVCVolumeSource);
           taskWorkspaces.add(wsWorkspaceBinding);
-        } else if ("activity".equals(ws.getName()) && !kubeService.getPVCName(helperKubeService.getWorkflowLabels(workflowId, workflowActivityId, customLabels)).isEmpty()) {
-          WorkspaceDeclaration wfWorkspaceDeclaration = new WorkspaceDeclaration();
-          wfWorkspaceDeclaration.setName(helperKubeService.getPrefixVol() + "-wf");
-          String mountPath = ws.getMountPath() != null && !ws.getMountPath().isEmpty() ? ws.getMountPath() : "/workspace/activity";
-          wfWorkspaceDeclaration.setMountPath(mountPath);
-          wfWorkspaceDeclaration.setDescription("Storage for the specific workflow execution");
-          taskSpecWorkspaces.add(wfWorkspaceDeclaration);
-          
-          PersistentVolumeClaimVolumeSource wfPVCVolumeSource = new PersistentVolumeClaimVolumeSource();
-          wfPVCVolumeSource.setClaimName(kubeService.getPVCName(helperKubeService.getWorkflowLabels(workflowId, workflowActivityId, customLabels)));
-          
-          WorkspaceBinding wfWorkspaceBinding = new WorkspaceBinding();
-          wfWorkspaceBinding.setName(helperKubeService.getPrefixVol() + "-wf");
-          wfWorkspaceBinding.setPersistentVolumeClaim(wfPVCVolumeSource);
-          taskWorkspaces.add(wfWorkspaceBinding);
         } else {
           LOGGER.warn("Skipping Workspace (" + ws.getName() + ") as we don't support custom workspaces yet.");
         }
@@ -202,46 +199,17 @@ public class TektonServiceImpl implements TektonService {
     }
     
     /*
+     * The following code is integrated to the helm chart and CICD properties It allows for
+     * containers that breach the standard ephemeral-storage size by off-loading to memory See:
+     * https://kubernetes.io/docs/concepts/storage/volumes/#emptydir
+     * 
      * Create volumes and Volume Mounts
-     * - [Deprecated] /workspace for cross workflow persistence such as caches (optional if mounted prior) 
-     * - [Deprecated] /workflow for workflow based sharing between tasks (optional if mounted prior) 
      * - /props for mounting config_maps 
      * - /data for task storage (optional - needed if using in memory storage)
      */
     List<VolumeMount> volumeMounts = new ArrayList<>();
     List<Volume> volumes = new ArrayList<>();
-//    if (workspaceId != null && !workspaceId.isEmpty() && kubeService.checkWorkspacePVCExists(workspaceId, false)) {
-//      VolumeMount wsVolumeMount = new VolumeMount();
-//      wsVolumeMount.setName(helperKubeService.getPrefixVol() + "-ws");
-//      wsVolumeMount.setMountPath("/workspace");
-//      volumeMounts.add(wsVolumeMount);
-//
-//      Volume wsVolume = new Volume();
-//      wsVolume.setName(helperKubeService.getPrefixVol() + "-ws");
-//      PersistentVolumeClaimVolumeSource wsPVCVolumeSource = new PersistentVolumeClaimVolumeSource();
-//      wsPVCVolumeSource.setClaimName(kubeService.getPVCName(helperKubeService.getWorkspaceLabels(workspaceId, customLabels)));
-//      wsVolume.setPersistentVolumeClaim(wsPVCVolumeSource);
-//      volumes.add(wsVolume);
-//    }
-    
-//  if (!kubeService.getPVCName(helperKubeService.getWorkflowLabels(workflowId, workflowActivityId, customLabels)).isEmpty()) {
-//  VolumeMount wfVolumeMount = new VolumeMount();
-//  wfVolumeMount.setName(helperKubeService.getPrefixVol() + "-wf");
-//  wfVolumeMount.setMountPath("/workflow");
-//  volumeMounts.add(wfVolumeMount);
-    
-//  Volume wfVolume = new Volume();
-//  wfVolume.setName(helperKubeService.getPrefixVol() + "-wf");
-//  wfVolume.setPersistentVolumeClaim(wfPVCVolumeSource);
-//  volumes.add(wfVolume);   
-//  }
 
-    
-    /*
-     * The following code is integrated to the helm chart and CICD properties It allows for
-     * containers that breach the standard ephemeral-storage size by off-loading to memory See:
-     * https://kubernetes.io/docs/concepts/storage/volumes/#emptydir
-     */
     VolumeMount dataVolumeMount = new VolumeMount();
     dataVolumeMount.setName(helperKubeService.getPrefixVol() + "-data");
     dataVolumeMount.setMountPath("/data");
@@ -250,8 +218,14 @@ public class TektonServiceImpl implements TektonService {
     Volume dataVolume = new Volume();
     dataVolume.setName(helperKubeService.getPrefixVol() + "-data");
     EmptyDirVolumeSource dataEmptyDirVolumeSource = new EmptyDirVolumeSource();
-    if (kubeTaskStorageDataMemory
-        && Boolean.valueOf(parameters.get("worker.storage.data.memory"))) {
+
+    Object value = null;
+    Optional<RunParam> param =
+        params.stream().filter(p -> "worker.storage.data.memory".equals(p.getName())).findFirst();
+    if (param.isPresent()) {
+      value = param.get().getValue();
+    }
+    if (kubeTaskStorageDataMemory && value != null && Boolean.valueOf((boolean) value)) {
       LOGGER.info("Setting /data to in memory storage...");
       dataEmptyDirVolumeSource.setMedium("Memory");
     }
@@ -272,7 +246,7 @@ public class TektonServiceImpl implements TektonService {
     List<VolumeProjection> projectPropsVolumeList = new ArrayList<>();
     VolumeProjection taskCMVolumeProjection = new VolumeProjection();
     ConfigMapProjection projectedTaskConfigMap = new ConfigMapProjection();
-    projectedTaskConfigMap.setName(kubeService.getConfigMapName(helperKubeService.getTaskLabels( workflowId, workflowActivityId, taskId, taskActivityId, customLabels)));
+    projectedTaskConfigMap.setName(kubeService.getConfigMapName(helperKubeService.getTaskLabels( workflowId, workflowActivityId, taskActivityId, customLabels)));
     taskCMVolumeProjection.setConfigMap(projectedTaskConfigMap);    
     projectPropsVolumeList.add(taskCMVolumeProjection);
     projectedVolPropsSource.setSources(projectPropsVolumeList);
@@ -330,8 +304,8 @@ public class TektonServiceImpl implements TektonService {
      */
     List<EnvVar> tknEnvVars = new ArrayList<>();
     tknEnvVars.addAll(helperKubeService.createProxyEnvVars());
-    tknEnvVars.addAll(helperKubeService.createEnvVars(workflowId, workflowActivityId, taskName, taskId, taskActivityId));
-    tknEnvVars.add(helperKubeService.createEnvVar("DEBUG", helperKubeService.getTaskDebug(configuration)));
+    tknEnvVars.addAll(helperKubeService.createEnvVars(workflowId, workflowActivityId, taskName, taskActivityId));
+    tknEnvVars.add(helperKubeService.createEnvVar("DEBUG", debug.toString()));
     tknEnvVars.add(helperKubeService.createEnvVar("CI", "true"));
     if (envVars != null) {
       envVars.forEach(var -> {
@@ -342,18 +316,19 @@ public class TektonServiceImpl implements TektonService {
     /*
      * Define Task Params and Task Spec Params
      * Additionally default an environment variable for the Task Param prefixed with PARAM_
+     * TODO: change this to handle objects and Params easier.
      */
     List<ParamSpec> taskSpecParams = new ArrayList<>();
     List<Param> taskParams = new ArrayList<>();
-    parameters.forEach((key, value) -> {
+    params.forEach(p -> {
       ParamSpec taskSpecParam = new ParamSpec();
-      taskSpecParam.setName(key);
+      taskSpecParam.setName(p.getName());
       taskSpecParam.setType("string");
       taskSpecParams.add(taskSpecParam);
       Param taskParam = new Param();
-      taskParam.setName(key);
+      taskParam.setName(p.getName());
       ArrayOrString valueString = new ArrayOrString();
-      valueString.setStringVal(value);
+      valueString.setStringVal((String) p.getValue());
       taskParam.setValue(valueString);
       taskParams.add(taskParam);
 //      Determine if we need this. For now we keep the configmap.
@@ -420,9 +395,9 @@ public class TektonServiceImpl implements TektonService {
     TaskRun taskRun = new TaskRunBuilder()
       .withNewMetadata()
       .withGenerateName(helperKubeService.getPrefixTask() + "-" + taskActivityId + "-")
-      .withLabels(helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskId, taskActivityId, customLabels))
-      .withAnnotations(helperKubeService.getAnnotations("task", workflowName, workflowId,
-          workflowActivityId, taskId, taskActivityId))
+      .withLabels(helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskActivityId, customLabels))
+      .withAnnotations(helperKubeService.getAnnotations("task", workflowId,
+          workflowActivityId, taskActivityId))
       .endMetadata()
       .withNewSpec()
 //      .withPodTemplate(taskPodTemplate) 
@@ -456,7 +431,7 @@ public class TektonServiceImpl implements TektonService {
   }
 
   @Override
-  public List<TaskResponseResultParameter> watchTask(String workflowId, String workflowActivityId, String taskId,
+  public List<TaskResponseResultParameter> watchTaskRun(String workflowId, String workflowActivityId,
       String taskActivityId, Map<String, String> customLabels, Integer timeout) throws InterruptedException {
     final CountDownLatch latch = new CountDownLatch(1);
     Condition condition = null;
@@ -465,7 +440,7 @@ public class TektonServiceImpl implements TektonService {
     TaskWatcher taskWatcher = new TaskWatcher(latch);
 
     try (Watch ignore = client
-        .v1beta1().taskRuns().withLabels(helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskId, taskActivityId, customLabels))
+        .v1beta1().taskRuns().withLabels(helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskActivityId, customLabels))
         .watch(taskWatcher)) {
       
       //TODO is there a way to wait 3 minutes and check if the task
@@ -487,7 +462,7 @@ public class TektonServiceImpl implements TektonService {
         LOGGER.info("Task completed successfully");
       } else {
         LOGGER.info("Task execution error. " + condition.getReason() + " - " + condition.getMessage());
-        if (kubeService.isTaskRunResultTooLarge(helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskId, taskActivityId, customLabels))) {
+        if (kubeService.isTaskRunResultTooLarge(helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskActivityId, customLabels))) {
           throw new BoomerangException(BoomerangError.TASK_EXECUTION_ERROR, "TaskRunResultTooLarge - Task has exceeded the maximum allowed 4096 byte size for Result Parameters.");
         } else {
           throw new BoomerangException(BoomerangError.TASK_EXECUTION_ERROR, condition.getReason() + " - " + condition.getMessage());
@@ -508,12 +483,12 @@ public class TektonServiceImpl implements TektonService {
   }
 
   @Override
-  public void deleteTask(String workflowId,
-      String workflowActivityId, String taskId, String taskActivityId, Map<String, String> customLabels) {
+  public void deleteTaskRun(String workflowId,
+      String workflowActivityId, String taskActivityId, Map<String, String> customLabels) {
 
     LOGGER.debug("Deleting Task...");
     
-    client.v1beta1().taskRuns().withLabels(helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskId, taskActivityId, customLabels)).withPropagationPolicy(DeletionPropagation.BACKGROUND).delete();
+    client.v1beta1().taskRuns().withLabels(helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskActivityId, customLabels)).withPropagationPolicy(DeletionPropagation.BACKGROUND).delete();
   }
   
   /*
@@ -526,8 +501,8 @@ public class TektonServiceImpl implements TektonService {
    * - https://github.com/abayer/tektoncd-pipeline/blob/0.8.0-jx-support-backwards-incompats/pkg/reconciler/taskrun/cancel.go
    */
   @Override
-  public void cancelTask(String workflowId, String workflowActivityId, String taskId, String taskActivityId, Map<String, String> customLabels) {
-    Map<String, String> labels = helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskId, taskActivityId, customLabels);
+  public void cancelTaskRun(String workflowId, String workflowActivityId, String taskActivityId, Map<String, String> customLabels) {
+    Map<String, String> labels = helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskActivityId, customLabels);
   
     LOGGER.info("Cancelling Task with labels: " + labels.toString());
     

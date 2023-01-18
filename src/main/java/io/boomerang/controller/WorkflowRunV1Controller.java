@@ -6,23 +6,25 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import io.boomerang.model.Response;
-import io.boomerang.model.Workflow;
+import io.boomerang.model.WorkflowRequest;
 import io.boomerang.service.WorkflowService;
 
 @RestController
-@RequestMapping("/controller/api/v1/workflowrun")
+@RequestMapping("/controller/api/v1/workflow/run")
 public class WorkflowRunV1Controller {
 
   @Autowired
   private WorkflowService workflowService;
 
+  @Deprecated
   @PostMapping(value = "/execute")
-  public Response createWorkflow(@RequestBody Workflow workflow) {
-    return workflowService.createWorkflow(workflow);
+  public Response create(@RequestBody WorkflowRequest workflow) {
+    return workflowService.execute(workflow);
   }
 
+  @Deprecated
   @PostMapping(value = "/terminate")
-  public Response terminateFlow(@RequestBody Workflow workflow) {
-    return workflowService.terminateWorkflow(workflow);
+  public Response terminate(@RequestBody WorkflowRequest workflow) {
+    return workflowService.terminate(workflow);
   }
 }

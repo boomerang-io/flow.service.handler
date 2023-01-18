@@ -1,22 +1,119 @@
 package io.boomerang.service;
 
+import static io.cloudevents.core.CloudEventUtils.mapData;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.boomerang.client.EngineClient;
+import io.boomerang.model.TaskCustom;
+import io.boomerang.model.TaskRequest;
+import io.boomerang.model.TaskTemplate;
+import io.boomerang.model.WorkflowRequest;
+import io.boomerang.model.enums.RunPhase;
+import io.boomerang.model.enums.RunStatus;
+import io.boomerang.model.ref.TaskRun;
+import io.boomerang.model.ref.TaskType;
+import io.boomerang.model.ref.WorkflowRun;
 import io.cloudevents.CloudEvent;
+import io.cloudevents.core.data.PojoCloudEventData;
+import io.cloudevents.jackson.PojoCloudEventDataMapper;
 
 @Service
 public class EventServiceImpl implements EventService {
 
+  @Autowired
+  private WorkflowService workflowService;
+  
+  @Autowired
+  private TaskService taskService;
+  
+  @Autowired
+  private EngineClient engineClient;
+
   private static final Logger logger = LogManager.getLogger(EventServiceImpl.class);
 
-  private static final String TYPE_PREFIX = "io.boomerang.eventing.";
+  private static final String TYPE_PREFIX = "io.boomerang.event.status.";
   
   @Override
-  public ResponseEntity<?> process(CloudEvent cloudEvent) {
+  public ResponseEntity<?> process(CloudEvent event) {
+    // Check if event that we support and return with accepted or rejected. Processing will be done async.
+    if (event.getType().startsWith(TYPE_PREFIX)) {
+      processAsync(event);
+    } else {
+      return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).build();
+    }
     logger.info("CloudEvent Processed.");
-    return null;
+    return ResponseEntity.status(HttpStatus.ACCEPTED).build();
+  }
+  
+  private Future<Boolean> processAsync(CloudEvent event) {
+    Supplier<Boolean> supplier = () -> {
+      Boolean isSuccess = Boolean.FALSE;
+      try {
+        String eventType = event.getType().substring(TYPE_PREFIX.length());
+        logger.info("Event Type: " + eventType);
+        ObjectMapper mapper = new ObjectMapper();    
+        if ("workflowrun".toLowerCase().equals(eventType.toLowerCase())) {
+          PojoCloudEventData<WorkflowRun> data = mapData(
+              event,
+              PojoCloudEventDataMapper.from(mapper,WorkflowRun.class)
+          );
+          WorkflowRun workflowRun = data.getValue();
+          logger.info(workflowRun.toString());
+          WorkflowRequest request = new WorkflowRequest();
+          request.setWorkflowRef(workflowRun.getWorkflowRef());
+          request.setWorkflowRunRef(workflowRun.getId());
+          request.setLabels(workflowRun.getLabels());
+          request.setWorkspaces(workflowRun.getWorkspaces());
+          if (RunPhase.pending.equals(workflowRun.getPhase()) && RunStatus.ready.equals(workflowRun.getStatus())) {
+            logger.info("Create Workflow");
+            workflowService.execute(request);
+            engineClient.startWorkflow(workflowRun.getId());
+          } else if (RunPhase.completed.equals(workflowRun.getPhase())) {
+            logger.info("Need to close out the workflow");
+            workflowService.terminate(request);
+            engineClient.finalizeWorkflow(workflowRun.getId());
+          }
+        } else if ("taskrun".toLowerCase().equals(eventType.toLowerCase())) {
+          PojoCloudEventData<TaskRun> data = mapData(
+              event,
+              PojoCloudEventDataMapper.from(mapper,TaskRun.class)
+          );
+          TaskRun taskRun = data.getValue();
+          if (RunPhase.pending.equals(taskRun.getPhase()) && RunStatus.ready.equals(taskRun.getStatus())) {
+            logger.info("Create Task");
+            if (TaskType.template.equals(taskRun.getType())) {
+              TaskTemplate request = new TaskTemplate(taskRun);
+              logger.info(request.toString());
+            taskService.execute(request);
+            engineClient.startTask(taskRun.getId());
+            } else if (TaskType.custom.equals(taskRun.getType())) {
+              TaskCustom request = new TaskCustom(taskRun);
+              logger.info(request.toString());
+            taskService.execute(request);
+            engineClient.startTask(taskRun.getId());
+            }
+          } else if (RunPhase.completed.equals(taskRun.getPhase())) {
+            logger.info("Need to close out the workflow");
+            //TODO: Close out any workspaces
+          }
+          logger.info(taskRun.toString());
+        }
+        isSuccess = Boolean.TRUE;
+      } catch (Exception e) {
+        logger.fatal("A fatal error has occurred while processing the message!", e);
+      }
+      return isSuccess;
+    };
+
+    return CompletableFuture.supplyAsync(supplier);
   }
 
 //  @Override
