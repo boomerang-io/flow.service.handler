@@ -12,17 +12,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Install Java and Maven
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v3
         with:
-          java-version: '11'
-          distribution: 'adopt'
-          server-id: github # Value of the distributionManagement/repository/id field of the pom.xml
-          settings-path: ${{ github.workspace }} # location for the settings.xml file
-      - name: Maven Package
-        env:
-          GITHUB_TOKEN: ${{ github.token }} # GITHUB_TOKEN is the default env for the password
+          java-version: '18'
+          distribution: 'temurin'
+          cache: 'maven'
+      - name: Test
         run: |
-          mvn clean test --batch-mode -s settings.xml
+          mvn clean test --batch-mode
       - name: Slack
         uses: 8398a7/action-slack@v3
         if: ${{ always() }}
@@ -39,16 +36,12 @@ jobs:
       - name: Install Java and Maven
         uses: actions/setup-java@v2
         with:
-          java-version: '11'
-          distribution: 'adopt'
+          java-version: '18'
+          distribution: 'temurin'
           cache: 'maven'
-          server-id: github # Value of the distributionManagement/repository/id field of the pom.xml
-          settings-path: ${{ github.workspace }} # location for the settings.xml file
-      - name: Maven Package
-        env:
-          GITHUB_TOKEN: ${{ github.token }} # GITHUB_TOKEN is the default env for the password
+      - name: Build
         run: |
-          mvn clean package --batch-mode -Dmaven.test.skip=true -s settings.xml
+          mvn clean package --batch-mode -Dmaven.test.skip=true
       - uses: actions/upload-artifact@v2
         if: ${{ success() }}
         with:
