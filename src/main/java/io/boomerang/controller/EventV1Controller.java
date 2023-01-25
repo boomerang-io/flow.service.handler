@@ -15,7 +15,7 @@ import io.cloudevents.CloudEvent;
 import io.cloudevents.spring.http.CloudEventHttpUtils;
 
 @RestController
-@RequestMapping("/controller/api/v1")
+@RequestMapping("/api/v1")
 public class EventV1Controller {
   Logger logger = LogManager.getLogger(EventV1Controller.class);
 

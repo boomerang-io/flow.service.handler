@@ -60,7 +60,8 @@ public class EventServiceImpl implements EventService {
         String eventType = event.getType().substring(TYPE_PREFIX.length());
         logger.info("Event Type: " + eventType);
         ObjectMapper mapper = new ObjectMapper();    
-        if ("workflowrun".toLowerCase().equals(eventType.toLowerCase())) {
+        if ("workflowrun"
+            .toLowerCase().equals(eventType.toLowerCase())) {
           PojoCloudEventData<WorkflowRun> data = mapData(
               event,
               PojoCloudEventDataMapper.from(mapper,WorkflowRun.class)
@@ -92,13 +93,13 @@ public class EventServiceImpl implements EventService {
             if (TaskType.template.equals(taskRun.getType())) {
               TaskTemplate request = new TaskTemplate(taskRun);
               logger.info(request.toString());
+              engineClient.startTask(taskRun.getId());
             taskService.execute(request);
-            engineClient.startTask(taskRun.getId());
             } else if (TaskType.custom.equals(taskRun.getType())) {
               TaskCustom request = new TaskCustom(taskRun);
               logger.info(request.toString());
-            taskService.execute(request);
-            engineClient.startTask(taskRun.getId());
+              engineClient.startTask(taskRun.getId());
+              taskService.execute(request);
             }
           } else if (RunPhase.completed.equals(taskRun.getPhase())) {
             logger.info("Need to close out the workflow");

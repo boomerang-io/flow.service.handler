@@ -10,7 +10,7 @@ import io.boomerang.model.TaskResponse;
 import io.boomerang.service.TaskService;
 
 @RestController
-@RequestMapping("/controller/api/v1/task/run")
+@RequestMapping("/api/v1/task/run")
 public class TaskRunV1Controller {
 
   @Autowired

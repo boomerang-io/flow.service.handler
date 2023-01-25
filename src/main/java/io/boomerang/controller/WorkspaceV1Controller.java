@@ -10,7 +10,7 @@ import io.boomerang.model.Response;
 import io.boomerang.service.WorkspaceService;
 
 @RestController
-@RequestMapping("/controller/api/v1/workspace")
+@RequestMapping("/api/v1/workspace")
 public class WorkspaceV1Controller {
 
   @Autowired
