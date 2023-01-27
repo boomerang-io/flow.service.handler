@@ -69,7 +69,7 @@ public class KubeServiceImpl implements KubeService {
   @Value("${kube.worker.hostaliases}")
   protected String kubeHostAliases;
 
-  @Value("${controller.service.host}")
+  @Value("${flow.controller.service.host}")
   protected String controllerServiceURL;
 
   protected KubernetesClient client = null;
