@@ -16,7 +16,6 @@ import io.boomerang.kube.service.TektonServiceImpl;
 import io.boomerang.model.TaskCustom;
 import io.boomerang.model.TaskRequest;
 import io.boomerang.model.TaskResponse;
-import io.boomerang.model.TaskResponseResultParameter;
 import io.boomerang.model.TaskTemplate;
 import io.boomerang.model.ref.RunResult;
 import io.boomerang.model.ref.TaskDeletionEnum;
