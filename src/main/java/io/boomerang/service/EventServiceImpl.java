@@ -101,7 +101,7 @@ public class EventServiceImpl implements EventService {
             TaskRun taskRun = data.getValue();
             logger.info(taskRun.toString());
             try {
-              if (RunPhase.pending.equals(taskRun.getPhase()) && RunStatus.ready.equals(taskRun.getStatus())) {
+              if ((TaskType.template.equals(taskRun.getType()) || TaskType.custom.equals(taskRun.getType()) ) && RunPhase.pending.equals(taskRun.getPhase()) && RunStatus.ready.equals(taskRun.getStatus())) {
                 logger.info("Executing TaskRun...");
                 TaskResponse response = new TaskResponse();
                 if (TaskType.template.equals(taskRun.getType())) {
@@ -120,6 +120,8 @@ public class EventServiceImpl implements EventService {
                 endRequest.setStatusMessage(response.getMessage());
                 endRequest.setResults(response.getResults());
                 engineClient.endTask(taskRun.getId(), endRequest);
+              } else {
+                logger.info("Skipping TaskRun as criteria not met; (Type: template or custom), (Status: ready), and (Phase: pending).");
               }
             } catch (BoomerangException e) {
               logger.fatal("Failed to execute TaskRun.", e);

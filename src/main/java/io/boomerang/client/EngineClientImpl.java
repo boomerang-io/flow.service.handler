@@ -23,8 +23,8 @@ public class EngineClientImpl implements EngineClient {
   @Value("${flow.engine.workflowrun.start.url}")
   private String startWorkflowRunURL;
 
-  @Value("${flow.engine.workflowrun.end.url}")
-  private String endWorkflowRunURL;
+  @Value("${flow.engine.workflowrun.finalize.url}")
+  private String finalizeWorkflowRunURL;
   
   @Value("${flow.engine.taskrun.start.url}")
   private String startTaskRunURL;
@@ -55,7 +55,7 @@ public class EngineClientImpl implements EngineClient {
   @Override
   public void finalizeWorkflow(String wfRunId) {
     try {
-      String url = endWorkflowRunURL.replace("{workflowRunId}", wfRunId);
+      String url = finalizeWorkflowRunURL.replace("{workflowRunId}", wfRunId);
       final HttpHeaders headers = new HttpHeaders();
       headers.setContentType(MediaType.APPLICATION_JSON);
       HttpEntity<String> entity = new HttpEntity<String>("{}", headers);
