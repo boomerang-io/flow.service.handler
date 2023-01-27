@@ -3,8 +3,8 @@ package io.boomerang.kube.service;
 import java.text.ParseException;
 import java.util.List;
 import java.util.Map;
-import io.boomerang.model.TaskResponseResultParameter;
 import io.boomerang.model.ref.RunParam;
+import io.boomerang.model.ref.RunResult;
 import io.boomerang.model.ref.TaskEnvVar;
 import io.boomerang.model.ref.TaskWorkspace;
 import io.fabric8.tekton.pipeline.v1beta1.TaskRun;
@@ -21,7 +21,7 @@ public interface TektonService {
       List<TaskWorkspace> workspaces, long waitSeconds, Integer timeout, Boolean debug)
       throws InterruptedException, ParseException;
 
-  List<TaskResponseResultParameter> watchTaskRun(String workflowId, String workflowActivityId,
+  List<RunResult> watchTaskRun(String workflowId, String workflowActivityId,
       String taskActivityId, Map<String, String> customLabels, Integer timeout)
       throws InterruptedException;
 

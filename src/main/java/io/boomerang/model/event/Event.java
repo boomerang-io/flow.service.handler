@@ -3,7 +3,6 @@ package io.boomerang.model.event;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Date;
-import io.boomerang.model.enums.EventType;
 import io.cloudevents.CloudEvent;
 
 public abstract class Event {

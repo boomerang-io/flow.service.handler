@@ -1,7 +1,6 @@
 package io.boomerang.model.ref;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import io.boomerang.model.enums.ExecutionCondition;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class TaskDependency {

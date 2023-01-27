@@ -8,8 +8,6 @@ import java.util.Map;
 import org.springframework.data.annotation.Id;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import io.boomerang.model.enums.RunPhase;
-import io.boomerang.model.enums.RunStatus;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 //@JsonInclude(Include.NON_NULL)

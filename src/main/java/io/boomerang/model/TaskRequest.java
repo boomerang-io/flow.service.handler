@@ -10,6 +10,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.boomerang.model.ref.RunParam;
 import io.boomerang.model.ref.RunResult;
+import io.boomerang.model.ref.TaskDeletionEnum;
 import io.boomerang.model.ref.TaskEnvVar;
 import io.boomerang.model.ref.TaskWorkspace;
 

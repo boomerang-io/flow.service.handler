@@ -1,4 +1,4 @@
-package io.boomerang.model.enums;
+package io.boomerang.model.ref;
 
 import java.util.Arrays;
 import com.fasterxml.jackson.annotation.JsonValue;

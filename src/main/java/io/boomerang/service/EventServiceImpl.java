@@ -12,13 +12,17 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.boomerang.client.EngineClient;
+import io.boomerang.error.BoomerangException;
+import io.boomerang.model.Response;
 import io.boomerang.model.TaskCustom;
-import io.boomerang.model.TaskRequest;
+import io.boomerang.model.TaskResponse;
 import io.boomerang.model.TaskTemplate;
 import io.boomerang.model.WorkflowRequest;
-import io.boomerang.model.enums.RunPhase;
-import io.boomerang.model.enums.RunStatus;
+import io.boomerang.model.ref.RunError;
+import io.boomerang.model.ref.RunPhase;
+import io.boomerang.model.ref.RunStatus;
 import io.boomerang.model.ref.TaskRun;
+import io.boomerang.model.ref.TaskRunEndRequest;
 import io.boomerang.model.ref.TaskType;
 import io.boomerang.model.ref.WorkflowRun;
 import io.cloudevents.CloudEvent;
@@ -56,61 +60,80 @@ public class EventServiceImpl implements EventService {
   private Future<Boolean> processAsync(CloudEvent event) {
     Supplier<Boolean> supplier = () -> {
       Boolean isSuccess = Boolean.FALSE;
-      try {
         String eventType = event.getType().substring(TYPE_PREFIX.length());
         logger.info("Event Type: " + eventType);
         ObjectMapper mapper = new ObjectMapper();    
         if ("workflowrun"
             .toLowerCase().equals(eventType.toLowerCase())) {
-          PojoCloudEventData<WorkflowRun> data = mapData(
-              event,
-              PojoCloudEventDataMapper.from(mapper,WorkflowRun.class)
-          );
-          WorkflowRun workflowRun = data.getValue();
-          logger.info(workflowRun.toString());
-          WorkflowRequest request = new WorkflowRequest();
-          request.setWorkflowRef(workflowRun.getWorkflowRef());
-          request.setWorkflowRunRef(workflowRun.getId());
-          request.setLabels(workflowRun.getLabels());
-          request.setWorkspaces(workflowRun.getWorkspaces());
-          if (RunPhase.pending.equals(workflowRun.getPhase()) && RunStatus.ready.equals(workflowRun.getStatus())) {
-            logger.info("Create Workflow");
-            workflowService.execute(request);
-            engineClient.startWorkflow(workflowRun.getId());
-          } else if (RunPhase.completed.equals(workflowRun.getPhase())) {
-            logger.info("Need to close out the workflow");
-            workflowService.terminate(request);
-            engineClient.finalizeWorkflow(workflowRun.getId());
+          try {
+            PojoCloudEventData<WorkflowRun> data = mapData(
+                event,
+                PojoCloudEventDataMapper.from(mapper,WorkflowRun.class)
+            );
+            WorkflowRun workflowRun = data.getValue();
+            logger.info(workflowRun.toString());
+            WorkflowRequest request = new WorkflowRequest();
+            request.setWorkflowRef(workflowRun.getWorkflowRef());
+            request.setWorkflowRunRef(workflowRun.getId());
+            request.setLabels(workflowRun.getLabels());
+            request.setWorkspaces(workflowRun.getWorkspaces());
+            if (RunPhase.pending.equals(workflowRun.getPhase()) && RunStatus.ready.equals(workflowRun.getStatus())) {
+              logger.info("Executing WorkflowRun...");
+              workflowService.execute(request);
+              engineClient.startWorkflow(workflowRun.getId());
+            } else if (RunPhase.completed.equals(workflowRun.getPhase())) {
+              logger.info("Finalizing WorkflowRun...");
+              workflowService.terminate(request);
+              engineClient.finalizeWorkflow(workflowRun.getId());
+            }
+          } catch (BoomerangException e) {
+            logger.fatal("A fatal error has occurred while processing the message!", e);
+            //TODO catch failure and end workflow with error status
+          } catch (Exception e) {
+            logger.fatal("A fatal error has occurred while processing the message!", e);
           }
         } else if ("taskrun".toLowerCase().equals(eventType.toLowerCase())) {
-          PojoCloudEventData<TaskRun> data = mapData(
-              event,
-              PojoCloudEventDataMapper.from(mapper,TaskRun.class)
-          );
-          TaskRun taskRun = data.getValue();
-          if (RunPhase.pending.equals(taskRun.getPhase()) && RunStatus.ready.equals(taskRun.getStatus())) {
-            logger.info("Create Task");
-            if (TaskType.template.equals(taskRun.getType())) {
-              TaskTemplate request = new TaskTemplate(taskRun);
-              logger.info(request.toString());
-              engineClient.startTask(taskRun.getId());
-            taskService.execute(request);
-            } else if (TaskType.custom.equals(taskRun.getType())) {
-              TaskCustom request = new TaskCustom(taskRun);
-              logger.info(request.toString());
-              engineClient.startTask(taskRun.getId());
-              taskService.execute(request);
+          try {
+            PojoCloudEventData<TaskRun> data = mapData(
+                event,
+                PojoCloudEventDataMapper.from(mapper,TaskRun.class)
+            );
+            TaskRun taskRun = data.getValue();
+            logger.info(taskRun.toString());
+            try {
+              if (RunPhase.pending.equals(taskRun.getPhase()) && RunStatus.ready.equals(taskRun.getStatus())) {
+                logger.info("Executing TaskRun...");
+                TaskResponse response = new TaskResponse();
+                if (TaskType.template.equals(taskRun.getType())) {
+                  TaskTemplate request = new TaskTemplate(taskRun);
+                  logger.info(request.toString());
+                  engineClient.startTask(taskRun.getId());
+                  response = taskService.execute(request);
+                } else if (TaskType.custom.equals(taskRun.getType())) {
+                  TaskCustom request = new TaskCustom(taskRun);
+                  logger.info(request.toString());
+                  engineClient.startTask(taskRun.getId());
+                  response = taskService.execute(request);
+                }
+                TaskRunEndRequest endRequest = new TaskRunEndRequest();
+                endRequest.setStatus(RunStatus.succeeded);
+                endRequest.setStatusMessage(response.getMessage());
+                endRequest.setResults(response.getResults());
+                engineClient.endTask(taskRun.getId(), endRequest);
+              }
+            } catch (BoomerangException e) {
+              logger.fatal("Failed to execute TaskRun.", e);
+              TaskRunEndRequest endRequest = new TaskRunEndRequest();
+              endRequest.setStatus(RunStatus.failed);
+              RunError error = new RunError(Integer.toString(e.getCode()), e.getMessage());
+              endRequest.setError(error);
+              engineClient.endTask(taskRun.getId(), endRequest);
             }
-          } else if (RunPhase.completed.equals(taskRun.getPhase())) {
-            logger.info("Need to close out the workflow");
-            //TODO: Close out any workspaces
+          } catch (Exception e) {
+            logger.fatal("A fatal error has occurred while processing the message!", e);
           }
-          logger.info(taskRun.toString());
-        }
         isSuccess = Boolean.TRUE;
-      } catch (Exception e) {
-        logger.fatal("A fatal error has occurred while processing the message!", e);
-      }
+      } 
       return isSuccess;
     };
 

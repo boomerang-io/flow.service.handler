@@ -14,11 +14,12 @@ import io.boomerang.kube.exception.KubeRuntimeException;
 import io.boomerang.kube.service.KubeServiceImpl;
 import io.boomerang.kube.service.TektonServiceImpl;
 import io.boomerang.model.TaskCustom;
-import io.boomerang.model.TaskDeletionEnum;
 import io.boomerang.model.TaskRequest;
 import io.boomerang.model.TaskResponse;
 import io.boomerang.model.TaskResponseResultParameter;
 import io.boomerang.model.TaskTemplate;
+import io.boomerang.model.ref.RunResult;
+import io.boomerang.model.ref.TaskDeletionEnum;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 
 @Service
@@ -82,7 +83,7 @@ public class TaskServiceImpl implements TaskService {
   private TaskResponse executeTaskTemplate(TaskTemplate task) {
     TaskResponse response = new TaskResponse("0",
         "Task (" + task.getTaskRunRef() + ") has been executed successfully.", null);
-    List<TaskResponseResultParameter> results = new ArrayList<>();
+    List<RunResult> results = new ArrayList<>();
     if (task.getImage() == null) {
       throw new BoomerangException(1, "NO_TASK_IMAGE", HttpStatus.BAD_REQUEST,
           task.getClass().toString());

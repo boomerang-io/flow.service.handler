@@ -1,5 +1,7 @@
 package io.boomerang.client;
 
+import io.boomerang.model.ref.TaskRunEndRequest;
+
 public interface EngineClient {
 
   void finalizeWorkflow(String wfRunId);
@@ -8,6 +10,6 @@ public interface EngineClient {
 
   void startTask(String taskRunId);
 
-  void endTask(String taskRunId);
+  void endTask(String taskRunId, TaskRunEndRequest endRequest);
   
 }

@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+import io.boomerang.model.ref.TaskRunEndRequest;
 
 @Service
 public class EngineClientImpl implements EngineClient {
@@ -84,12 +85,12 @@ public class EngineClientImpl implements EngineClient {
   }
 
   @Override
-  public void endTask(String taskRunId) {
+  public void endTask(String taskRunId, TaskRunEndRequest endRequest) {
     try {
       String url = endTaskRunURL.replace("{taskRunId}", taskRunId);
       final HttpHeaders headers = new HttpHeaders();
       headers.setContentType(MediaType.APPLICATION_JSON);
-      HttpEntity<String> entity = new HttpEntity<String>("{}", headers);
+      HttpEntity<TaskRunEndRequest> entity = new HttpEntity<TaskRunEndRequest>(endRequest, headers);
       ResponseEntity<Void> response =
           restTemplate.exchange(url, HttpMethod.PUT, entity, Void.class);
 

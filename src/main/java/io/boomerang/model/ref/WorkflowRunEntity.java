@@ -9,8 +9,6 @@ import org.springframework.data.annotation.Id;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import io.boomerang.model.enums.RunPhase;
-import io.boomerang.model.enums.RunStatus;
 import io.fabric8.tekton.v1beta1.internal.pipeline.pkg.apis.run.v1alpha1.RunResult;
 
 @JsonIgnoreProperties(ignoreUnknown = true)

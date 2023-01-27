@@ -18,8 +18,8 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import io.boomerang.error.BoomerangError;
 import io.boomerang.error.BoomerangException;
-import io.boomerang.model.TaskResponseResultParameter;
 import io.boomerang.model.ref.RunParam;
+import io.boomerang.model.ref.RunResult;
 import io.boomerang.model.ref.TaskEnvVar;
 import io.boomerang.model.ref.TaskWorkspace;
 import io.boomerang.service.WorkspaceService;
@@ -431,11 +431,11 @@ public class TektonServiceImpl implements TektonService {
   }
 
   @Override
-  public List<TaskResponseResultParameter> watchTaskRun(String workflowId, String workflowActivityId,
+  public List<RunResult> watchTaskRun(String workflowId, String workflowActivityId,
       String taskActivityId, Map<String, String> customLabels, Integer timeout) throws InterruptedException {
     final CountDownLatch latch = new CountDownLatch(1);
     Condition condition = null;
-    List<TaskRunResult> tknResultParameters = new ArrayList<TaskRunResult>();
+    List<TaskRunResult> tknResults = new ArrayList<TaskRunResult>();
     
     TaskWatcher taskWatcher = new TaskWatcher(latch);
 
@@ -456,7 +456,7 @@ public class TektonServiceImpl implements TektonService {
       }
       
       condition = taskWatcher.getCondition();
-      tknResultParameters = taskWatcher.getResults();
+      tknResults = taskWatcher.getResults();
       
       if (condition != null && "True".equals(condition.getStatus())) {
         LOGGER.info("Task completed successfully");
@@ -474,12 +474,12 @@ public class TektonServiceImpl implements TektonService {
       throw e;
     }
     
-    List<TaskResponseResultParameter> resultParameters = new ArrayList<>();
-    tknResultParameters.forEach(tknResult -> {
-      resultParameters.add(new TaskResponseResultParameter(tknResult.getName(), tknResult.getValue()));
+    List<RunResult> results = new ArrayList<>();
+    tknResults.forEach(tr -> {
+      results.add(new RunResult(tr.getName(), tr.getValue()));
     });
     
-    return resultParameters;
+    return results;
   }
 
   @Override
