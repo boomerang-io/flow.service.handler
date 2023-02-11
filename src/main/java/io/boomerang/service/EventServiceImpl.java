@@ -13,8 +13,8 @@ import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.boomerang.client.EngineClient;
 import io.boomerang.error.BoomerangException;
-import io.boomerang.model.Response;
 import io.boomerang.model.TaskCustom;
+import io.boomerang.model.TaskRequest;
 import io.boomerang.model.TaskResponse;
 import io.boomerang.model.TaskTemplate;
 import io.boomerang.model.WorkflowRequest;
@@ -120,6 +120,10 @@ public class EventServiceImpl implements EventService {
                 endRequest.setStatusMessage(response.getMessage());
                 endRequest.setResults(response.getResults());
                 engineClient.endTask(taskRun.getId(), endRequest);
+              } else if ((TaskType.template.equals(taskRun.getType()) || TaskType.custom.equals(taskRun.getType()) ) && RunPhase.completed.equals(taskRun.getPhase()) && RunStatus.cancelled.equals(taskRun.getStatus())) {
+                logger.info("Cancelling TaskRun...");
+                TaskTemplate request = new TaskTemplate(taskRun);
+                taskService.terminate(request);
               } else {
                 logger.info("Skipping TaskRun as criteria not met; (Type: template or custom), (Status: ready), and (Phase: pending).");
               }

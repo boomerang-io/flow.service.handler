@@ -521,7 +521,7 @@ public class TektonServiceImpl implements TektonService {
       
       taskRun.getStatus().setConditions(taskRunConditions);
   
-      client.v1beta1().taskRuns().updateStatus(taskRun);
+      client.v1beta1().taskRuns().replaceStatus(taskRun);
     } else if (taskRuns != null && taskRuns.isEmpty()) {
       throw new BoomerangException(BoomerangError.TASK_EXECUTION_ERROR, "CANCEL_FAILURE - No tasks found matching the lables: " + labels.toString());
     } else {
