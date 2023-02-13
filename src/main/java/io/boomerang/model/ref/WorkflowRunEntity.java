@@ -6,14 +6,20 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import io.fabric8.tekton.v1beta1.internal.pipeline.pkg.apis.run.v1alpha1.RunResult;
+import io.boomerang.model.RunError;
+import io.boomerang.model.RunParam;
+import io.boomerang.model.RunResult;
+import io.boomerang.model.WorkflowWorkspace;
+import io.boomerang.model.enums.RunPhase;
+import io.boomerang.model.enums.RunStatus;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(Include.NON_NULL)
-//@Document(collection = "#{@mongoConfiguration.fullCollectionName('workflow_runs')}")
+@Document(collection = "#{@mongoConfiguration.fullCollectionName('workflow_runs')}")
 public class WorkflowRunEntity   {
 
   @Id
@@ -28,6 +34,10 @@ public class WorkflowRunEntity   {
   private Date startTime;
 
   private long duration = 0;
+  
+  private Long timeout;
+  
+  private Long retries;
 
   private RunStatus status = RunStatus.notstarted;
   
@@ -101,6 +111,22 @@ public class WorkflowRunEntity   {
 
   public void setDuration(long duration) {
     this.duration = duration;
+  }
+
+  public Long getTimeout() {
+    return timeout;
+  }
+
+  public void setTimeout(Long timeout) {
+    this.timeout = timeout;
+  }
+
+  public Long getRetries() {
+    return retries;
+  }
+
+  public void setRetries(Long retries) {
+    this.retries = retries;
   }
 
   public String getId() {
@@ -213,6 +239,5 @@ public class WorkflowRunEntity   {
 
   public void setWorkspaces(List<WorkflowWorkspace> workspaces) {
     this.workspaces = workspaces;
-  }
-  
+  }  
 }

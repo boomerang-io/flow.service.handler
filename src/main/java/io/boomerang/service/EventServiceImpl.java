@@ -120,7 +120,7 @@ public class EventServiceImpl implements EventService {
                 endRequest.setStatusMessage(response.getMessage());
                 endRequest.setResults(response.getResults());
                 engineClient.endTask(taskRun.getId(), endRequest);
-              } else if ((TaskType.template.equals(taskRun.getType()) || TaskType.custom.equals(taskRun.getType()) ) && RunPhase.completed.equals(taskRun.getPhase()) && RunStatus.cancelled.equals(taskRun.getStatus())) {
+              } else if ((TaskType.template.equals(taskRun.getType()) || TaskType.custom.equals(taskRun.getType()) ) && RunPhase.completed.equals(taskRun.getPhase()) && (RunStatus.cancelled.equals(taskRun.getStatus()) || RunStatus.timedout.equals(taskRun.getStatus()))) {
                 logger.info("Cancelling TaskRun...");
                 TaskTemplate request = new TaskTemplate(taskRun);
                 taskService.terminate(request);
