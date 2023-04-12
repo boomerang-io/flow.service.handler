@@ -1,6 +1,6 @@
-# Boomerang Controller Service
+# Boomerang Handler Service
 
-This service handles and translates the requests that go to Kubernetes. This is used by Boomerang CICD and Boomerang Flow.
+This service handles and translates the Events from Workflow Service that go to TektonCD (Kubernetes). This is used by Boomerang CICD and Boomerang Flow.
 
 It uses the [Fabric8 Kubernetes Java Client](https://github.com/fabric8io/kubernetes-client) to interact with Kubernetes along with the Tekton extension to interact with the Tekton TaskRuns. When writing new controller integrations, it is recommended to look through the Kubernetes Client Docs to find the exact Client method to use and then look at the API code to see how it works for advance configurations such as the Watcher API.
 
