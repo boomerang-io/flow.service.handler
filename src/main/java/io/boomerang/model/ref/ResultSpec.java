@@ -1,4 +1,4 @@
-package io.boomerang.model;
+package io.boomerang.model.ref;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -11,7 +11,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * - io.fabric8.tekton.pipeline.v1beta1.TaskResult;
  */
 @JsonIgnoreProperties
-public class TaskResultParameter {
+public class ResultSpec {
 
   @JsonProperty("description")
   private String description;
@@ -23,7 +23,7 @@ public class TaskResultParameter {
    * No args constructor for use in serialization
    * 
    */
-  public TaskResultParameter() {
+  public ResultSpec() {
   }
 
   /**
@@ -31,7 +31,7 @@ public class TaskResultParameter {
    * @param name
    * @param description
    */
-  public TaskResultParameter(String description, String name) {
+  public ResultSpec(String description, String name) {
       super();
       this.description = description;
       this.name = name;

@@ -6,8 +6,8 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 
 public abstract interface LogService {
 
-	String getLogForTask(String workflowId, String workflowActivityId, String taskId,  String taskActivityId);
+  String getLogForTask(String workflowRef, String workflowRunRef, String taskRunRef);
 
-	StreamingResponseBody streamLogForTask(HttpServletResponse response, String workflowId, String workflowActivityId,
-			String taskId,  String taskActivityId);
+  StreamingResponseBody streamLogForTask(HttpServletResponse response, String workflowRef,
+      String workflowRunRef, String taskRunRef);
 }

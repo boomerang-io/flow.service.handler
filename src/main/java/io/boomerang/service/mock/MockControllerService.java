@@ -2,7 +2,7 @@ package io.boomerang.service.mock;
 
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
-import io.boomerang.model.Task;
+import io.boomerang.model.TaskRequest;
 import io.boomerang.model.TaskResponse;
 import io.boomerang.service.TaskService;
 
@@ -11,7 +11,7 @@ import io.boomerang.service.TaskService;
 public class MockControllerService implements TaskService {
 
 	@Override
-	public TaskResponse executeTask(Task task) {
+	public TaskResponse execute(TaskRequest task) {
 		return null;
 	}
 
@@ -38,7 +38,7 @@ public class MockControllerService implements TaskService {
 //  }
 
   @Override
-  public TaskResponse terminateTask(Task task) {
+  public TaskResponse terminate(TaskRequest task) {
     // TODO Auto-generated method stub
     return null;
   }

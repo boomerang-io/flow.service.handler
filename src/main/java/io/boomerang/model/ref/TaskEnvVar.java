@@ -1,17 +1,17 @@
-package io.boomerang.model;
+package io.boomerang.model.ref;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /*
- * Partially replicates Tekton TaskRunResult but ensures that the SDK Model is not exposed
+ * Partially replicates Tekton EnvVar but ensures that the SDK Model is not exposed
  * as the controllers model
  * 
  * Reference:
- * - io.fabric8.tekton.pipeline.v1beta1.TaskRunResult;
+ * - import io.fabric8.kubernetes.api.model.EnvVar;
  */
 @JsonIgnoreProperties
-public class TaskResponseResultParameter {
+public class TaskEnvVar {
   
   @JsonProperty("name")
   private String name;
@@ -23,7 +23,7 @@ public class TaskResponseResultParameter {
    * No args constructor for use in serialization
    * 
    */
-  public TaskResponseResultParameter() {
+  public TaskEnvVar() {
   }
 
   /**
@@ -31,7 +31,7 @@ public class TaskResponseResultParameter {
    * @param name
    * @param description
    */
-  public TaskResponseResultParameter(String name, String value) {
+  public TaskEnvVar(String name, String value) {
       super();
       this.name = name;
       this.value = value;

@@ -1,4 +1,4 @@
-FROM eclipse-temurin:11.0.17_8-jdk-alpine
+FROM eclipse-temurin:18-jre-alpine
 ENV JAVA_OPTS=""
 ENV BMRG_HOME=/opt/boomerang
 ENV BMRG_SVC=service-controller

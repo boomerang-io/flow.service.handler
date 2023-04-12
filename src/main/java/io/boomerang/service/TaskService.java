@@ -1,11 +1,11 @@
 package io.boomerang.service;
 
-import io.boomerang.model.Task;
+import io.boomerang.model.TaskRequest;
 import io.boomerang.model.TaskResponse;
 
 public abstract interface TaskService {
 
-	TaskResponse executeTask(Task task);
+	TaskResponse execute(TaskRequest task);
 
-    TaskResponse terminateTask(Task task);
+    TaskResponse terminate(TaskRequest task);
 }
