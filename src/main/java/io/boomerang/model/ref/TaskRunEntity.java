@@ -6,25 +6,13 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import io.boomerang.data.model.TaskRunSpec;
-import io.boomerang.model.ResultSpec;
-import io.boomerang.model.RunError;
-import io.boomerang.model.RunParam;
-import io.boomerang.model.RunResult;
-import io.boomerang.model.TaskDependency;
-import io.boomerang.model.TaskWorkspace;
-import io.boomerang.model.enums.RunPhase;
-import io.boomerang.model.enums.RunStatus;
-import io.boomerang.model.enums.TaskType;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(Include.NON_NULL)
-@Document(collection = "#{@mongoConfiguration.fullCollectionName('task_runs')}")
 public class TaskRunEntity {
 
   @Id

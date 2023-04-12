@@ -14,7 +14,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.boomerang.client.EngineClient;
 import io.boomerang.error.BoomerangException;
 import io.boomerang.model.TaskCustom;
-import io.boomerang.model.TaskRequest;
 import io.boomerang.model.TaskResponse;
 import io.boomerang.model.TaskTemplate;
 import io.boomerang.model.WorkflowRequest;

@@ -2,7 +2,6 @@ package io.boomerang.model.ref;
 
 import org.springframework.beans.BeanUtils;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import io.boomerang.data.entity.TaskRunEntity;
 
 /*
  * Based on TaskRunEntity
