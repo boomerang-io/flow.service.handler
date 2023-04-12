@@ -2,10 +2,10 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>io.boomerang</groupId>
-	<artifactId>service-controller</artifactId>
+	<artifactId>service-handler</artifactId>
 	<packaging>jar</packaging>
-	<name>service-controller</name>
-	<description>Service for Flow Controller</description>
+	<name>service-handler</name>
+	<description>Service for Flow Tekton Handler</description>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<java.version>18</java.version>
