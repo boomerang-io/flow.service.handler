@@ -37,10 +37,10 @@ public class KubeHelperServiceImpl implements KubeHelperService {
   @Value("${proxy.ignore}")
   protected String proxyIgnore;
   
-  @Value("${boomerang.product:bmrg-flow}")
+  @Value("${flow.product:bmrg-flow}")
   protected String bmrgProduct;
   
-  @Value("${boomerang.instance:bmrg-flow}")
+  @Value("${flow.instance:bmrg-flow}")
   protected String bmrgInstance;
   
   // Utilized by LogServiceImpl

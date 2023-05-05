@@ -69,9 +69,6 @@ public class KubeServiceImpl implements KubeService {
   @Value("${kube.worker.hostaliases}")
   protected String kubeHostAliases;
 
-  @Value("${flow.controller.service.host}")
-  protected String controllerServiceURL;
-
   protected KubernetesClient client = null;
 
   public KubeServiceImpl() {
@@ -201,7 +198,6 @@ public class KubeServiceImpl implements KubeService {
 //    
 //  Map<String, String> dataMap = new HashMap<>();
 //  Map<String, String> sysProps = new HashMap<>();
-//  sysProps.put("controller-service-url", controllerServiceURL);
 //  sysProps.put("workflow-name", workflowName);
 //  sysProps.put("workflow-id", workflowId);
 //  sysProps.put("workflow-activity-id", workflowActivityId);
@@ -263,7 +259,6 @@ public ConfigMap createTaskConfigMap(String workflowId,
   Map<String, String> sysProps = new HashMap<>();
   sysProps.put("task-name", taskName);
   sysProps.put("task-activity-id", taskActivityId);
-  sysProps.put("controller-service-url", controllerServiceURL);
   sysProps.put("workflow-id", workflowId);
   sysProps.put("workflow-activity-id", workflowActivityId);
   dataMap.put("task.input.properties", helperKubeService.createConfigMapProp(params));
