@@ -13,6 +13,9 @@ public class TaskTemplate extends TaskRequest {
   
   public TaskTemplate(TaskRunEntity entity) {
     BeanUtils.copyProperties(entity, this);
+    //TaskRunEntity has an ID but on the TaskRequest this is the ref
+    this.setTaskRunRef(entity.getId());
+    //TaskRunEntity has layered elements under Spec, the request is flat.
     BeanUtils.copyProperties(entity.getSpec(), this);
   }
 }

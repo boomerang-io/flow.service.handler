@@ -26,8 +26,9 @@ import io.boomerang.model.ref.TaskWorkspace;
 public abstract class TaskRequest {
   private String workflowRef;
   private String workflowRunRef;
+  private String workflowName;
   private String taskRunRef;
-  private String taskName;
+  private String name;
   private String image;
   private List<String> command;
   private String workingDir;
@@ -45,7 +46,7 @@ public abstract class TaskRequest {
   @Override
   public String toString() {
     return "TaskRequest [workflowRef=" + workflowRef + ", workflowRunRef=" + workflowRunRef
-        + ", taskRunRef=" + taskRunRef + ", taskName=" + taskName + ", image=" + image
+        + ", taskRunRef=" + taskRunRef + ", taskName=" + name + ", image=" + image
         + ", command=" + command + ", workingDir=" + workingDir + ", script=" + script + ", labels="
         + labels + ", params=" + params + ", envs=" + envs + ", results=" + results + ", arguments="
         + arguments + ", workspaces=" + workspaces + ", debug=" + debug + ", timeout=" + timeout
@@ -63,6 +64,12 @@ public abstract class TaskRequest {
   public void setWorkflowRunRef(String workflowRunRef) {
     this.workflowRunRef = workflowRunRef;
   }
+  public String getWorkflowName() {
+    return workflowName;
+  }
+  public void setWorkflowName(String workflowName) {
+    this.workflowName = workflowName;
+  }
   public String getTaskRunRef() {
     return taskRunRef;
   }
@@ -70,10 +77,10 @@ public abstract class TaskRequest {
     this.taskRunRef = taskRunRef;
   }
   public String getTaskName() {
-    return taskName;
+    return name;
   }
   public void setTaskName(String taskName) {
-    this.taskName = taskName;
+    this.name = taskName;
   }
   public String getImage() {
     return image;

@@ -21,6 +21,12 @@ public class WorkflowRequest {
   @JsonProperty("workspaces")
   private List<WorkflowWorkspace> workspaces = new LinkedList<>();
 
+  @Override
+  public String toString() {
+    return "WorkflowRequest [workflowRunRef=" + workflowRunRef + ", workflowRef=" + workflowRef
+        + ", labels=" + labels + ", workspaces=" + workspaces + "]";
+  }
+
   public String getWorkflowRef() {
     return workflowRef;
   }
