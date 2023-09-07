@@ -71,9 +71,6 @@ public class TektonServiceImpl implements TektonService {
 
   @Value("${kube.image.pullSecret}")
   protected String kubeImagePullSecret;
-  
-  @Value("${kube.lifecycle.image}")
-  protected String kubeLifecycleImage;
 
   @Value("${kube.task.backOffLimit}")
   protected Integer kubeJobBackOffLimit;
