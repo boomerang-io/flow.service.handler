@@ -175,7 +175,7 @@ public class TektonServiceImpl implements TektonService {
 //        boolean pvcExists =
 //            kubeService.checkWorkspacePVCExists(workspaceRef, ws.getType(), false);
 //        if (pvcExists) {
-        if ("workflow".equals(ws.getType()) || "workflowRun".equals(ws.getType())) {
+        if ("workflow".equals(ws.getType().toLowerCase()) || "workflowrun".equals(ws.getType().toLowerCase())) {
           WorkspaceDeclaration wsWorkspaceDeclaration = new WorkspaceDeclaration();
           wsWorkspaceDeclaration.setName(helperKubeService.getPrefixVol() + "-ws-" + ws.getType());
           String mountPath = ws.getMountPath() != null && !ws.getMountPath().isEmpty() ? ws.getMountPath() : "/workspace/" + ws.getType();

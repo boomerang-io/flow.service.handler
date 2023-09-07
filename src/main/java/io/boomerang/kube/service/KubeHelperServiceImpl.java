@@ -95,9 +95,9 @@ public class KubeHelperServiceImpl implements KubeHelperService {
       String taskName, String taskActivityId) {
     List<EnvVar> envVars = new ArrayList<>();
     envVars.add(createEnvVar("BMRG_WORKFLOW_ID", workflowId));
-    envVars.add(createEnvVar("BMRG_WORKFLOW_RUN_ID", workflowActivityId));
-    envVars.add(createEnvVar("BMRG_TASK_RUN_ID", taskActivityId));
-    envVars.add(createEnvVar("BMRG_TASK_NAME", taskName.replace(" ", "")));
+    envVars.add(createEnvVar("BMRG_WORKFLOWRUN_ID", workflowActivityId));
+    envVars.add(createEnvVar("BMRG_TASKRUN_ID", taskActivityId));
+    envVars.add(createEnvVar("BMRG_TASKRUN_NAME", taskName.replace(" ", "")));
     return envVars;
   }
 
@@ -234,9 +234,9 @@ public class KubeHelperServiceImpl implements KubeHelperService {
     labels.putAll(getBaseLabels(tier));
     Optional.ofNullable(workflowRef).ifPresent(str -> labels.put("boomerang.io/workflow-ref", str));
     Optional.ofNullable(workflowRunRef)
-        .ifPresent(str -> labels.put("boomerang.io/workflow-run-ref", str));
+        .ifPresent(str -> labels.put("boomerang.io/workflowrun-ref", str));
     Optional.ofNullable(taskRunRef)
-        .ifPresent(str -> labels.put("boomerang.io/task-run-ref", str));
+        .ifPresent(str -> labels.put("boomerang.io/taskrun-ref", str));
     Optional.ofNullable(customLabels).ifPresent(lbl -> labels.putAll(lbl));
     return labels;
   }
@@ -291,9 +291,9 @@ public class KubeHelperServiceImpl implements KubeHelperService {
     Optional.ofNullable(workflowRef)
         .ifPresent(str -> labelSelector.append(",boomerang.io/workflow-ref=" + str));
     Optional.ofNullable(workflowRunRef)
-        .ifPresent(str -> labelSelector.append(",boomerang.io/workflow-run-ref=" + str));
+        .ifPresent(str -> labelSelector.append(",boomerang.io/workflowrun-ref=" + str));
     Optional.ofNullable(taskRunRef)
-        .ifPresent(str -> labelSelector.append(",boomerang.io/task-run-ref=" + str));
+        .ifPresent(str -> labelSelector.append(",boomerang.io/taskrun-ref=" + str));
 
     LOGGER.info("  labelSelector: " + labelSelector.toString());
     return labelSelector.toString();

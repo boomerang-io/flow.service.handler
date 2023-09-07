@@ -257,10 +257,10 @@ public ConfigMap createTaskConfigMap(String workflowId,
 
   Map<String, String> dataMap = new HashMap<>();
   Map<String, String> sysProps = new HashMap<>();
-  sysProps.put("task-name", taskName);
-  sysProps.put("task-activity-id", taskActivityId);
-  sysProps.put("workflow-id", workflowId);
-  sysProps.put("workflow-activity-id", workflowActivityId);
+  sysProps.put("taskrun-name", taskName);
+  sysProps.put("taskrun-ref", taskActivityId);
+  sysProps.put("workflow-ref", workflowId);
+  sysProps.put("workflowrun-ref", workflowActivityId);
   dataMap.put("task.input.properties", helperKubeService.createConfigMapProp(params));
   dataMap.put("task.system.properties", helperKubeService.createConfigMapProp(sysProps));
 

@@ -44,12 +44,6 @@ public class TaskServiceImpl implements TaskService {
   @Autowired
   private DeleteService deleteService;
 
-  protected TaskDeletionEnum getTaskDeletionConfig(TaskDeletionEnum taskDeletion) {
-    return taskDeletion != null
-        ? taskDeletion
-        : taskDeletion;
-  }
-
   protected Integer getTaskTimeout(int timeout) {
     return timeout != 0
         ? timeout
@@ -97,7 +91,7 @@ public class TaskServiceImpl implements TaskService {
             waitUntilTimeout, getTaskTimeout(task.getTimeout()), task.getDebug());
         results = tektonService.watchTaskRun(task.getWorkflowRef(), task.getWorkflowRunRef(),
             task.getTaskRunRef(), task.getLabels(), getTaskTimeout(task.getTimeout()));
-        if (getTaskDeletionConfig(task.getDeletion()).equals(TaskDeletionEnum.OnSuccess)) {
+        if ((task.getDeletion() != null ? task.getDeletion() : taskDeletion).equals(TaskDeletionEnum.OnSuccess)) {
           // This will only delete on success as failure throws an Exception.
           deleteService.deleteTaskRun(task.getWorkflowRef(),
               task.getWorkflowRunRef(), task.getTaskRunRef(),
@@ -123,7 +117,7 @@ public class TaskServiceImpl implements TaskService {
         response.setResults(results);
         kubeService.deleteTaskConfigMap(task.getWorkflowRef(), task.getWorkflowRunRef(),
             task.getTaskRunRef(), task.getLabels());
-        if (getTaskDeletionConfig(task.getDeletion()).equals(TaskDeletionEnum.Always)) {
+        if ((task.getDeletion() != null ? task.getDeletion() : taskDeletion).equals(TaskDeletionEnum.Always)) {
           deleteService.deleteTaskRun(task.getWorkflowRef(),
               task.getWorkflowRunRef(), task.getTaskRunRef(),
               task.getLabels());
