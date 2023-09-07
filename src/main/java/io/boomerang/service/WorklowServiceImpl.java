@@ -1,6 +1,5 @@
 package io.boomerang.service;
 
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,7 +9,6 @@ import io.boomerang.error.BoomerangException;
 import io.boomerang.kube.exception.KubeRuntimeException;
 import io.boomerang.kube.service.KubeService;
 import io.boomerang.model.Response;
-import io.boomerang.model.WorkflowRequest;
 import io.boomerang.model.WorkspaceRequest;
 import io.boomerang.model.ref.WorkflowRun;
 import io.fabric8.kubernetes.client.KubernetesClientException;
