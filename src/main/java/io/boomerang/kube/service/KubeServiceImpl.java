@@ -271,6 +271,8 @@ public ConfigMap createTaskConfigMap(String workflowId,
           workflowActivityId, taskActivityId))
       .endMetadata().addToData(dataMap).build();
   
+  LOGGER.debug("ConfigMap: " + configMap.toString());
+  
   ConfigMap result = client.configMaps().create(configMap);
   
   LOGGER.info(result.toString());
