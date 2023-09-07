@@ -1,11 +1,11 @@
 package io.boomerang.service;
 
 import io.boomerang.model.Response;
-import io.boomerang.model.WorkflowRequest;
+import io.boomerang.model.ref.WorkflowRun;
 
 public abstract interface WorkflowService {
 
-	Response execute(WorkflowRequest workflow);
+  Response execute(WorkflowRun workflow);
 
-	Response terminate(WorkflowRequest workflow);
+  Response terminate(WorkflowRun workflow);
 }

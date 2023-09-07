@@ -71,9 +71,6 @@ public class TektonServiceImpl implements TektonService {
 
   @Value("${kube.image.pullSecret}")
   protected String kubeImagePullSecret;
-  
-  @Value("${kube.lifecycle.image}")
-  protected String kubeLifecycleImage;
 
   @Value("${kube.task.backOffLimit}")
   protected Integer kubeJobBackOffLimit;
@@ -122,7 +119,7 @@ public class TektonServiceImpl implements TektonService {
       String workflowId, String workflowActivityId, String taskActivityId, String taskName,
       Map<String, String> customLabels, String image, List<String> command, String script, List<String> arguments,
       List<RunParam> params, List<TaskEnvVar> envVars, List<io.boomerang.model.ref.RunResult> results, String workingDir, 
-      List<TaskWorkspace> workspaces, long waitSeconds, Integer timeout, Boolean debug) throws InterruptedException, ParseException {
+      List<TaskWorkspace> workspaces, long waitSeconds, Long timeout, Boolean debug) throws InterruptedException, ParseException {
 
     LOGGER.info("Initializing Task...");
     
@@ -175,7 +172,7 @@ public class TektonServiceImpl implements TektonService {
 //        boolean pvcExists =
 //            kubeService.checkWorkspacePVCExists(workspaceRef, ws.getType(), false);
 //        if (pvcExists) {
-        if ("workflow".equals(ws.getType().toLowerCase()) || "workflowrun".equals(ws.getType().toLowerCase())) {
+        if ("workflow".equalsIgnoreCase(ws.getType()) || "workflowrun".equalsIgnoreCase(ws.getType())) {
           WorkspaceDeclaration wsWorkspaceDeclaration = new WorkspaceDeclaration();
           wsWorkspaceDeclaration.setName(helperKubeService.getPrefixVol() + "-ws-" + ws.getType());
           String mountPath = ws.getMountPath() != null && !ws.getMountPath().isEmpty() ? ws.getMountPath() : "/workspace/" + ws.getType();
@@ -266,7 +263,7 @@ public class TektonServiceImpl implements TektonService {
       });
     }
     LOGGER.info("Finalized Node Selectors: " + nodeSelectors.toString());
-    if (kubeWorkerTolerations != null && !kubeWorkerTolerations.isEmpty() && !"null".equals(kubeWorkerTolerations)) {
+    if (kubeWorkerTolerations != null && !kubeWorkerTolerations.isEmpty() && !"null".equalsIgnoreCase(kubeWorkerTolerations)) {
       LOGGER.info(kubeWorkerTolerations.toString());
       Type listTolerationsType = new TypeToken<List<Toleration>>() {}.getType();
       tolerations = new Gson().fromJson(kubeWorkerTolerations, listTolerationsType);
@@ -432,7 +429,7 @@ public class TektonServiceImpl implements TektonService {
 
   @Override
   public List<RunResult> watchTaskRun(String workflowId, String workflowActivityId,
-      String taskActivityId, Map<String, String> customLabels, Integer timeout) throws InterruptedException {
+      String taskActivityId, Map<String, String> customLabels, Long timeout) throws InterruptedException {
     final CountDownLatch latch = new CountDownLatch(1);
     Condition condition = null;
     List<TaskRunResult> tknResults = new ArrayList<TaskRunResult>();

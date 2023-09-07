@@ -57,6 +57,14 @@ public class WorkflowRunEntity   {
   
   private List<WorkflowWorkspace> workspaces = new LinkedList<>();
 
+  @Override
+  public String toString() {
+    return "WorkflowRunEntity [id=" + id + ", labels=" + labels + ", creationDate=" + creationDate
+        + ", startTime=" + startTime + ", duration=" + duration + ", timeout=" + timeout
+        + ", retries=" + retries + ", status=" + status + ", phase=" + phase + ", params=" + params
+        + ", results=" + results + ", workspaces=" + workspaces + "]";
+  }
+
   public Map<String, String> getLabels() {
     return labels;
   }

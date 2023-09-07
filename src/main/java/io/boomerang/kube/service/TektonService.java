@@ -18,11 +18,11 @@ public interface TektonService {
       String taskName, Map<String, String> customLabels, String image, List<String> command,
       String script, List<String> arguments, List<RunParam> parameters, List<TaskEnvVar> envVars,
       List<io.boomerang.model.ref.RunResult> results, String workingDir,
-      List<TaskWorkspace> workspaces, long waitSeconds, Integer timeout, Boolean debug)
+      List<TaskWorkspace> workspaces, long waitSeconds, Long timeout, Boolean debug)
       throws InterruptedException, ParseException;
 
   List<RunResult> watchTaskRun(String workflowId, String workflowActivityId,
-      String taskActivityId, Map<String, String> customLabels, Integer timeout)
+      String taskActivityId, Map<String, String> customLabels, Long timeout)
       throws InterruptedException;
 
   void deleteTaskRun(String workflowId, String workflowActivityId, String taskActivityId,
