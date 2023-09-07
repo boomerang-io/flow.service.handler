@@ -13,10 +13,7 @@ import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.boomerang.client.EngineClient;
 import io.boomerang.error.BoomerangException;
-import io.boomerang.model.TaskCustom;
 import io.boomerang.model.TaskResponse;
-import io.boomerang.model.TaskTemplate;
-import io.boomerang.model.WorkflowRequest;
 import io.boomerang.model.ref.RunError;
 import io.boomerang.model.ref.RunPhase;
 import io.boomerang.model.ref.RunStatus;
@@ -71,18 +68,13 @@ public class EventServiceImpl implements EventService {
             );
             WorkflowRun workflowRun = data.getValue();
             logger.info(workflowRun.toString());
-            WorkflowRequest request = new WorkflowRequest();
-            request.setWorkflowRef(workflowRun.getWorkflowRef());
-            request.setWorkflowRunRef(workflowRun.getId());
-            request.setLabels(workflowRun.getLabels());
-            request.setWorkspaces(workflowRun.getWorkspaces());
             if (RunPhase.pending.equals(workflowRun.getPhase()) && RunStatus.ready.equals(workflowRun.getStatus())) {
               logger.info("Executing WorkflowRun...");
-              workflowService.execute(request);
+              workflowService.execute(workflowRun);
               engineClient.startWorkflow(workflowRun.getId());
             } else if (RunPhase.completed.equals(workflowRun.getPhase())) {
               logger.info("Finalizing WorkflowRun...");
-              workflowService.terminate(request);
+              workflowService.terminate(workflowRun);
               engineClient.finalizeWorkflow(workflowRun.getId());
             }
           } catch (BoomerangException e) {
@@ -103,17 +95,8 @@ public class EventServiceImpl implements EventService {
               if ((TaskType.template.equals(taskRun.getType()) || TaskType.custom.equals(taskRun.getType()) || TaskType.script.equals(taskRun.getType())) && RunPhase.pending.equals(taskRun.getPhase()) && RunStatus.ready.equals(taskRun.getStatus())) {
                 logger.info("Executing TaskRun...");
                 TaskResponse response = new TaskResponse();
-                if (TaskType.template.equals(taskRun.getType())) {
-                  TaskTemplate request = new TaskTemplate(taskRun);
-                  logger.info(request.toString());
-                  engineClient.startTask(taskRun.getId());
-                  response = taskService.execute(request);
-                } else if (TaskType.custom.equals(taskRun.getType())) {
-                  TaskCustom request = new TaskCustom(taskRun);
-                  logger.info(request.toString());
-                  engineClient.startTask(taskRun.getId());
-                  response = taskService.execute(request);
-                }
+                response = taskService.execute(taskRun);
+                engineClient.startTask(taskRun.getId());
                 TaskRunEndRequest endRequest = new TaskRunEndRequest();
                 endRequest.setStatus(RunStatus.succeeded);
                 endRequest.setStatusMessage(response.getMessage());
@@ -121,10 +104,9 @@ public class EventServiceImpl implements EventService {
                 engineClient.endTask(taskRun.getId(), endRequest);
               } else if ((TaskType.template.equals(taskRun.getType()) || TaskType.custom.equals(taskRun.getType()) || TaskType.script.equals(taskRun.getType())) && RunPhase.completed.equals(taskRun.getPhase()) && (RunStatus.cancelled.equals(taskRun.getStatus()) || RunStatus.timedout.equals(taskRun.getStatus()))) {
                 logger.info("Cancelling TaskRun...");
-                TaskTemplate request = new TaskTemplate(taskRun);
-                taskService.terminate(request);
+                taskService.terminate(taskRun);
               } else {
-                logger.info("Skipping TaskRun as criteria not met; (Type: template, custom, or script), (Status: ready), and (Phase: pending).");
+                logger.info("Skipping TaskRun as criteria not met; (Type: template, custom, or script), (Status: ready, cancelled, timedout), and (Phase: pending, completed).");
               }
             } catch (BoomerangException e) {
               logger.fatal("Failed to execute TaskRun.", e);

@@ -1,5 +1,6 @@
 package io.boomerang.service;
 
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,9 +9,10 @@ import org.springframework.stereotype.Service;
 import io.boomerang.error.BoomerangException;
 import io.boomerang.kube.exception.KubeRuntimeException;
 import io.boomerang.kube.service.KubeService;
+import io.boomerang.model.Response;
 import io.boomerang.model.WorkflowRequest;
 import io.boomerang.model.WorkspaceRequest;
-import io.boomerang.model.Response;
+import io.boomerang.model.ref.WorkflowRun;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 
 @Service
@@ -32,18 +34,18 @@ public class WorklowServiceImpl implements WorkflowService {
    * and return the information to the Engine.
    */
   @Override
-  public Response execute(WorkflowRequest workflow) {
+  public Response execute(WorkflowRun workflow) {
     Response response = new Response("0",
-        "WorkflowRun (" + workflow.getWorkflowRunRef() + ") has been created successfully.");
+        "WorkflowRun (" + workflow.getId() + ") has been created successfully.");
     LOGGER.info(workflow.toString());
     if (workflow.getWorkspaces() != null && !workflow.getWorkspaces().isEmpty()) {
       workflow.getWorkspaces().stream()
-          .filter(ws -> "workflow".equals(ws.getType()) || "workfowRun".equals(ws.getType()))
+          .filter(ws -> "workflow".equalsIgnoreCase(ws.getType()) || "workfowRun".equalsIgnoreCase(ws.getType()))
           .forEach(ws -> {
             try {
               // Based on the Workspace Type we set the workspaceRef to be the WorkflowRef or the
               // WorkflowRunRef
-              String workspaceRef = workspaceService.getWorkspaceRef(ws.getType(), workflow.getWorkflowRef(), workflow.getWorkflowRunRef());
+              String workspaceRef = workspaceService.getWorkspaceRef(ws.getType(), workflow.getWorkflowRef(), workflow.getId());
               boolean pvcExists =
                   kubeService.checkWorkspacePVCExists(workspaceRef, ws.getType(), false);
               if (!pvcExists && ws.getSpec() != null) {
@@ -54,7 +56,7 @@ public class WorklowServiceImpl implements WorkflowService {
                 request.setOptional(ws.isOptional());
                 request.setSpec(ws.getSpec());
                 request.setWorkflowRef(workflow.getWorkflowRef());
-                request.setWorkflowRunRef(workflow.getWorkflowRunRef());
+                request.setWorkflowRunRef(workflow.getId());
                 workspaceService.create(request);
               } else if (pvcExists) {
                 LOGGER.debug("Workspace (" + ws.getName() + ") PVC already existed.");
@@ -66,7 +68,7 @@ public class WorklowServiceImpl implements WorkflowService {
           });
     } else {
       response = new Response("0",
-          "WorkflowRun (" + workflow.getWorkflowRunRef() + ") created without workspaces.");
+          "WorkflowRun (" + workflow.getId() + ") created without workspaces.");
     }
     return response;
   }
@@ -79,20 +81,20 @@ public class WorklowServiceImpl implements WorkflowService {
    * Workspaces as 'workflow' Workspaces persist across executions.
    */
   @Override
-  public Response terminate(WorkflowRequest workflow) {
+  public Response terminate(WorkflowRun workflow) {
     Response response = new Response("0",
-        "WorkflowRun (" + workflow.getWorkflowRunRef() + ") has been terminated successfully.");
+        "WorkflowRun (" + workflow.getId() + ") has been terminated successfully.");
     if (workflow.getWorkspaces() != null && !workflow.getWorkspaces().isEmpty()) {
-      workflow.getWorkspaces().stream().filter(ws -> "workfowRun".equals(ws.getType()))
+      workflow.getWorkspaces().stream().filter(ws -> "workfowRun".equalsIgnoreCase(ws.getType()))
           .forEach(ws -> {
             WorkspaceRequest request = new WorkspaceRequest();
             request.setType(ws.getType());
             request.setWorkflowRef(workflow.getWorkflowRef());
-            request.setWorkflowRunRef(workflow.getWorkflowRunRef());
+            request.setWorkflowRunRef(workflow.getId());
             workspaceService.delete(request);
           });
     } else {
-      response = new Response("0", "WorkflowRun (" + workflow.getWorkflowRunRef()
+      response = new Response("0", "WorkflowRun (" + workflow.getId()
           + ") terminated without removing Workspaces.");
     }
     return response;
