@@ -252,23 +252,23 @@ public class KubeServiceImpl implements KubeService {
 
   @Override
 public ConfigMap createTaskConfigMap(String workflowId,
-    String workflowActivityId, String taskName, String taskActivityId,
+    String workflowRunId, String taskName, String taskRunId,
     Map<String, String> customLabels, List<RunParam> params) {
 
   Map<String, String> dataMap = new HashMap<>();
   Map<String, String> sysProps = new HashMap<>();
   sysProps.put("taskrun-name", taskName);
-  sysProps.put("taskrun-ref", taskActivityId);
+  sysProps.put("taskrun-ref", taskRunId);
   sysProps.put("workflow-ref", workflowId);
-  sysProps.put("workflowrun-ref", workflowActivityId);
+  sysProps.put("workflowrun-ref", workflowRunId);
   dataMap.put("task.input.properties", helperKubeService.createConfigMapProp(params));
   dataMap.put("task.system.properties", helperKubeService.createConfigMapProp(sysProps));
 
   ConfigMap configMap = new ConfigMapBuilder().withNewMetadata()
       .withGenerateName(helperKubeService.getPrefixCM() + "-")
-      .withLabels(helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskActivityId, customLabels))
+      .withLabels(helperKubeService.getTaskLabels(workflowId, workflowRunId, taskRunId, customLabels))
       .withAnnotations(helperKubeService.getAnnotations("task", workflowId,
-          workflowActivityId, taskActivityId))
+          workflowRunId, taskRunId))
       .endMetadata().addToData(dataMap).build();
   
   LOGGER.debug("ConfigMap: " + configMap.toString());

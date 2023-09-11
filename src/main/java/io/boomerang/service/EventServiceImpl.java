@@ -70,6 +70,9 @@ public class EventServiceImpl implements EventService {
             logger.info(workflowRun.toString());
             if (RunPhase.pending.equals(workflowRun.getPhase()) && RunStatus.ready.equals(workflowRun.getStatus())) {
               logger.info("Executing WorkflowRun...");
+              //The execute is before communicating with the Engine
+              //as starting the workflow will kick off the first task(s) and 
+              //dependencies at the workflow level (Workspaces) need to be there prior
               workflowService.execute(workflowRun);
               engineClient.startWorkflow(workflowRun.getId());
             } else if (RunPhase.completed.equals(workflowRun.getPhase())) {
@@ -94,9 +97,11 @@ public class EventServiceImpl implements EventService {
             try {
               if ((TaskType.template.equals(taskRun.getType()) || TaskType.custom.equals(taskRun.getType()) || TaskType.script.equals(taskRun.getType())) && RunPhase.pending.equals(taskRun.getPhase()) && RunStatus.ready.equals(taskRun.getStatus())) {
                 logger.info("Executing TaskRun...");
+                //Communicate the start with the Engine
+                //prior to Tekton starting as it is a blocking Watch call.
+                engineClient.startTask(taskRun.getId());
                 TaskResponse response = new TaskResponse();
                 response = taskService.execute(taskRun);
-                engineClient.startTask(taskRun.getId());
                 TaskRunEndRequest endRequest = new TaskRunEndRequest();
                 endRequest.setStatus(RunStatus.succeeded);
                 endRequest.setStatusMessage(response.getMessage());
