@@ -11,8 +11,8 @@ import io.boomerang.error.BoomerangError;
 import io.boomerang.error.BoomerangException;
 import io.boomerang.kube.exception.KubeRuntimeException;
 import io.boomerang.kube.service.KubeServiceImpl;
-import io.boomerang.model.WorkspaceRequest;
 import io.boomerang.model.Response;
+import io.boomerang.model.WorkspaceRequest;
 import io.boomerang.model.ref.WorkflowWorkspaceSpec;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 
@@ -114,6 +114,19 @@ public class WorkspaceServiceImpl implements WorkspaceService {
       String workspaceRef = "workflow".equals(workspace.getType()) ? workspace.getWorkflowRef()
           : workspace.getWorkflowRunRef();
       kubeService.deleteWorkspacePVC(workspaceRef, workspace.getType());
+    } catch (KubeRuntimeException e) {
+      throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+    LOGGER.info("deleteWorkspace() - " + response.getMessage());
+    return response;
+  }
+  
+  @Override
+  public Response delete(String type, String ref) {
+    Response response =
+        new Response("0", "Workspace has been successfully deleted.");
+    try {
+      kubeService.deleteWorkspacePVC(ref, type);
     } catch (KubeRuntimeException e) {
       throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
     }

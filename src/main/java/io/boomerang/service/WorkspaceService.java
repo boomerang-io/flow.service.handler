@@ -10,4 +10,6 @@ public abstract interface WorkspaceService {
     Response delete(WorkspaceRequest workspace);
 
     String getWorkspaceRef(String workspaceType, String workflowRef, String workflowRunRef);
+
+    Response delete(String type, String ref);
 }
