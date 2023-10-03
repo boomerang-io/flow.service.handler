@@ -67,7 +67,7 @@ public class TaskServiceImpl implements TaskService {
     TaskResponse response =
         new TaskResponse("0", "Task (" + task.getId() + ") has been executed successfully.", null);
     List<RunResult> results = new ArrayList<>();
-    if (!TaskType.script.equals(task.getType()) && task.getSpec().getImage() == null) {
+    if (task.getSpec().getImage() == null) {
       throw new BoomerangException(1, "NO_TASK_IMAGE", HttpStatus.BAD_REQUEST,
           task.getClass().toString());
     } else {
