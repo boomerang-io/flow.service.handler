@@ -17,6 +17,7 @@ import io.boomerang.model.TaskResponse;
 import io.boomerang.model.ref.RunResult;
 import io.boomerang.model.ref.TaskDeletionEnum;
 import io.boomerang.model.ref.TaskRun;
+import io.boomerang.model.ref.TaskType;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 
 @Service
@@ -66,7 +67,7 @@ public class TaskServiceImpl implements TaskService {
     TaskResponse response =
         new TaskResponse("0", "Task (" + task.getId() + ") has been executed successfully.", null);
     List<RunResult> results = new ArrayList<>();
-    if (task.getSpec().getImage() == null) {
+    if (!TaskType.script.equals(task.getType()) && task.getSpec().getImage() == null) {
       throw new BoomerangException(1, "NO_TASK_IMAGE", HttpStatus.BAD_REQUEST,
           task.getClass().toString());
     } else {
