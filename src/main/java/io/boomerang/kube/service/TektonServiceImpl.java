@@ -10,9 +10,14 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import io.boomerang.error.BoomerangError;
@@ -31,6 +36,7 @@ import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.HostAlias;
 import io.fabric8.kubernetes.api.model.LocalObjectReference;
 import io.fabric8.kubernetes.api.model.PersistentVolumeClaimVolumeSource;
+import io.fabric8.kubernetes.api.model.PodSecurityContext;
 import io.fabric8.kubernetes.api.model.ProjectedVolumeSource;
 import io.fabric8.kubernetes.api.model.Toleration;
 import io.fabric8.kubernetes.api.model.Volume;
@@ -118,7 +124,7 @@ public class TektonServiceImpl implements TektonService {
       String workflowId, String workflowActivityId, String taskActivityId, String taskName,
       String taskId, Map<String, String> customLabels, String image, List<String> command, String script, List<String> arguments,
       Map<String, String> parameters, List<TaskEnvVar> envVars, List<TaskResultParameter> results, String workingDir, 
-      TaskConfiguration configuration, List<TaskWorkspace> workspaces, long waitSeconds, Integer timeout) throws InterruptedException, ParseException {
+      TaskConfiguration configuration, List<TaskWorkspace> workspaces, long waitSeconds, Integer timeout, String serviceAccountName, String podSecurityContextInYaml) throws InterruptedException, ParseException, JsonProcessingException {
 
     LOGGER.info("Initializing Task...");
     
@@ -445,6 +451,19 @@ public class TektonServiceImpl implements TektonService {
       .endTaskSpec()
       .endSpec()
       .build();
+    
+    // Set Pod Security Context if configured
+    if(Strings.isNotBlank(podSecurityContextInYaml)) {
+      taskRun.getSpec().getPodTemplate().setSecurityContext(null);
+      ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+	  PodSecurityContext podSecurityContext = mapper.readValue(podSecurityContextInYaml, PodSecurityContext.class);
+	  taskRun.getSpec().getPodTemplate().setSecurityContext(podSecurityContext);
+    }    
+    
+    // Set Service Account Name if configured
+    if(Strings.isNotBlank(serviceAccountName)) {
+      taskRun.getSpec().setServiceAccountName(serviceAccountName);
+    }
     
     LOGGER.info(taskRun);
     

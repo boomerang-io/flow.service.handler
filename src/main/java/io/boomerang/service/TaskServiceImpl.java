@@ -9,6 +9,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+
 import io.boomerang.error.BoomerangException;
 import io.boomerang.kube.exception.KubeRuntimeException;
 import io.boomerang.kube.service.KubeServiceImpl;
@@ -96,7 +99,7 @@ public class TaskServiceImpl implements TaskService {
             task.getWorkflowActivityId(), task.getTaskActivityId(), task.getTaskName(),
             task.getTaskId(), task.getLabels(), task.getImage(), task.getCommand(), task.getScript(), task.getArguments(), task.getParameters(),
             task.getEnvs(), task.getResults(), task.getWorkingDir(), task.getConfiguration(), task.getWorkspaces(),
-            waitUntilTimeout, getTaskTimeout(task.getConfiguration()));
+            waitUntilTimeout, getTaskTimeout(task.getConfiguration()), task.getServiceAccountName(), task.getSecurityContext());
         results = tektonService.watchTask(task.getWorkflowId(), task.getWorkflowActivityId(),
             task.getTaskId(), task.getTaskActivityId(), task.getLabels(), getTaskTimeout(task.getConfiguration()));
         if (getTaskDeletionConfig(task.getConfiguration()).equals(TaskDeletionEnum.OnSuccess)) {
@@ -117,7 +120,7 @@ public class TaskServiceImpl implements TaskService {
       } catch (KubeRuntimeException e) {
         LOGGER.info("DEBUG::Task Is Being Set as Failed");
         throw new BoomerangException(e, 1, e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
-      } catch (InterruptedException e) {
+      } catch (InterruptedException | JsonProcessingException e) {
         throw new BoomerangException(1, "TASK_CREATION_ERROR", HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
       } catch (ParseException e) {
         throw new BoomerangException(1, "TASK_CREATION_TIMEOUT_ERROR", HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
