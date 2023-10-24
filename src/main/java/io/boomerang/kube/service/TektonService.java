@@ -30,6 +30,6 @@ public interface TektonService {
       String image, List<String> command, String script, List<String> arguments,
       Map<String, String> parameters, List<TaskEnvVar> envVars, List<TaskResultParameter> results,
       String workingDir, TaskConfiguration configuration, List<TaskWorkspace> workspaces,
-      long waitSeconds, Integer timeout, String serviceAccountName, String podSecurityContextInYaml)throws InterruptedException, ParseException, JsonProcessingException;
+      long waitSeconds, Integer timeout, String serviceAccountName, String securityContextInYaml)throws InterruptedException, ParseException, JsonProcessingException;
 
 }
