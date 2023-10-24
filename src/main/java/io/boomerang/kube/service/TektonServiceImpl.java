@@ -454,7 +454,6 @@ public class TektonServiceImpl implements TektonService {
     
     // Set Pod Security Context if configured
     if(Strings.isNotBlank(podSecurityContextInYaml)) {
-      taskRun.getSpec().getPodTemplate().setSecurityContext(null);
       ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
 	  PodSecurityContext podSecurityContext = mapper.readValue(podSecurityContextInYaml, PodSecurityContext.class);
 	  taskRun.getSpec().getPodTemplate().setSecurityContext(podSecurityContext);
