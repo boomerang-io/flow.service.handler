@@ -3,6 +3,9 @@ package io.boomerang.kube.service;
 import java.text.ParseException;
 import java.util.List;
 import java.util.Map;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+
 import io.boomerang.model.TaskConfiguration;
 import io.boomerang.model.TaskEnvVar;
 import io.boomerang.model.TaskResponseResultParameter;
@@ -27,6 +30,6 @@ public interface TektonService {
       String image, List<String> command, String script, List<String> arguments,
       Map<String, String> parameters, List<TaskEnvVar> envVars, List<TaskResultParameter> results,
       String workingDir, TaskConfiguration configuration, List<TaskWorkspace> workspaces,
-      long waitSeconds, Integer timeout) throws InterruptedException, ParseException;
+      long waitSeconds, Integer timeout, String serviceAccountName, String securityContextInYaml)throws InterruptedException, ParseException, JsonProcessingException;
 
 }
