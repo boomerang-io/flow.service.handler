@@ -41,7 +41,7 @@ public class TaskWatcher implements Watcher<TaskRun>{
   public void eventReceived(Action action, TaskRun resource) {
     LOGGER.info("Watch event received {}: {}", action.name(),
         resource.getMetadata().getName());
-    if (resource.getStatus()!= null && resource.getStatus().getConditions() != null) {
+    if (resource.getStatus()!= null && resource.getStatus().getConditions() != null && !resource.getStatus().getConditions().isEmpty()) {
       String taskStatus = resource.getStatus().getConditions().get(0).getStatus();
       LOGGER.info("TaskRun Name: " + resource.getMetadata().getName() + ",\n  Start Time: " + resource.getStatus().getStartTime() + ",\n  Status: "
           + taskStatus);
