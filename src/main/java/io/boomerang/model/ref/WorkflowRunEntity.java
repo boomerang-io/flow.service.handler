@@ -16,53 +16,37 @@ public class WorkflowRunEntity   {
 
   @Id
   private String id;
-
   private Map<String, String> labels = new HashMap<>();
-
   private Map<String, Object> annotations = new HashMap<>();
-  
   private Date creationDate;
-  
   private Date startTime;
-
   private long duration = 0;
-  
   private Long timeout;
-  
   private Long retries;
-
+  private Boolean debug;
   private RunStatus status = RunStatus.notstarted;
-  
   private RunPhase phase = RunPhase.pending;
-
   private RunStatus statusOverride;
-
   private String statusMessage;
-  
   private boolean isAwaitingApproval;
-  
-  private RunError error;
-
   private String workflowRef;
-
   private String workflowRevisionRef;
-
   private String trigger;
-
   private String initiatedByRef;
-  
   private List<RunParam> params = new LinkedList<>();
-
   private List<RunResult> results = new LinkedList<>();
-  
   private List<WorkflowWorkspace> workspaces = new LinkedList<>();
-
+  
   @Override
   public String toString() {
-    return "WorkflowRunEntity [id=" + id + ", labels=" + labels + ", creationDate=" + creationDate
-        + ", startTime=" + startTime + ", duration=" + duration + ", timeout=" + timeout
-        + ", retries=" + retries + ", status=" + status + ", phase=" + phase + ", params=" + params
-        + ", results=" + results + ", workspaces=" + workspaces + "]";
+    return "WorkflowRunEntity [id=" + id + ", labels=" + labels + ", annotations=" + annotations
+        + ", creationDate=" + creationDate + ", startTime=" + startTime + ", duration=" + duration
+        + ", timeout=" + timeout + ", retries=" + retries + ", debug=" + debug + ", status="
+        + status + ", phase=" + phase + ", statusOverride=" + statusOverride + ", statusMessage="
+        + statusMessage + ", isAwaitingApproval=" + isAwaitingApproval + ", workflowRef="
+        + workflowRef + ", workflowRevisionRef=" + workflowRevisionRef + ", trigger=" + trigger
+        + ", initiatedByRef=" + initiatedByRef + ", params=" + params + ", results=" + results
+        + ", workspaces=" + workspaces + "]";
   }
 
   public Map<String, String> getLabels() {
@@ -129,6 +113,14 @@ public class WorkflowRunEntity   {
     this.retries = retries;
   }
 
+  public Boolean getDebug() {
+    return debug;
+  }
+
+  public void setDebug(Boolean debug) {
+    this.debug = debug;
+  }
+  
   public String getId() {
     return id;
   }
@@ -175,14 +167,6 @@ public class WorkflowRunEntity   {
 
   public void setAwaitingApproval(boolean isAwaitingApproval) {
     this.isAwaitingApproval = isAwaitingApproval;
-  }
-
-  public RunError getError() {
-    return error;
-  }
-
-  public void setError(RunError error) {
-    this.error = error;
   }
 
   public String getWorkflowRef() {
