@@ -17,6 +17,7 @@ public class TaskWatcher implements Watcher<TaskRun>{
   private final CountDownLatch latch;
   private Condition condition;
   private List<TaskRunResult> results;
+  private boolean shouldRetry = false;
   
   public TaskWatcher(CountDownLatch latch) {
     this.latch = latch;
@@ -29,7 +30,11 @@ public class TaskWatcher implements Watcher<TaskRun>{
   public List<TaskRunResult> getResults() {
     return results;
   }
-
+  
+  public boolean isShouldRetry() {
+    return shouldRetry;
+  }
+  
   @Override
   /*
    * Process the Watcher Events and return as a Condition result object
@@ -88,9 +93,14 @@ public class TaskWatcher implements Watcher<TaskRun>{
 
   @Override
   public void onClose(WatcherException e) {
-    LOGGER.error("Watch error received: {}", e.getMessage(), e);
-    // Cause the pod to restart
-    System.exit(1);
+	LOGGER.error("Watch error http code received: {}", e.asClientException().getCode());
+    LOGGER.error("Watch error message received: {}", e.getMessage(), e);
+    // set shouldRetry flag for watcher exception
+    if(e.getMessage().contains("too old resource version")) {
+      LOGGER.info("Set shouldRetry to true for too old resource version exception.");
+      this.shouldRetry = true;
+    }
+    latch.countDown();
   }
 
 }

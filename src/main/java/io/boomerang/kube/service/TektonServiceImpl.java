@@ -473,45 +473,56 @@ public class TektonServiceImpl implements TektonService {
   @Override
   public List<TaskResponseResultParameter> watchTask(String workflowId, String workflowActivityId, String taskId,
       String taskActivityId, Map<String, String> customLabels, Integer timeout) throws InterruptedException {
-    final CountDownLatch latch = new CountDownLatch(1);
     Condition condition = null;
     List<TaskRunResult> tknResultParameters = new ArrayList<TaskRunResult>();
+    boolean shouldRetry = true;
+    int retryLimit = 3;
     
-    TaskWatcher taskWatcher = new TaskWatcher(latch);
-
-    try (Watch ignore = client
-        .v1beta1().taskRuns().withLabels(helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskId, taskActivityId, customLabels))
-        .watch(taskWatcher)) {
-      
-      //TODO is there a way to wait 3 minutes and check if the task
-      //has moved from initial state. If its still in initial state then check PVC
-      //PVC might have Event / Condition "ProvisioningFailed" with a reason.
-      
-      //Timeout is 10 minutes more than the TaskRun to account for delays in provisioning etc.
-      //Note:
-      // - The TaskRun Timeout will trigger an interrupt which enters this block as well
-      boolean taskComplete = latch.await(timeout + 10, TimeUnit.MINUTES);
-      if (!taskComplete) {
-        throw new BoomerangException(BoomerangError.TASK_EXECUTION_ERROR, "TaskRunTimeout - Task timed out while waiting for completion.");
-      }
-      
-      condition = taskWatcher.getCondition();
-      tknResultParameters = taskWatcher.getResults();
-      
-      if (condition != null && "True".equals(condition.getStatus())) {
-        LOGGER.info("Task completed successfully");
-      } else {
-        LOGGER.info("Task execution error. " + condition.getReason() + " - " + condition.getMessage());
-        if (kubeService.isTaskRunResultTooLarge(helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskId, taskActivityId, customLabels))) {
-          throw new BoomerangException(BoomerangError.TASK_EXECUTION_ERROR, "TaskRunResultTooLarge - Task has exceeded the maximum allowed 4096 byte size for Result Parameters.");
-        } else {
-          throw new BoomerangException(BoomerangError.TASK_EXECUTION_ERROR, condition.getReason() + " - " + condition.getMessage());
-        }
-      }
-      
-    } catch (Exception e) {
-      LOGGER.error(e.toString());
-      throw e;
+    while(shouldRetry && retryLimit > 0) {
+	    CountDownLatch latch = new CountDownLatch(1);
+	    TaskWatcher taskWatcher = new TaskWatcher(latch);
+	    try (Watch ignore = client
+	        .v1beta1().taskRuns().withLabels(helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskId, taskActivityId, customLabels))
+	        .watch(taskWatcher)) {
+	      
+	      //TODO is there a way to wait 3 minutes and check if the task
+	      //has moved from initial state. If its still in initial state then check PVC
+	      //PVC might have Event / Condition "ProvisioningFailed" with a reason.
+	      
+	      //Timeout is 10 minutes more than the TaskRun to account for delays in provisioning etc.
+	      //Note:
+	      // - The TaskRun Timeout will trigger an interrupt which enters this block as well
+	      boolean taskComplete = latch.await(timeout + 10, TimeUnit.MINUTES);
+	      shouldRetry = taskWatcher.isShouldRetry();
+	      if (!taskComplete) {
+	        throw new BoomerangException(BoomerangError.TASK_EXECUTION_ERROR, "TaskRunTimeout - Task timed out while waiting for completion.");
+	      }
+	      
+	      // handling taskRun watcher retry.
+	      if(shouldRetry) {
+	        LOGGER.warn("TaskRun Watcher Retry: " + retryLimit);
+	    	retryLimit --;
+	    	continue;
+	      }
+	      
+	      condition = taskWatcher.getCondition();
+	      tknResultParameters = taskWatcher.getResults();
+	      
+	      if (condition != null && "True".equals(condition.getStatus())) {
+	        LOGGER.info("Task completed successfully");
+	      } else {
+	        LOGGER.info("Task execution error. " + condition.getReason() + " - " + condition.getMessage());
+	        if (kubeService.isTaskRunResultTooLarge(helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskId, taskActivityId, customLabels))) {
+	          throw new BoomerangException(BoomerangError.TASK_EXECUTION_ERROR, "TaskRunResultTooLarge - Task has exceeded the maximum allowed 4096 byte size for Result Parameters.");
+	        } else {
+	          throw new BoomerangException(BoomerangError.TASK_EXECUTION_ERROR, condition.getReason() + " - " + condition.getMessage());
+	        }
+	      }
+	      
+	    } catch (Exception e) {
+	      LOGGER.error(e.toString());
+	      throw e;
+	    }
     }
     
     List<TaskResponseResultParameter> resultParameters = new ArrayList<>();
