@@ -202,16 +202,15 @@ public class TektonServiceImpl implements TektonService {
      * 
      * Create volumes and Volume Mounts
      * - /props for mounting config_maps @deprecated
-     * - /data for task storage (optional - needed if using in memory storage) @deprecated
-     * - /flow/params for mounting taskrun params as files 
-     * - /flow/data for task storage (optional - needed if using in memory storage)
+     * - /params for mounting taskrun params as files 
+     * - /data for task storage (optional - needed if using in memory storage)
      */
     List<VolumeMount> volumeMounts = new ArrayList<>();
     List<Volume> volumes = new ArrayList<>();
 
     VolumeMount dataVolumeMount = new VolumeMount();
     dataVolumeMount.setName(helperKubeService.getPrefixVol() + "-data");
-    dataVolumeMount.setMountPath("/flow/data");
+    dataVolumeMount.setMountPath("/data");
     volumeMounts.add(dataVolumeMount);
     
     Volume dataVolume = new Volume();
@@ -236,7 +235,7 @@ public class TektonServiceImpl implements TektonService {
      */
     VolumeMount propsVolumeMount = new VolumeMount();
     propsVolumeMount.setName(helperKubeService.getPrefixVol() + "-params");
-    propsVolumeMount.setMountPath("/flow/params");
+    propsVolumeMount.setMountPath("/params");
     volumeMounts.add(propsVolumeMount);
     
     Volume propsVolume = new Volume();
