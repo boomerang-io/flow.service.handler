@@ -120,6 +120,18 @@ public class KubeHelperServiceImpl implements KubeHelperService {
 
     return propsSW.toString();
   }
+  
+  protected Map<String, String> createConfigMapData(List<RunParam> params) {
+    LOGGER.info("Building ConfigMap Data");
+    Map<String, String> data = new HashMap<>();
+    if (params != null && !params.isEmpty()) {
+      params.stream().forEach(p -> {
+        data.put(p.getName(), p.getValue().toString());
+      });
+    }
+
+    return data;
+  }
 
   protected String createConfigMapProp(Map<String, String> properties) {
     LOGGER.info("Building ConfigMap Body");

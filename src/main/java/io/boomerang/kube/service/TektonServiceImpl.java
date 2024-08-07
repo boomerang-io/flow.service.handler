@@ -201,15 +201,17 @@ public class TektonServiceImpl implements TektonService {
      * https://kubernetes.io/docs/concepts/storage/volumes/#emptydir
      * 
      * Create volumes and Volume Mounts
-     * - /props for mounting config_maps 
-     * - /data for task storage (optional - needed if using in memory storage)
+     * - /props for mounting config_maps @deprecated
+     * - /data for task storage (optional - needed if using in memory storage) @deprecated
+     * - /flow/params for mounting taskrun params as files 
+     * - /flow/data for task storage (optional - needed if using in memory storage)
      */
     List<VolumeMount> volumeMounts = new ArrayList<>();
     List<Volume> volumes = new ArrayList<>();
 
     VolumeMount dataVolumeMount = new VolumeMount();
     dataVolumeMount.setName(helperKubeService.getPrefixVol() + "-data");
-    dataVolumeMount.setMountPath("/data");
+    dataVolumeMount.setMountPath("/flow/data");
     volumeMounts.add(dataVolumeMount);
     
     Volume dataVolume = new Volume();
@@ -223,22 +225,22 @@ public class TektonServiceImpl implements TektonService {
       value = param.get().getValue();
     }
     if (kubeTaskStorageDataMemory && value != null && Boolean.valueOf((boolean) value)) {
-      LOGGER.info("Setting /data to in memory storage...");
+      LOGGER.info("Setting data to in memory storage...");
       dataEmptyDirVolumeSource.setMedium("Memory");
     }
     dataVolume.setEmptyDir(dataEmptyDirVolumeSource);
     volumes.add(dataVolume);
 
     /*
-     * Creation of property projected volume to mount workflow and task configmaps
+     * Creation of projected volume to mount task params
      */
     VolumeMount propsVolumeMount = new VolumeMount();
-    propsVolumeMount.setName(helperKubeService.getPrefixVol() + "-props");
-    propsVolumeMount.setMountPath("/props");
+    propsVolumeMount.setName(helperKubeService.getPrefixVol() + "-params");
+    propsVolumeMount.setMountPath("/flow/params");
     volumeMounts.add(propsVolumeMount);
     
     Volume propsVolume = new Volume();
-    propsVolume.setName(helperKubeService.getPrefixVol() + "-props");
+    propsVolume.setName(helperKubeService.getPrefixVol() + "-params");
     ProjectedVolumeSource projectedVolPropsSource = new ProjectedVolumeSource();
     List<VolumeProjection> projectPropsVolumeList = new ArrayList<>();
     VolumeProjection taskCMVolumeProjection = new VolumeProjection();
@@ -301,7 +303,8 @@ public class TektonServiceImpl implements TektonService {
      */
     List<EnvVar> tknEnvVars = new ArrayList<>();
     tknEnvVars.addAll(helperKubeService.createProxyEnvVars());
-    tknEnvVars.addAll(helperKubeService.createEnvVars(workflowId, workflowActivityId, taskName, taskActivityId));
+//    @deprecated - no need to create default params. Can be provided if needed.
+//    tknEnvVars.addAll(helperKubeService.createEnvVars(workflowId, workflowActivityId, taskName, taskActivityId));
     tknEnvVars.add(helperKubeService.createEnvVar("DEBUG", debug.toString()));
     tknEnvVars.add(helperKubeService.createEnvVar("CI", "true"));
     if (envVars != null) {
@@ -328,7 +331,7 @@ public class TektonServiceImpl implements TektonService {
       valueString.setStringVal((String) p.getValue());
       taskParam.setValue(valueString);
       taskParams.add(taskParam);
-//      Determine if we need this. For now we keep the configmap.
+//      TODO Determine if we need this.
 //      envVars.add(helperKubeService.createEnvVar("PARAM_" + key.toUpperCase(), value));
     });
     

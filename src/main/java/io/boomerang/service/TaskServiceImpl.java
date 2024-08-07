@@ -17,7 +17,6 @@ import io.boomerang.model.TaskResponse;
 import io.boomerang.model.ref.RunResult;
 import io.boomerang.model.ref.TaskDeletionEnum;
 import io.boomerang.model.ref.TaskRun;
-import io.boomerang.model.ref.TaskType;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 
 @Service
