@@ -2,7 +2,7 @@ package io.boomerang.kube.service;
 
 import java.io.IOException;
 import java.util.Map;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 public interface LogKubeService {

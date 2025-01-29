@@ -1,6 +1,6 @@
 package io.boomerang.service;
 
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
