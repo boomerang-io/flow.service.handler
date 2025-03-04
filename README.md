@@ -1,3 +1,5 @@
+> ⚠️ this project has been deprecated and the functionality migrated to the Flow Services monorepo. This is remaining unarchived due to LTS of v3 by IBM.
+
 # Boomerang Handler Service
 
 This service handles and translates the Events from Workflow Service that go to TektonCD (Kubernetes). This is used by Boomerang CICD and Boomerang Flow.
