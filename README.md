@@ -107,3 +107,5 @@ container.lifecycle(lifecycle);
 - https://hackernoon.com/the-curious-case-of-pid-namespaces-1ce86b6bc900
 - https://www.mirantis.com/blog/multi-container-pods-and-container-communication-in-kubernetes/
 
+
+1
