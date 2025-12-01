@@ -31,6 +31,12 @@
 	</properties>
 	<dependencyManagement>
 		<dependencies>
+			<!-- https://mvnrepository.com/artifact/org.springframework/spring-beans -->
+			<dependency>
+				<groupId>org.springframework</groupId>
+				<artifactId>spring-beans</artifactId>
+				<version>6.2.10</version>
+			</dependency>
 			<dependency>
 				<groupId>com.google.guava</groupId>
 				<artifactId>guava</artifactId>
@@ -39,7 +45,7 @@
 			<dependency>
 				<groupId>org.apache.tomcat.embed</groupId>
 				<artifactId>tomcat-embed-core</artifactId>
-				<version>10.1.42</version>
+				<version>11.0.11</version>
 			</dependency>
 			<dependency>
 				<groupId>org.springframework</groupId>
@@ -94,6 +100,7 @@
 		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-core</artifactId>
+			<version>6.2.11</version>
 		</dependency>
 
 		<dependency>
@@ -117,6 +124,7 @@
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>
+			<version>3.18.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
