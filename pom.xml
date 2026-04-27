@@ -31,12 +31,16 @@
 	</properties>
 	<dependencyManagement>
 		<dependencies>
-			<!-- Override transitive OkHttp dependency to fix CVE-2021-0341 vulnerability -->
-			<!-- Using version 3.14.9 which contains security fixes but maintains API compatibility -->
+			<!-- Override transitive OkHttp dependency to remediate CVE-2021-0341 -->
 			<dependency>
 				<groupId>com.squareup.okhttp3</groupId>
 				<artifactId>okhttp</artifactId>
-				<version>3.14.9</version>
+				<version>4.12.0</version>
+			</dependency>
+			<dependency>
+				<groupId>com.squareup.okhttp3</groupId>
+				<artifactId>logging-interceptor</artifactId>
+				<version>4.12.0</version>
 			</dependency>
 			<!-- https://mvnrepository.com/artifact/org.springframework/spring-beans -->
 			<dependency>
