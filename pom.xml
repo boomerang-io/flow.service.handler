@@ -31,6 +31,12 @@
 	</properties>
 	<dependencyManagement>
 		<dependencies>
+			<!-- Override jackson-core to remediate WS-2026-0003 (async parser maxNumberLength bypass) -->
+			<dependency>
+				<groupId>com.fasterxml.jackson.core</groupId>
+				<artifactId>jackson-core</artifactId>
+				<version>2.21.1</version>
+			</dependency>
 			<!-- Override transitive OkHttp dependency to remediate CVE-2021-0341 -->
 			<dependency>
 				<groupId>com.squareup.okhttp3</groupId>
