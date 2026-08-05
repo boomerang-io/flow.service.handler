@@ -32,6 +32,12 @@
 	</properties>
 	<dependencyManagement>
 		<dependencies>
+			<!-- Override micrometer-core to remediate CVE-2026-40983 -->
+			<dependency>
+				<groupId>io.micrometer</groupId>
+				<artifactId>micrometer-core</artifactId>
+				<version>1.15.12</version>
+			</dependency>
 			<!-- Override jackson-core to remediate WS-2026-0003 (async parser maxNumberLength bypass) -->
 			<dependency>
 				<groupId>com.fasterxml.jackson.core</groupId>
@@ -63,12 +69,12 @@
 			<dependency>
 				<groupId>org.apache.tomcat.embed</groupId>
 				<artifactId>tomcat-embed-core</artifactId>
-				<version>11.0.22</version>
+				<version>11.0.24</version>
 			</dependency>
 			<dependency>
 				<groupId>org.springframework</groupId>
 				<artifactId>spring-web</artifactId>
-				<version>6.2.8</version>
+				<version>6.2.19</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
