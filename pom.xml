@@ -38,6 +38,24 @@
 				<artifactId>micrometer-core</artifactId>
 				<version>1.15.12</version>
 			</dependency>
+			<!-- Override spring-data-commons to remediate CVE-2026-41695 -->
+			<dependency>
+				<groupId>org.springframework.data</groupId>
+				<artifactId>spring-data-commons</artifactId>
+				<version>3.5.12</version>
+			</dependency>
+			<!-- Override httpcore5-h2 to remediate CVE-2026-54428 -->
+			<dependency>
+				<groupId>org.apache.httpcomponents.core5</groupId>
+				<artifactId>httpcore5-h2</artifactId>
+				<version>5.4.3</version>
+			</dependency>
+			<!-- Override spring-expression to remediate CVE-2026-41850 -->
+			<dependency>
+				<groupId>org.springframework</groupId>
+				<artifactId>spring-expression</artifactId>
+				<version>6.2.19</version>
+			</dependency>
 			<!-- Override jackson-core to remediate WS-2026-0003 (async parser maxNumberLength bypass) -->
 			<dependency>
 				<groupId>com.fasterxml.jackson.core</groupId>
