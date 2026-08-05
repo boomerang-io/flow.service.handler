@@ -38,7 +38,7 @@
 				<artifactId>micrometer-core</artifactId>
 				<version>1.15.12</version>
 			</dependency>
-			<!-- Override spring-data-commons to remediate CVE-2026-41695 -->
+			<!-- Override spring-data-commons to remediate CVE-2026-41695 and CVE-2026-41716 -->
 			<dependency>
 				<groupId>org.springframework.data</groupId>
 				<artifactId>spring-data-commons</artifactId>
@@ -111,6 +111,12 @@
 				<groupId>org.springframework</groupId>
 				<artifactId>spring-webmvc</artifactId>
 				<version>6.2.19</version>
+			</dependency>
+			<!-- Override spring-data-mongodb to remediate CVE-2026-41717 -->
+			<dependency>
+				<groupId>org.springframework.data</groupId>
+				<artifactId>spring-data-mongodb</artifactId>
+				<version>5.0.6</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
