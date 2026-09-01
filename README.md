@@ -1,3 +1,14 @@
+> [!IMPORTANT]
+> ## 🔧 v3 maintenance only
+> This repository is the Tekton handler (controller) of **Boomerang Flow v3**. It is kept for v3 security and compatibility fixes —
+> IBM maintains that line on the `essentials_v3_stable` and `cve_fix` branches. v4 development here has ended.
+>
+> **Boomerang Flow v5 is a monorepo**: task execution continues as [`service-dispatcher`](https://github.com/boomerang-io/flow/tree/feat-v5/service-dispatcher), with Tekton and plain Kubernetes Jobs behind one `TaskExecutor` interface.
+> New bugs and features go to [boomerang-io/flow issues](https://github.com/boomerang-io/flow/issues/new/choose);
+> only v3-line fixes belong here.
+
+---
+
 > ⚠️ this project has been deprecated and the functionality migrated to the Flow Services monorepo. This is remaining unarchived due to LTS of v3 by IBM.
 
 # Boomerang Handler Service
