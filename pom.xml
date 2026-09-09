@@ -96,10 +96,17 @@
 				<artifactId>guava</artifactId>
 				<version>33.4.0-jre</version>
 			</dependency>
+			<!-- Override tomcat-embed-core to remediate CVE-2026-65637 -->
 			<dependency>
 				<groupId>org.apache.tomcat.embed</groupId>
 				<artifactId>tomcat-embed-core</artifactId>
-				<version>11.0.24</version>
+				<version>11.0.25</version>
+			</dependency>
+			<!-- Override httpclient5 to remediate CVE-2026-71290 -->
+			<dependency>
+				<groupId>org.apache.httpcomponents.client5</groupId>
+				<artifactId>httpclient5</artifactId>
+				<version>5.6.4</version>
 			</dependency>
 			<dependency>
 				<groupId>org.springframework</groupId>
