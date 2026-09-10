@@ -102,12 +102,6 @@
 				<artifactId>tomcat-embed-core</artifactId>
 				<version>11.0.25</version>
 			</dependency>
-			<!-- Override httpclient5 to remediate CVE-2026-71290 -->
-			<dependency>
-				<groupId>org.apache.httpcomponents.client5</groupId>
-				<artifactId>httpclient5</artifactId>
-				<version>5.6.4</version>
-			</dependency>
 			<dependency>
 				<groupId>org.springframework</groupId>
 				<artifactId>spring-web</artifactId>
