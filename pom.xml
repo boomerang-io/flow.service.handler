@@ -56,18 +56,35 @@
 				<artifactId>httpcore5</artifactId>
 				<version>5.4.3</version>
 			</dependency>
-			<!-- Override jackson-core to remediate WS-2026-0003 (async parser maxNumberLength bypass) -->
 			<dependency>
-				<groupId>com.fasterxml.jackson.core</groupId>
-				<artifactId>jackson-core</artifactId>
-				<version>2.21.4</version>
+				<groupId>tools.jackson</groupId>
+				<artifactId>jackson-bom</artifactId>
+				<version>3.1.3</version>
+				<type>pom</type>
+				<scope>import</scope>
 			</dependency>
-			<!-- Override jackson-databind to remediate CVE-2026-54513 -->
 			<dependency>
-				<groupId>com.fasterxml.jackson.core</groupId>
-				<artifactId>jackson-databind</artifactId>
-				<version>2.21.4</version>
-			</dependency>
+            	<groupId>com.fasterxml.jackson.core</groupId>
+            	<artifactId>jackson-core</artifactId>
+            	<version>2.21.6</version>
+        	</dependency>
+        	<dependency>
+        	    <groupId>com.fasterxml.jackson.core</groupId>
+        	    <artifactId>jackson-databind</artifactId>
+        	    <version>2.21.6</version>
+        	</dependency>
+        
+        	<!-- Jackson 3.x (Spring Boot 4 default) -->
+        	<dependency>
+        	    <groupId>tools.jackson.core</groupId>
+        	    <artifactId>jackson-core</artifactId>
+            	<version>3.1.6</version>
+        	</dependency>
+        	<dependency>
+            	<groupId>tools.jackson.core</groupId>
+            	<artifactId>jackson-databind</artifactId>
+            	<version>3.1.6</version>
+        	</dependency>
 			<!-- Override transitive OkHttp dependency to remediate CVE-2021-0341 -->
 			<dependency>
 				<groupId>com.squareup.okhttp3</groupId>
