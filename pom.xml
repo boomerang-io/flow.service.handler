@@ -27,6 +27,9 @@
 		<sonar.jacoco.reportPath>${jacoco.out.path}/jacoco.exec</sonar.jacoco.reportPath>
 		<jacoco.version>0.8.2</jacoco.version>
 		<log4j2.version>2.25.5</log4j2.version>
+		<kubernetes.version>5.12.4</kubernetes.version>
+		<tekton.version>5.12.4</tekton.version>
+		<cloudevents.version>2.4.1</cloudevents.version>
 	</properties>
 	<dependencyManagement>
 		<dependencies>
@@ -263,6 +266,26 @@
 			<version>3.0.3</version>
 		</dependency>
 
+		<dependency>
+			<groupId>io.cloudevents</groupId>
+			<artifactId>cloudevents-api</artifactId>
+			<version>${cloudevents.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>io.cloudevents</groupId>
+			<artifactId>cloudevents-spring</artifactId>
+			<version>${cloudevents.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>io.cloudevents</groupId>
+			<artifactId>cloudevents-json-jackson</artifactId>
+			<version>${cloudevents.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>io.cloudevents</groupId>
+			<artifactId>cloudevents-http-basic</artifactId>
+			<version>${cloudevents.version}</version>
+		</dependency>
 	</dependencies>
 	<build>
 		<plugins>

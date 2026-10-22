@@ -123,11 +123,13 @@ public class TektonServiceImpl implements TektonService {
   @Override
   public TaskRun createTaskRun(
       String workflowId, String workflowActivityId, String taskActivityId, String taskName,
-      String taskId, Map<String, String> customLabels, String image, List<String> command, String script, List<String> arguments,
-      Map<String, String> parameters, List<TaskEnvVar> envVars, List<TaskResultParameter> results, String workingDir, 
-      TaskConfiguration configuration, List<TaskWorkspace> workspaces, long waitSeconds, Integer timeout, String serviceAccountName, String securityContextInYaml) throws InterruptedException, ParseException, JsonProcessingException {
+      Map<String, String> customLabels, String image, List<String> command, String script, List<String> arguments,
+      List<RunParam> parameters, List<TaskEnvVar> envVars, List<RunResult> results, String workingDir,
+      List<TaskWorkspace> workspaces, long waitSeconds, Long timeout, Boolean debug,
+      String serviceAccountName, String securityContextInYaml) throws InterruptedException, ParseException, JsonProcessingException {
 
     LOGGER.info("Initializing Task...");
+    List<RunParam> params = parameters == null ? List.of() : parameters;
     
     /*
      * Define environment variables made up of
@@ -229,7 +231,7 @@ public class TektonServiceImpl implements TektonService {
     if (param.isPresent()) {
       value = param.get().getValue();
     }
-    if (kubeTaskStorageDataMemory && value != null && Boolean.valueOf((boolean) value)) {
+    if (Boolean.TRUE.equals(kubeTaskStorageDataMemory) && Boolean.parseBoolean(String.valueOf(value))) {
       LOGGER.info("Setting data to in memory storage...");
       dataEmptyDirVolumeSource.setMedium("Memory");
     }
@@ -310,7 +312,7 @@ public class TektonServiceImpl implements TektonService {
     tknEnvVars.addAll(helperKubeService.createProxyEnvVars());
 //    @deprecated - no need to create default params. Can be provided if needed.
 //    tknEnvVars.addAll(helperKubeService.createEnvVars(workflowId, workflowActivityId, taskName, taskActivityId));
-    tknEnvVars.add(helperKubeService.createEnvVar("DEBUG", debug.toString()));
+    tknEnvVars.add(helperKubeService.createEnvVar("DEBUG", Boolean.toString(Boolean.TRUE.equals(debug))));
     tknEnvVars.add(helperKubeService.createEnvVar("CI", "true"));
     if (envVars != null) {
       envVars.forEach(var -> {
@@ -333,7 +335,7 @@ public class TektonServiceImpl implements TektonService {
       Param taskParam = new Param();
       taskParam.setName(p.getName());
       ArrayOrString valueString = new ArrayOrString();
-      valueString.setStringVal((String) p.getValue());
+      valueString.setStringVal(String.valueOf(p.getValue()));
       taskParam.setValue(valueString);
       taskParams.add(taskParam);
 //      TODO Determine if we need this.
@@ -445,8 +447,8 @@ public class TektonServiceImpl implements TektonService {
   }
 
   @Override
-  public List<TaskResponseResultParameter> watchTask(String workflowId, String workflowActivityId, String taskId,
-      String taskActivityId, Map<String, String> customLabels, Integer timeout) throws InterruptedException {
+    public List<RunResult> watchTaskRun(String workflowId, String workflowActivityId,
+      String taskActivityId, Map<String, String> customLabels, Long timeout) throws InterruptedException {
     Condition condition = null;
     List<TaskRunResult> tknResultParameters = new ArrayList<TaskRunResult>();
     boolean shouldRetry = true;
@@ -456,7 +458,7 @@ public class TektonServiceImpl implements TektonService {
 	    CountDownLatch latch = new CountDownLatch(1);
 	    TaskWatcher taskWatcher = new TaskWatcher(latch);
 	    try (Watch ignore = client
-	        .v1beta1().taskRuns().withLabels(helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskId, taskActivityId, customLabels))
+            .v1beta1().taskRuns().withLabels(helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskActivityId, customLabels))
 	        .watch(taskWatcher)) {
 	      
 	      //TODO is there a way to wait 3 minutes and check if the task
@@ -486,7 +488,7 @@ public class TektonServiceImpl implements TektonService {
 	        LOGGER.info("Task completed successfully");
 	      } else {
 	        LOGGER.info("Task execution error. " + condition.getReason() + " - " + condition.getMessage());
-	        if (kubeService.isTaskRunResultTooLarge(helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskId, taskActivityId, customLabels))) {
+            if (kubeService.isTaskRunResultTooLarge(helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskActivityId, customLabels))) {
 	          throw new BoomerangException(BoomerangError.TASK_EXECUTION_ERROR, "TaskRunResultTooLarge - Task has exceeded the maximum allowed 4096 byte size for Result Parameters.");
 	        } else {
 	          throw new BoomerangException(BoomerangError.TASK_EXECUTION_ERROR, condition.getReason() + " - " + condition.getMessage());
@@ -500,7 +502,7 @@ public class TektonServiceImpl implements TektonService {
     }
     
     List<RunResult> results = new ArrayList<>();
-    tknResults.forEach(tr -> {
+    tknResultParameters.forEach(tr -> {
       results.add(new RunResult(tr.getName(), tr.getValue()));
     });
     

@@ -15,6 +15,8 @@ public class TaskRunSpec {
   private String image;
   private String script;
   private String workingDir;
+  private String serviceAccountName;
+  private String securityContext;
   private Boolean debug = false;
   private int timeout;
   private TaskDeletionEnum deletion;
@@ -67,6 +69,22 @@ public class TaskRunSpec {
 
   public void setWorkingDir(String workingDir) {
     this.workingDir = workingDir;
+  }
+
+  public String getServiceAccountName() {
+    return serviceAccountName;
+  }
+
+  public void setServiceAccountName(String serviceAccountName) {
+    this.serviceAccountName = serviceAccountName;
+  }
+
+  public String getSecurityContext() {
+    return securityContext;
+  }
+
+  public void setSecurityContext(String securityContext) {
+    this.securityContext = securityContext;
   }
 
   @JsonAnyGetter

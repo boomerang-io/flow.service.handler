@@ -74,17 +74,18 @@ public class TaskServiceImpl implements TaskService {
           task.getClass().toString());
     } else {
       try {
-        kubeService.createTaskConfigMap(task.getWorkflowName(), task.getWorkflowId(),
-            task.getWorkflowActivityId(), task.getTaskName(), task.getTaskId(),
-            task.getTaskActivityId(), task.getLabels(), task.getParameters());
-        tektonService.createTaskRun(task.getWorkflowName(), task.getWorkflowId(),
-            task.getWorkflowActivityId(), task.getTaskActivityId(), task.getTaskName(),
-            task.getTaskId(), task.getLabels(), task.getImage(), task.getCommand(), task.getScript(), task.getArguments(), task.getParameters(),
-            task.getEnvs(), task.getResults(), task.getWorkingDir(), task.getConfiguration(), task.getWorkspaces(),
-            waitUntilTimeout, getTaskTimeout(task.getConfiguration()), task.getServiceAccountName(), task.getSecurityContext());
-        results = tektonService.watchTask(task.getWorkflowId(), task.getWorkflowActivityId(),
-            task.getTaskId(), task.getTaskActivityId(), task.getLabels(), getTaskTimeout(task.getConfiguration()));
-        if (getTaskDeletionConfig(task.getConfiguration()).equals(TaskDeletionEnum.OnSuccess)) {
+        Long timeout = getTaskTimeout((long) task.getSpec().getTimeout());
+        kubeService.createTaskConfigMap(task.getWorkflowRef(), task.getWorkflowRunRef(),
+          task.getName(), task.getId(), task.getLabels(), task.getParams());
+        tektonService.createTaskRun(task.getWorkflowRef(), task.getWorkflowRunRef(),
+          task.getId(), task.getName(), task.getLabels(), task.getSpec().getImage(),
+          task.getSpec().getCommand(), task.getSpec().getScript(), task.getSpec().getArguments(),
+          task.getParams(), task.getSpec().getEnvs(), task.getResults(), task.getSpec().getWorkingDir(),
+          task.getWorkspaces(), waitUntilTimeout, timeout, task.getSpec().getDebug(),
+          task.getSpec().getServiceAccountName(), task.getSpec().getSecurityContext());
+        results = tektonService.watchTaskRun(task.getWorkflowRef(), task.getWorkflowRunRef(),
+          task.getId(), task.getLabels(), timeout);
+        if (getTaskDeletion(task.getSpec().getDeletion()).equals(TaskDeletionEnum.OnSuccess)) {
           // This will only delete on success as failure throws an Exception.
           deleteService.deleteTaskRun(task.getWorkflowRef(), task.getWorkflowRunRef(), task.getId(),
               task.getLabels());

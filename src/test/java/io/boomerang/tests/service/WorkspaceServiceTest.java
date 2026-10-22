@@ -3,6 +3,7 @@ package io.boomerang.tests.service;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -14,6 +15,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import io.boomerang.kube.service.KubeServiceImpl;
+import io.boomerang.model.ref.RunParam;
 import io.fabric8.kubernetes.api.model.ConfigMapList;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -41,9 +43,8 @@ public class WorkspaceServiceTest {
   public void testCreateTaskConfigMap() {
 
     Map<String, String> labels = new HashMap<>();
-    Map<String, String> params = new HashMap<>();
-    params.put("test-param", "This is a test");
-    kubeService.createTaskConfigMap("test-cm-workflow", "20210926", "202109260627", "Test Task", "1234", "2021092606271234", labels, params);
+    List<RunParam> params = List.of(new RunParam("test-param", "This is a test"));
+    kubeService.createTaskConfigMap("20210926", "202109260627", "Test Task", "2021092606271234", labels, params);
     
     ConfigMapList configMapList = client.configMaps().inAnyNamespace().list();
     LOGGER.info("testCreateTaskConfigMap() - " + configMapList.toString());
@@ -55,9 +56,8 @@ public class WorkspaceServiceTest {
   public void testCreateTaskConfigMapWithEmptyParams() {
 
     Map<String, String> labels = new HashMap<>();
-    Map<String, String> params = new HashMap<>();
-//    params.put("test-param", "This is a test");
-    kubeService.createTaskConfigMap("test-cm-workflow", "20210926", "202109260627", "Test Task", "1234", "2021092606271234", labels, params);
+    List<RunParam> params = List.of();
+    kubeService.createTaskConfigMap("20210926", "202109260627", "Test Task", "2021092606271234", labels, params);
     
     ConfigMapList configMapList = client.configMaps().inAnyNamespace().list();
     LOGGER.info("testCreateTaskConfigMapWithEmptyParams() - " + configMapList.toString());
