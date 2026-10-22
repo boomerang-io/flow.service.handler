@@ -31,8 +31,8 @@ public class LogKubeServiceImpl implements LogKubeService {
   }
 
   @Override
-  public String getPodLog(String workflowId, String workflowActivityId, String taskId, String taskActivityId, Map<String, String> customLabels) {
-    Map<String, String> labelSelector = helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskId, taskActivityId, customLabels);
+  public String getPodLog(String workflowId, String workflowActivityId, String taskActivityId, Map<String, String> customLabels) {
+    Map<String, String> labelSelector = helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskActivityId, customLabels);
 
     try {
       List<Pod> pods = client.pods().withLabels(labelSelector).list().getItems();
@@ -52,13 +52,13 @@ public class LogKubeServiceImpl implements LogKubeService {
 
   @Override
   public StreamingResponseBody streamPodLog(HttpServletResponse response, String workflowId,
-      String workflowActivityId, String taskId, String taskActivityId,
+      String workflowActivityId, String taskActivityId,
       Map<String, String> customLabels) {
 
     LOGGER.info("Stream logs from Kubernetes");
 
     Map<String, String> labelSelector = helperKubeService.getTaskLabels(workflowId,
-        workflowActivityId, taskId, taskActivityId, customLabels);
+        workflowActivityId, taskActivityId, customLabels);
     StreamingResponseBody responseBody = null;
     List<Pod> pods = client.pods().withLabels(labelSelector).list().getItems();
     if (!pods.isEmpty()) {

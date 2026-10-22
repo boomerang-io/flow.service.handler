@@ -1,36 +1,29 @@
 package io.boomerang.kube.service;
 
+import java.util.List;
 import java.util.Map;
+import io.boomerang.model.ref.RunParam;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.PersistentVolumeClaim;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 
 public interface KubeService {
 
-  boolean checkWorkspacePVCExists(String workspaceId, boolean failIfNotBound);
-
-  boolean checkWorkflowPVCExists(String workflowId, String workflowActivityId,
-      boolean failIfNotBound);
-
-  PersistentVolumeClaim createWorkspacePVC(String workspaceName, String workspaceId,
-      Map<String, String> customLabels, String size, String className, String accessMode,
-      long waitSeconds) throws KubernetesClientException, InterruptedException;
-
-  PersistentVolumeClaim createWorkflowPVC(String workflowName, String workflowId,
-      String workflowActivityId, Map<String, String> customLabels, String size, String className,
-      String accessMode, long waitSeconds) throws KubernetesClientException, InterruptedException;
-
-  void deleteWorkspacePVC(String workspaceId);
-
-  void deleteWorkflowPVC(String workflowId, String workflowActivityId);
-
-  ConfigMap createTaskConfigMap(String workflowName, String workflowId, String workflowActivityId,
-      String taskName, String taskId, String taskActivityId, Map<String, String> customLabels,
-      Map<String, String> inputProps);
-
   void deleteWorkflowConfigMap(String workflowId, String workflowActivityId);
 
-  void deleteTaskConfigMap(String workflowId, String workflowActivityId, String taskId,
-      String taskActivityId, Map<String, String> customLabels);
+  PersistentVolumeClaim createWorkspacePVC(String workflowRef, String workspaceRef,
+      String workspaceType, Map<String, String> customLabels, String size, String className,
+      String accessMode, long waitSeconds) throws KubernetesClientException, InterruptedException;
+  
+  void deleteWorkspacePVC(String workspaceRef, String workspaceType);
+
+  boolean checkWorkspacePVCExists(String workspaceRef, String workspaceType,
+      boolean failIfNotBound);
+
+  void deleteTaskConfigMap(String workflowId, String workflowActivityId, String taskActivityId,
+      Map<String, String> customLabels);
+
+  ConfigMap createTaskConfigMap(String workflowId, String workflowActivityId, String taskName,
+      String taskActivityId, Map<String, String> customLabels, List<RunParam> list);
 
 }

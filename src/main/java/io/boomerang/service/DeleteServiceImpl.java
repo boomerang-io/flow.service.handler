@@ -22,13 +22,13 @@ public class DeleteServiceImpl implements DeleteService {
 
   @Override
   @Async
-  public void deleteJob(String workflowId, String workflowActivityId, String taskId, String taskActivityId, Map<String, String> customLabels) {
+  public void deleteTaskRun(String workflowId, String workflowActivityId, String taskActivityId, Map<String, String> customLabels) {
     try {
       Thread.sleep(sleep);
     } catch (InterruptedException e) {
       e.printStackTrace();
     }
-    tektonService.deleteTask(workflowId,workflowActivityId, taskId, taskActivityId, customLabels);
+    tektonService.deleteTaskRun(workflowId,workflowActivityId, taskActivityId, customLabels);
   }
   
 //  @Override

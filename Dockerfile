@@ -5,7 +5,7 @@ RUN apk update && \
     
 ENV JAVA_OPTS=""
 ENV BMRG_HOME=/opt/boomerang
-ENV BMRG_SVC=service-controller
+ENV BMRG_SVC=service-handler
 
 WORKDIR $BMRG_HOME
 ADD target/$BMRG_SVC.jar service.jar

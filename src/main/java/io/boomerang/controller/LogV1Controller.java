@@ -12,30 +12,29 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 import io.boomerang.service.LogServiceImpl;
 
 @RestController
-@RequestMapping("/controller/log")
-public class LogController {
+@RequestMapping("/api/v1/logs")
+public class LogV1Controller {
 
   @Autowired
   private LogServiceImpl logService;
 
   @GetMapping(value = "/stream")
   public ResponseEntity<StreamingResponseBody> streamLogForTask(HttpServletResponse response,
-      @RequestParam(value = "workflowId", required = true) String workflowId,
-      @RequestParam(value = "workflowActivityId", required = true) String workflowActivityId,
-      @RequestParam(value = "taskActivityId", required = false) String taskActivityId,
-      @RequestParam(value = "taskId", required = true) String taskId) {
+      @RequestParam(value = "workflowRef", required = true) String workflowRef,
+      @RequestParam(value = "workflowRunRef", required = true) String workflowRunRef,
+      @RequestParam(value = "taskRunRef", required = false) String taskRunRef) {
     return new ResponseEntity<>(
-        logService.streamLogForTask(response, workflowId, workflowActivityId, taskId, taskActivityId),
+        logService.streamLogForTask(response, workflowRef, workflowRunRef, taskRunRef),
         HttpStatus.OK);
   }
   
   @GetMapping(value = "")
-  public ResponseEntity<String> getLogForTask(@RequestParam(value = "workflowId", required = true) String workflowId,
+  public ResponseEntity<String> getLogForTask(@RequestParam(value = "workflowRef", required = true) String workflowRef,
       @RequestParam(value = "workflowActivityId", required = true) String workflowActivityId,
-      @RequestParam(value = "taskActivityId", required = false) String taskActivityId,
-      @RequestParam(value = "taskId", required = true) String taskId) {
+      @RequestParam(value = "workflowRunRef", required = false) String workflowRunRef,
+      @RequestParam(value = "taskRunRef", required = true) String taskRunRef) {
     return new ResponseEntity<>(
-        logService.getLogForTask(workflowId, workflowActivityId, taskId, taskActivityId),
+        logService.getLogForTask(workflowRef, workflowRunRef, taskRunRef),
         HttpStatus.OK);
   }
 }

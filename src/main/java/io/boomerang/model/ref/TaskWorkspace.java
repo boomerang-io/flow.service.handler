@@ -1,19 +1,15 @@
-package io.boomerang.model;
+package io.boomerang.model.ref;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties
 public class TaskWorkspace {
 
-//  Optional
   private String name;
 
-//  Required
-  private String id;
+  private String type;
 
-  private Boolean readOnly;
-  
-  private Boolean optional;
+  private boolean optional = false;
   
   private String mountPath;
 
@@ -25,27 +21,19 @@ public class TaskWorkspace {
     this.name = name;
   }
 
-  public String getId() {
-    return id;
+  public String getType() {
+    return type;
   }
 
-  public void setId(String id) {
-    this.id = id;
+  public void setType(String type) {
+    this.type = type;
   }
 
-  public Boolean getReadOnly() {
-    return readOnly;
-  }
-
-  public void setReadOnly(Boolean readOnly) {
-    this.readOnly = readOnly;
-  }
-
-  public Boolean getOptional() {
+  public boolean isOptional() {
     return optional;
   }
 
-  public void setOptional(Boolean optional) {
+  public void setOptional(boolean optional) {
     this.optional = optional;
   }
 

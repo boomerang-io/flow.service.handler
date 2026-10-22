@@ -9,6 +9,7 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import io.boomerang.model.ref.RunParam;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
 import io.fabric8.kubernetes.api.model.ConfigMapList;
@@ -22,6 +23,7 @@ import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 
 @Component
+//@Configurable
 public class KubeServiceImpl implements KubeService {
 
   private static final Logger LOGGER = LogManager.getLogger(KubeServiceImpl.class);
@@ -67,26 +69,23 @@ public class KubeServiceImpl implements KubeService {
   @Value("${kube.worker.hostaliases}")
   protected String kubeHostAliases;
 
-  @Value("${controller.service.host}")
-  protected String controllerServiceURL;
+  protected KubernetesClient client = null;
 
-  KubernetesClient client = null;
-
-  protected KubeServiceImpl() {
+  public KubeServiceImpl() {
     this.client = new DefaultKubernetesClient();
   }
-
-  @Override
-  public boolean checkWorkspacePVCExists(String workspaceId, boolean failIfNotBound) {
-    return workspaceId != null
-        ? checkPVCExists(helperKubeService.getWorkspaceLabels(workspaceId, null), failIfNotBound)
-        : false;
+  
+//  Using setter instead of Constructor due to autowiring issues
+  public void setClient(KubernetesClient client) {
+    LOGGER.info("Creating Client with default namespace: " + client.getNamespace());
+    this.client = client;
   }
-
+  
   @Override
-  public boolean checkWorkflowPVCExists(String workflowId, String workflowActivityId, boolean failIfNotBound) {
-    return checkPVCExists(helperKubeService.getWorkflowLabels(workflowId, workflowActivityId, null),
-        failIfNotBound);
+  public boolean checkWorkspacePVCExists(String workspaceRef, String workspaceType, boolean failIfNotBound) {    
+    return workspaceRef != null && workspaceType!= null
+        ? checkPVCExists(helperKubeService.getWorkspaceLabels(null,  workspaceRef, workspaceType, null), failIfNotBound)
+        : false;
   }
 
   private boolean checkPVCExists(Map<String, String> labelSelector, boolean failIfNotBound) {
@@ -131,23 +130,12 @@ public class KubeServiceImpl implements KubeService {
   }
 
   @Override
-  public PersistentVolumeClaim createWorkspacePVC(String workspaceName, String workspaceId,
+  public PersistentVolumeClaim createWorkspacePVC(String workflowRef, String workspaceRef, String workspaceType,
       Map<String, String> customLabels, String size, String className, String accessMode,
       long waitSeconds) throws KubernetesClientException, InterruptedException {
-    return createPVC(helperKubeService.getWorkspaceAnnotations(workspaceName, workspaceId),
-        helperKubeService.getWorkspaceLabels(workspaceId, customLabels), size, className,
+    return createPVC(helperKubeService.getWorkspaceAnnotations(workflowRef, workspaceRef, workspaceType),
+        helperKubeService.getWorkspaceLabels(workflowRef, workspaceRef, workspaceType, customLabels), size, className,
         accessMode, waitSeconds);
-  }
-
-  @Override
-  public PersistentVolumeClaim createWorkflowPVC(String workflowName, String workflowId,
-      String workflowActivityId, Map<String, String> customLabels, String size, String className,
-      String accessMode, long waitSeconds) throws KubernetesClientException, InterruptedException {
-    return createPVC(
-        helperKubeService.getAnnotations("workflow", workflowName, workflowId, workflowActivityId,
-            null, null),
-        helperKubeService.getWorkflowLabels(workflowId, workflowActivityId, customLabels), size,
-        className, accessMode, waitSeconds);
   }
 
   private PersistentVolumeClaim createPVC(Map<String, String> annotations,
@@ -192,13 +180,8 @@ public class KubeServiceImpl implements KubeService {
   }
 
   @Override
-  public void deleteWorkspacePVC(String workspaceId) {
-    deletePVC(helperKubeService.getWorkspaceLabels(workspaceId, null));
-  }
-
-  @Override
-  public void deleteWorkflowPVC(String workflowId, String workflowActivityId) {
-    deletePVC(helperKubeService.getWorkflowLabels(workflowId, workflowActivityId, null));
+  public void deleteWorkspacePVC(String workspaceRef, String workspaceType) {
+    deletePVC(helperKubeService.getWorkspaceLabels(null, workspaceRef, workspaceType, null));
   }
 
   private void deletePVC(Map<String, String> labels) {
@@ -215,7 +198,6 @@ public class KubeServiceImpl implements KubeService {
 //    
 //  Map<String, String> dataMap = new HashMap<>();
 //  Map<String, String> sysProps = new HashMap<>();
-//  sysProps.put("controller-service-url", controllerServiceURL);
 //  sysProps.put("workflow-name", workflowName);
 //  sysProps.put("workflow-id", workflowId);
 //  sysProps.put("workflow-activity-id", workflowActivityId);
@@ -269,29 +251,31 @@ public class KubeServiceImpl implements KubeService {
 //  }
 
   @Override
-public ConfigMap createTaskConfigMap(String workflowName, String workflowId,
-    String workflowActivityId, String taskName, String taskId, String taskActivityId,
-    Map<String, String> customLabels, Map<String, String> inputProps) {
+public ConfigMap createTaskConfigMap(String workflowId,
+    String workflowRunId, String taskName, String taskRunId,
+    Map<String, String> customLabels, List<RunParam> params) {
 
-  Map<String, String> dataMap = new HashMap<>();
-  Map<String, String> sysProps = new HashMap<>();
-  sysProps.put("task-id", taskId);
-  sysProps.put("task-name", taskName);
-  sysProps.put("task-activity-id", taskActivityId);
-  sysProps.put("controller-service-url", controllerServiceURL);
-  sysProps.put("workflow-name", workflowName);
-  sysProps.put("workflow-id", workflowId);
-  sysProps.put("workflow-activity-id", workflowActivityId);
-  dataMap.put("task.input.properties", helperKubeService.createConfigMapProp(inputProps));
-  dataMap.put("task.system.properties", helperKubeService.createConfigMapProp(sysProps));
+//  Map<String, String> dataMap = new HashMap<>();
+//  Map<String, String> sysProps = new HashMap<>();
+//  sysProps.put("taskrun-name", taskName);
+//  sysProps.put("taskrun-ref", taskRunId);
+//  sysProps.put("workflow-ref", workflowId);
+//  sysProps.put("workflowrun-ref", workflowRunId);
+//  dataMap.put("task.input.properties", helperKubeService.createConfigMapProp(params));
+//  dataMap.put("task.system.properties", helperKubeService.createConfigMapProp(sysProps));
 
   ConfigMap configMap = new ConfigMapBuilder().withNewMetadata()
       .withGenerateName(helperKubeService.getPrefixCM() + "-")
-      .withLabels(helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskId, taskActivityId, customLabels))
-      .withAnnotations(helperKubeService.getAnnotations("task", workflowName, workflowId,
-          workflowActivityId, taskId, taskActivityId))
-      .endMetadata().addToData(dataMap).build();
+      .withLabels(helperKubeService.getTaskLabels(workflowId, workflowRunId, taskRunId, customLabels))
+      .withAnnotations(helperKubeService.getAnnotations("task", workflowId,
+          workflowRunId, taskRunId))
+      .endMetadata().addToData(helperKubeService.createConfigMapData(params)).build();
+  
+  LOGGER.debug("ConfigMap: " + configMap.toString());
+  
   ConfigMap result = client.configMaps().create(configMap);
+  
+  LOGGER.info(result.toString());
 
   return result;
 }
@@ -326,8 +310,8 @@ public ConfigMap createTaskConfigMap(String workflowName, String workflowId,
   }
 
   @Override
-  public void deleteTaskConfigMap(String workflowId, String workflowActivityId, String taskId, String taskActivityId, Map<String, String> customLabels) {
-    deleteConfigMap(helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskId, taskActivityId, customLabels));
+  public void deleteTaskConfigMap(String workflowId, String workflowActivityId, String taskActivityId, Map<String, String> customLabels) {
+    deleteConfigMap(helperKubeService.getTaskLabels(workflowId, workflowActivityId, taskActivityId, customLabels));
   }
   
   private void deleteConfigMap(Map<String, String> labels) {
